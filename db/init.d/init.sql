@@ -10,6 +10,6 @@ CREATE TABLE student (
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 테스트용 학생 데이터를 3개 삽입합니다.
-INSERT INTO student (name, major) VALUES ('test1', 'ccccccccc');
+INSERT INTO student (name, major) VALUES ('한국어', 'ccccccccc');
 INSERT INTO student (name, major) VALUES ('test2', 'aaaaaaa');
 INSERT INTO student (name, major) VALUES ('test3', 'dddd');
