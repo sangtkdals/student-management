@@ -1,0 +1,17 @@
+# IDE & OS specific
+.idea/
+.vscode/
+*.DS_Store
+/nbproject/
+
+# Build artifacts
+/backend/build/
+/frontend/dist/
+/frontend/node_modules/
+
+# Log files
+*.log
+
+.env 
+
+/db/data/
