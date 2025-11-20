@@ -1,24 +1,25 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import LandingPage from "./components/LandingPage";
+import LeaveApplication from "./components/LeaveReturnPage";
 import type { UserRole } from "./types";
 
 function App() {
+  const [currentView, setCurrentView] = useState<"landing" | "leave">("landing");
   const [userRole, setUserRole] = useState<UserRole | null>(null);
 
   const handleNavigateToAuth = (role: UserRole) => {
     setUserRole(role);
-    // In a real application, you would navigate to a login/signup page here.
-    // For this mock, we'll just log the role.
-    console.log(`Navigating to auth for role: ${role}`);
+    // 로그인 후 휴학/복학 페이지로 이동
+    setCurrentView("leave");
   };
 
-  return (
-    <div>
-      {/* For now, we only show the landing page. 
-          Later, we can add routing to show different pages based on auth state. */}
-      <LandingPage onNavigateToAuth={handleNavigateToAuth} />
-    </div>
-  );
+  // 휴학/복학 페이지 표시
+  if (currentView === "leave") {
+    return <LeaveReturnPage />;
+  }
+
+  // 랜딩 페이지 표시
+  return <LandingPage onNavigateToAuth={handleNavigateToAuth} />;
 }
 
 export default App;

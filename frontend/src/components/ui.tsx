@@ -186,3 +186,18 @@ export const DropdownItem: React.FC<DropdownItemProps> = ({ children, onClick })
     {children}
   </a>
 );
+
+interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+  children: React.ReactNode;
+}
+
+export const Select: React.FC<SelectProps> = ({ children, className = "", ...props }) => {
+  return (
+    <select
+      className={`w-full px-4 py-2.5 border border-brand-gray rounded-md focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-transparent bg-white ${className}`}
+      {...props}
+    >
+      {children}
+    </select>
+  );
+};
