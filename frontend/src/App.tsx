@@ -8,27 +8,39 @@ import LandingPage from "./components/LandingPage";
 import { UserProfile, NoticeBoard, AcademicCalendar } from "./components/CommonViews";
 import { ICONS, MOCK_COURSES, MOCK_ANNOUNCEMENTS, MOCK_CALENDAR_EVENTS } from "./constants";
 
-// Student Views (Imported from feature/professor)
-import { 
-    StudentHome, StudentAllGrades, StudentCourseRegistration, StudentTuitionHistory, 
-    StudentLeaveApplication, StudentGraduationCheck, StudentTuitionPayment, 
-    StudentLeaveHistory, StudentReturnApplication, StudentReturnHistory, 
-    StudentCertificateIssuance, StudentTimetable, StudentCurrentGrades
-} from './components/StudentViews';
-
-// Professor Views (Imported from feature/professor)
+// Student Views
 import {
-    ProfessorHome, ProfessorLectureTimetable, ProfessorSyllabus, ProfessorCourseMaterials,
-    ProfessorAssignments, ProfessorCourseEvaluation, ProfessorStudentManagement
-} from './components/ProfessorViews';
+  StudentHome,
+  StudentAllGrades,
+  StudentCourseRegistration,
+  StudentTuitionHistory,
+  StudentLeaveApplication,
+  StudentGraduationCheck,
+  StudentTuitionPayment,
+  StudentLeaveHistory,
+  StudentReturnApplication,
+  StudentReturnHistory,
+  StudentCertificateIssuance,
+  StudentTimetable,
+  StudentCurrentGrades,
+} from "./components/StudentViews";
+
+// Professor Views
+import {
+  ProfessorHome,
+  ProfessorTimetable, // 이름 변경 (ProfessorLectureTimetable -> ProfessorTimetable)
+  ProfessorSyllabus,
+  ProfessorCourseMaterials,
+  ProfessorAssignments,
+  ProfessorCourseEvaluation,
+  ProfessorStudentManagement,
+  ProfessorMyLectures, // 추가됨
+} from "./components/ProfessorViews";
 
 // Admin Views
-import {
-    AdminDashboard, AdminUserManagement, AdminSystemManagement
-} from './components/AdminViews';
+import { AdminDashboard, AdminUserManagement, AdminSystemManagement } from "./components/AdminViews";
 
-
-// --- Navigation Structures (Based on feature/main-ui but enriched) ---
+// --- Navigation Structures ---
 
 const STUDENT_MENU = [
   {
@@ -54,13 +66,13 @@ const STUDENT_MENU = [
 const PROFESSOR_MENU = [
   {
     label: "강의 관리",
-    path: "/professor/timetable",
-    sub: ["/professor/timetable", "/professor/syllabus", "/professor/course-materials", "/professor/assignments"],
+    path: "/professor/my-lectures", // 기본 경로 수정
+    sub: ["/professor/my-lectures", "/professor/timetable", "/professor/syllabus", "/professor/course-materials", "/professor/assignments"],
   },
-  { 
-    label: "학생 관리", 
-    path: "/professor/student-attendance", 
-    sub: ["/professor/student-attendance", "/professor/grade-management"] 
+  {
+    label: "학생 관리",
+    path: "/professor/student-management",
+    sub: ["/professor/student-management", "/professor/student-attendance", "/professor/grade-management"],
   },
   { label: "연구/행정", path: "/professor/course-evaluation", sub: ["/professor/course-evaluation"] },
 ];
@@ -70,7 +82,7 @@ const ADMIN_MENU = [
   { label: "시스템 관리", path: "/admin/system-management" },
 ];
 
-// --- Components (TopNavigation, DashboardHero from feature/main-ui) ---
+// --- Components ---
 
 const TopNavigation: React.FC<{
   user: User;
@@ -99,11 +111,21 @@ const TopNavigation: React.FC<{
           {/* Logo */}
           <div className="flex items-center cursor-pointer" onClick={() => navigate(homePath)}>
             <span className="text-brand-blue mr-2">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" />
-                </svg>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"
+                />
+              </svg>
             </span>
             <h1 className="text-xl font-bold text-brand-blue tracking-tight">학사 관리 시스템</h1>
           </div>
@@ -142,7 +164,10 @@ const TopNavigation: React.FC<{
 
           {/* User Profile */}
           <div className="relative">
-            <button className="flex items-center space-x-2 focus:outline-none py-1 px-2 rounded-full hover:bg-slate-50" onClick={() => setIsProfileOpen(!isProfileOpen)}>
+            <button
+              className="flex items-center space-x-2 focus:outline-none py-1 px-2 rounded-full hover:bg-slate-50"
+              onClick={() => setIsProfileOpen(!isProfileOpen)}
+            >
               <div className="text-right hidden sm:block mr-1">
                 <div className="text-sm font-bold text-slate-800 leading-tight">{user.name}</div>
                 <div className="text-xs text-slate-500 capitalize leading-tight">{user.role}</div>
@@ -247,7 +272,7 @@ const DashboardHero: React.FC<{ user: User; navigate: ReturnType<typeof useNavig
                   </div>
                   <div className="bg-black/20 rounded p-3 flex justify-between items-center">
                     <span className="text-blue-100 text-sm">{user.role === "student" ? "이번 학기 평점" : "연구실"}</span>
-                    <span className="font-medium text-sm">{user.role === "student" ? "4.0 / 4.5" : "공학관 401호"}</span>
+                    <span className="font-medium text-sm">{user.role === "student" ? "4.0 / 4.5" : user.officeRoom || "미배정"}</span>
                   </div>
                 </div>
               </div>
@@ -378,14 +403,14 @@ const DashboardContent: React.FC<{ navigate: ReturnType<typeof useNavigate>; use
                   <span className="text-xs font-bold">내 강의</span>
                 </button>
                 <button
-                  onClick={() => navigate("/professor/student-attendance")}
+                  onClick={() => navigate("/professor/student-management")}
                   className="p-3 bg-slate-50 rounded-lg hover:bg-blue-50 hover:text-brand-blue transition-colors text-center"
                 >
                   <div className="mx-auto mb-1 w-6 h-6">{ICONS.users}</div>
-                  <span className="text-xs font-bold">출결 관리</span>
+                  <span className="text-xs font-bold">학생 관리</span>
                 </button>
                 <button
-                  onClick={() => navigate("/professor/grade-management")}
+                  onClick={() => navigate("/professor/student-management")}
                   className="p-3 bg-slate-50 rounded-lg hover:bg-blue-50 hover:text-brand-blue transition-colors text-center"
                 >
                   <div className="mx-auto mb-1 w-6 h-6">{ICONS.grades}</div>
@@ -433,51 +458,332 @@ const App: React.FC = () => {
   const AuthenticatedApp = ({ user, onLogout }: { user: User; onLogout: () => void }) => {
     const navigate = useNavigate();
     const location = useLocation();
-    // Show dashboard hero on specific home pages
+
+    // 학생(/student)과 교수(/professor) 경로에서도 파란색 배너(DashboardHero)가 나오도록 설정
     const isDashboard = ["/", "/student", "/professor", "/admin/dashboard"].includes(location.pathname);
 
     return (
       <div className="min-h-screen bg-brand-gray-light flex flex-col font-sans">
         <TopNavigation user={user} onLogout={onLogout} />
 
-        {/* Hero Section - Only visible on Dashboard Home */}
+        {/* 파란색 배너 (프로필 + 오늘의 시간표) */}
         {isDashboard && <DashboardHero user={user} navigate={navigate} />}
-
         <main className="flex-1">
           <Routes>
             {/* Main Role Dashboards */}
-            <Route path="/" element={
-                user.role === "student" ? <StudentHome user={user} /> : 
-                user.role === "professor" ? <ProfessorHome user={user} /> : 
-                <DashboardContent user={user} navigate={navigate} />
-            } />
+            <Route
+              path="/"
+              element={
+                user.role === "student" ? (
+                  <StudentHome user={user} />
+                ) : user.role === "professor" ? (
+                  <ProfessorHome user={user} />
+                ) : (
+                  <DashboardContent user={user} navigate={navigate} />
+                )
+              }
+            />
             <Route path="/student" element={<StudentHome user={user} />} />
             <Route path="/professor" element={<ProfessorHome user={user} />} />
-            
+
             {/* Common Routes */}
-            <Route path="/profile" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><UserProfile user={user} /></div>} />
-            <Route path="/announcements" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><NoticeBoard /></div>} />
-            <Route path="/calendar" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><AcademicCalendar /></div>} />
+            <Route
+              path="/profile"
+              element={
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                  <UserProfile user={user} />
+                </div>
+              }
+            />
+            <Route
+              path="/announcements"
+              element={
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                  <NoticeBoard />
+                </div>
+              }
+            />
+            <Route
+              path="/calendar"
+              element={
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                  <AcademicCalendar />
+                </div>
+              }
+            />
 
             {/* Student Specific Routes */}
             {user.role === "student" && (
               <>
-                <Route path="/student/course-registration" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><StudentCourseRegistration /></div>} />
-                <Route path="/student/all-grades" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><StudentAllGrades /></div>} />
-                <Route path="/student/tuition-history" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><StudentTuitionHistory /></div>} />
-                <Route path="/student/leave-application" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><StudentLeaveApplication /></div>} />
-                <Route path="/student/graduation-check" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><StudentGraduationCheck /></div>} />
-                <Route path="/student/tuition-payment" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><StudentTuitionPayment /></div>} />
-                <Route path="/student/leave-history" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><StudentLeaveHistory /></div>} />
-                <Route path="/student/return-application" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><StudentReturnApplication /></div>} />
-                <Route path="/student/return-history" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><StudentReturnHistory /></div>} />
-                <Route path="/student/certificate-issuance" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><StudentCertificateIssuance /></div>} />
-                <Route path="/student/timetable" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><StudentTimetable /></div>} />
-                <Route path="/student/current-grades" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><StudentCurrentGrades /></div>} />
+                <Route
+                  path="/student/course-registration"
+                  element={
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                      <StudentCourseRegistration />
+                    </div>
+                  }
+                />
+                <Route
+                  path="/student/all-grades"
+                  element={
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                      <StudentAllGrades />
+                    </div>
+                  }
+                />
+                <Route
+                  path="/student/tuition-history"
+                  element={
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                      <StudentTuitionHistory />
+                    </div>
+                  }
+                />
+                <Route
+                  path="/student/leave-application"
+                  element={
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                      <StudentLeaveApplication />
+                    </div>
+                  }
+                />
+                <Route
+                  path="/student/graduation-check"
+                  element={
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                      <StudentGraduationCheck />
+                    </div>
+                  }
+                />
+                <Route
+                  path="/student/tuition-payment"
+                  element={
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                      <StudentTuitionPayment />
+                    </div>
+                  }
+                />
+                <Route
+                  path="/student/leave-history"
+                  element={
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                      <StudentLeaveHistory />
+                    </div>
+                  }
+                />
+                <Route
+                  path="/student/return-application"
+                  element={
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                      <StudentReturnApplication />
+                    </div>
+                  }
+                />
+                <Route
+                  path="/student/return-history"
+                  element={
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                      <StudentReturnHistory />
+                    </div>
+                  }
+                />
+                <Route
+                  path="/student/certificate-issuance"
+                  element={
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                      <StudentCertificateIssuance />
+                    </div>
+                  }
+                />
+                <Route
+                  path="/student/timetable"
+                  element={
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                      <StudentTimetable />
+                    </div>
+                  }
+                />
+                <Route
+                  path="/student/current-grades"
+                  element={
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                      <StudentCurrentGrades />
+                    </div>
+                  }
+                />
               </>
             )}
 
             {/* Professor Specific Routes */}
             {user.role === "professor" && (
               <>
-                <Route path="/professor/timetable" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><ProfessorLectureTimetable /><
+                <Route
+                  path="/professor/timetable"
+                  element={
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                      <ProfessorTimetable user={user} />
+                    </div>
+                  }
+                />
+
+                {/* Reusing the component with different viewType props as per feature/professor logic */}
+                <Route
+                  path="/professor/student-management"
+                  element={
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                      <ProfessorStudentManagement user={user} />
+                    </div>
+                  }
+                />
+                <Route
+                  path="/professor/student-attendance"
+                  element={
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                      <ProfessorStudentManagement user={user} viewType="attendance" />
+                    </div>
+                  }
+                />
+                <Route
+                  path="/professor/grade-management"
+                  element={
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                      <ProfessorStudentManagement user={user} viewType="grades" />
+                    </div>
+                  }
+                />
+
+                <Route
+                  path="/professor/my-lectures"
+                  element={
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                      <ProfessorMyLectures user={user} />
+                    </div>
+                  }
+                />
+                <Route
+                  path="/professor/syllabus"
+                  element={
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                      <ProfessorSyllabus />
+                    </div>
+                  }
+                />
+                <Route
+                  path="/professor/course-materials"
+                  element={
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                      <ProfessorCourseMaterials />
+                    </div>
+                  }
+                />
+                <Route
+                  path="/professor/assignments"
+                  element={
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                      <ProfessorAssignments />
+                    </div>
+                  }
+                />
+                <Route
+                  path="/professor/course-evaluation"
+                  element={
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                      <ProfessorCourseEvaluation />
+                    </div>
+                  }
+                />
+              </>
+            )}
+
+            {/* Admin Specific Routes */}
+            {user.role === "admin" && (
+              <>
+                <Route
+                  path="/admin/dashboard"
+                  element={
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                      <AdminDashboard />
+                    </div>
+                  }
+                />
+                <Route
+                  path="/admin/user-management"
+                  element={
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                      <AdminUserManagement />
+                    </div>
+                  }
+                />
+                <Route
+                  path="/admin/system-management"
+                  element={
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                      <AdminSystemManagement />
+                    </div>
+                  }
+                />
+              </>
+            )}
+
+            <Route path="*" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">페이지를 찾을 수 없습니다</div>} />
+          </Routes>
+        </main>
+
+        <footer className="bg-white border-t border-brand-gray mt-auto">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="md:flex md:justify-between md:items-center">
+              <div className="text-sm text-slate-500">&copy; {new Date().getFullYear()} University Academic System. All rights reserved.</div>
+              <div className="mt-4 md:mt-0 flex space-x-6">
+                <a href="#" className="text-sm text-slate-500 hover:text-brand-blue">
+                  개인정보처리방침
+                </a>
+                <a href="#" className="text-sm text-slate-500 hover:text-brand-blue">
+                  이용약관
+                </a>
+                <a href="#" className="text-sm text-slate-500 hover:text-brand-blue">
+                  연락처
+                </a>
+              </div>
+            </div>
+          </div>
+        </footer>
+      </div>
+    );
+  };
+
+  return (
+    <>
+      {user ? (
+        <AuthenticatedApp user={user} onLogout={handleLogout} />
+      ) : (
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <LandingPage
+                onNavigateToAuth={(role) => {
+                  setAuthRole(role);
+                  navigate(`/auth/${role}`);
+                }}
+              />
+            }
+          />
+          <Route path="/auth/:role" element={<Auth onLogin={handleLogin} onBack={() => navigate("/")} initialRole={authRole} />} />
+          <Route
+            path="*"
+            element={
+              <LandingPage
+                onNavigateToAuth={(role) => {
+                  setAuthRole(role);
+                  navigate(`/auth/${role}`);
+                }}
+              />
+            }
+          />
+        </Routes>
+      )}
+    </>
+  );
+};
+
+export default App;
