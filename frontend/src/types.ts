@@ -1,4 +1,4 @@
-export type UserRole = "student" | "professor" | "admin";
+export type UserRole = 'student' | 'professor' | 'admin';
 
 export interface User {
   id: string;
@@ -44,13 +44,13 @@ export interface CalendarEvent {
   title: string;
   startDate: string;
   endDate: string;
-  category: "academic" | "holiday" | "event";
+  category: 'academic' | 'holiday' | 'event';
 }
 
 export interface StudentRecord {
   id: string;
   name: string;
   department: string;
-  attendance: "Present" | "Absent" | "Late";
+  attendance: 'Present' | 'Absent' | 'Late';
   grade: string | null;
 }
