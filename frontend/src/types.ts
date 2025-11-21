@@ -274,13 +274,13 @@ export interface CalendarEvent {
   title: string;
   startDate: string;
   endDate: string;
-  category: "academic" | "holiday";
+  category: 'academic' | 'holiday' | 'event';
 }
 
 export interface StudentRecord {
   id: string;
   name: string;
   department: string;
-  attendance: string;
+  attendance: 'Present' | 'Absent' | 'Late';
   grade: string | null;
 }
