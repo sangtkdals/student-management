@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import type { User, UserRole } from './types';
 import Auth from './components/Auth';
 import LandingPage from './components/LandingPage';
@@ -37,7 +38,7 @@ interface MenuItem {
 
 const ALL_VIEWS: NavItem[] = [
     // Common
-    { key: 'dashboard', label: '홈', icon: ICONS.dashboard, roles: ['student', 'professor', 'admin'], component: () => <></> }, // Special case
+    { key: 'dashboard', label: '홈', icon: ICONS.dashboard, roles: ['student', 'professor', 'admin'], component: () => <></> }, // Special case, handled by redirect
     { key: 'profile', label: '내 정보', icon: ICONS.profile, roles: ['student', 'professor', 'admin'], component: UserProfile },
     { key: 'announcements', label: '공지사항', icon: ICONS.announcement, roles: ['student', 'professor', 'admin'], component: NoticeBoard },
     { key: 'calendar', label: '학사일정', icon: ICONS.calendar, roles: ['student', 'professor', 'admin'], component: AcademicCalendar },
@@ -75,9 +76,8 @@ const ALL_VIEWS: NavItem[] = [
     { key: 'manage_system', label: '시스템 관리', icon: ICONS.system, roles: ['admin'], component: AdminSystemManagement }
 ];
 
-// Menu structures for specific roles to support dropdowns
+// Menu structures... (Same as before)
 const PROFESSOR_MENU_STRUCTURE: MenuItem[] = [
-    // Home handled separately in Logo
     { 
         label: '강의 관리', 
         icon: ICONS.courses, 
@@ -100,7 +100,6 @@ const PROFESSOR_MENU_STRUCTURE: MenuItem[] = [
 ];
 
 const STUDENT_MENU_STRUCTURE: MenuItem[] = [
-    // Home handled separately
     {
         label: '수강/성적',
         icon: ICONS.courses,
@@ -140,12 +139,12 @@ const ADMIN_MENU_STRUCTURE: MenuItem[] = [
 
 interface HeaderProps {
     user: User;
-    activeView: string;
-    setActiveView: (view: string) => void;
     onLogout: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ user, activeView, setActiveView, onLogout }) => {
+const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
+    const navigate = useNavigate();
+    const location = useLocation();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [openDropdown, setOpenDropdown] = useState<string | null>(null);
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
@@ -153,11 +152,12 @@ const Header: React.FC<HeaderProps> = ({ user, activeView, setActiveView, onLogo
     const navRef = useRef<HTMLDivElement>(null);
     const profileRef = useRef<HTMLDivElement>(null);
 
+    const activeView = location.pathname.substring(1); // Remove leading slash
+
     const menuStructure = user.role === 'professor' ? PROFESSOR_MENU_STRUCTURE 
                         : user.role === 'student' ? STUDENT_MENU_STRUCTURE 
                         : ADMIN_MENU_STRUCTURE;
 
-    // Close dropdowns when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (navRef.current && !navRef.current.contains(event.target as Node)) {
@@ -174,15 +174,13 @@ const Header: React.FC<HeaderProps> = ({ user, activeView, setActiveView, onLogo
     }, []);
 
     const handleNavClick = (key: string) => {
-        setActiveView(key);
+        navigate('/' + key);
         setMobileMenuOpen(false);
         setOpenDropdown(null);
     };
 
-    // Helper to render menu items (desktop)
     const renderDesktopMenu = () => {
         return menuStructure.map((item, index) => {
-            // Skip "Student Home" or "Professor Home" keys if they exist in structure, as they are handled by logo
             if (item.key === 'student_home' || item.key === 'professor_home') return null;
 
             if (item.children) {
@@ -233,11 +231,7 @@ const Header: React.FC<HeaderProps> = ({ user, activeView, setActiveView, onLogo
     return (
         <header className="bg-white border-b border-brand-gray shadow-sm sticky top-0 z-50 h-16 flex-shrink-0 relative">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full relative">
-                
-                {/* Desktop Layout */}
                 <div className="hidden md:flex justify-between items-center h-full relative">
-                    
-                    {/* Left Section: Logo & Back Button */}
                     <div className="flex items-center">
                         <div 
                             className="flex items-center cursor-pointer" 
@@ -252,12 +246,9 @@ const Header: React.FC<HeaderProps> = ({ user, activeView, setActiveView, onLogo
                             </span>
                             <span className="font-bold text-brand-blue text-xl tracking-tight whitespace-nowrap">학사 관리 시스템</span>
                         </div>
-                        
                     </div>
 
-                    {/* Center Section: Navigation */}
                     <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center space-x-6 z-20" ref={navRef}>
-                        {/* Common Links */}
                         <button 
                             onClick={() => handleNavClick('announcements')}
                             className={`text-sm font-medium transition-colors whitespace-nowrap ${activeView === 'announcements' ? 'text-brand-blue font-bold' : 'text-slate-600 hover:text-brand-blue'}`}
@@ -271,16 +262,12 @@ const Header: React.FC<HeaderProps> = ({ user, activeView, setActiveView, onLogo
                             학사일정
                         </button>
 
-                        {/* Divider */}
                         <div className="h-4 w-px bg-slate-300 mx-1"></div>
-
-                        {/* Dynamic Menu Items (Management) */}
                         {renderDesktopMenu()}
 
-                        {/* Placeholder for "Research/Admin" for professors */}
                         {user.role === 'professor' && (
                              <button 
-                                onClick={() => handleNavClick('dashboard')} // Placeholder
+                                onClick={() => handleNavClick('dashboard')}
                                 className="text-sm font-medium text-slate-600 hover:text-brand-blue whitespace-nowrap"
                             >
                                 연구/행정
@@ -288,7 +275,6 @@ const Header: React.FC<HeaderProps> = ({ user, activeView, setActiveView, onLogo
                         )}
                     </div>
 
-                    {/* Right Section: Profile */}
                      <div className="flex items-center relative z-20" ref={profileRef}>
                          <div 
                             className="flex items-center cursor-pointer py-1.5 px-2 rounded-full hover:bg-slate-50 transition-colors"
@@ -321,8 +307,6 @@ const Header: React.FC<HeaderProps> = ({ user, activeView, setActiveView, onLogo
                     </div>
                 </div>
 
-
-                {/* Mobile Layout */}
                 <div className="md:hidden flex justify-between items-center h-full">
                      <div className="flex items-center" onClick={() => handleNavClick(user.role === 'professor' ? 'professor_home' : 'student_home')}>
                         <span className="text-brand-blue mr-2">
@@ -346,7 +330,6 @@ const Header: React.FC<HeaderProps> = ({ user, activeView, setActiveView, onLogo
                 </div>
             </div>
 
-            {/* Mobile Menu (Drawer) */}
             {mobileMenuOpen && (
                 <div className="md:hidden bg-white border-t border-slate-200 absolute w-full z-50 shadow-xl">
                     <div className="px-4 py-3 border-b border-slate-100 flex items-center">
@@ -407,51 +390,53 @@ const Header: React.FC<HeaderProps> = ({ user, activeView, setActiveView, onLogo
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [activeViewKey, setActiveViewKey] = useState<string>('dashboard');
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogin = (loggedInUser: User) => {
     setUser(loggedInUser);
-    setActiveViewKey(loggedInUser.role === 'professor' ? 'professor_home' : (loggedInUser.role === 'student' ? 'student_home' : 'dashboard'));
+    const homePath = loggedInUser.role === 'professor' ? '/professor_home' : (loggedInUser.role === 'student' ? '/student_home' : '/dashboard');
+    navigate(homePath);
   };
 
   const handleLogout = () => {
     setUser(null);
-    setActiveViewKey('dashboard');
+    navigate('/');
   };
 
-  // Determine the view to render
-  let activeViewItem = ALL_VIEWS.find(v => v.key === activeViewKey);
-  
-  // Fallback if view not found or role mismatch (simple protection)
-  if (!activeViewItem || (user && !activeViewItem.roles.includes(user.role))) {
-      if (user?.role === 'student') activeViewItem = ALL_VIEWS.find(v => v.key === 'student_home');
-      else if (user?.role === 'professor') activeViewItem = ALL_VIEWS.find(v => v.key === 'professor_home');
-      else activeViewItem = ALL_VIEWS.find(v => v.key === 'dashboard');
+  if (!user) {
+    return (
+        <Routes>
+            <Route path="*" element={<Auth onLogin={handleLogin} />} />
+        </Routes>
+    );
   }
 
-  const ActiveComponent = activeViewItem?.component || (() => <div>View Not Found</div>);
-  
+  const activeViewKey = location.pathname.substring(1) || 'dashboard';
   const isRootView = ['student_home', 'professor_home', 'dashboard'].includes(activeViewKey);
   const isFullWidthView = activeViewKey === 'professor_home' || activeViewKey === 'student_home';
-
-  if (!user) {
-    return <Auth onLogin={handleLogin} />;
-  }
 
   return (
     <div className="flex flex-col h-screen bg-brand-gray-light font-sans text-slate-800 overflow-hidden">
       <Header 
         user={user} 
-        activeView={activeViewKey} 
-        setActiveView={setActiveViewKey} 
         onLogout={handleLogout}
       />
       
-      {/* Conditional Rendering for Layout: Full Width for ProfessorHome/StudentHome vs Centered Box for others */}
-      {/* Changed overflow-hidden to overflow-y-auto to allow scrolling on small screens where content exceeds height */}
       <main className={`flex-1 relative ${isFullWidthView ? 'bg-white overflow-x-hidden overflow-y-auto' : 'bg-brand-gray-light p-4 sm:p-6 lg:p-8 overflow-x-hidden overflow-y-auto'}`}>
            <div className={isFullWidthView ? 'w-full h-full' : 'max-w-7xl mx-auto pb-10'}>
-                <ActiveComponent user={user} setActiveView={setActiveViewKey} />
+                <Routes>
+                    {ALL_VIEWS.map(view => (
+                        <Route 
+                            key={view.key} 
+                            path={`/${view.key}`} 
+                            element={<view.component user={user} />} 
+                        />
+                    ))}
+                    {/* Default redirects based on role */}
+                    <Route path="/" element={<Navigate to={user.role === 'professor' ? '/professor_home' : '/student_home'} replace />} />
+                    <Route path="*" element={<div>Page Not Found</div>} />
+                </Routes>
            </div>
       </main>
     </div>
