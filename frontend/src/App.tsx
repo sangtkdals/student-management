@@ -28,6 +28,13 @@ interface NavItem {
     component: React.ComponentType<any>;
 }
 
+interface MenuItem {
+    key?: string;
+    label: string;
+    icon: React.ReactElement<{ className?: string }>;
+    children?: { key: string; label: string }[];
+}
+
 const ALL_VIEWS: NavItem[] = [
     // Common
     { key: 'dashboard', label: '홈', icon: ICONS.dashboard, roles: ['student', 'professor', 'admin'], component: () => <></> }, // Special case
@@ -69,7 +76,7 @@ const ALL_VIEWS: NavItem[] = [
 ];
 
 // Menu structures for specific roles to support dropdowns
-const PROFESSOR_MENU_STRUCTURE = [
+const PROFESSOR_MENU_STRUCTURE: MenuItem[] = [
     // Home handled separately in Logo
     { 
         label: '강의 관리', 
@@ -92,7 +99,7 @@ const PROFESSOR_MENU_STRUCTURE = [
     }
 ];
 
-const STUDENT_MENU_STRUCTURE = [
+const STUDENT_MENU_STRUCTURE: MenuItem[] = [
     // Home handled separately
     {
         label: '수강/성적',
@@ -126,7 +133,7 @@ const STUDENT_MENU_STRUCTURE = [
     { key: 'certificate_issuance', label: '증명서', icon: ICONS.profile }
 ];
 
-const ADMIN_MENU_STRUCTURE = [
+const ADMIN_MENU_STRUCTURE: MenuItem[] = [
     { key: 'manage_users', label: '사용자 관리', icon: ICONS.users },
     { key: 'manage_system', label: '시스템 관리', icon: ICONS.system }
 ];
@@ -136,11 +143,9 @@ interface HeaderProps {
     activeView: string;
     setActiveView: (view: string) => void;
     onLogout: () => void;
-    showBackButton?: boolean;
-    onBack?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ user, activeView, setActiveView, onLogout, showBackButton, onBack }) => {
+const Header: React.FC<HeaderProps> = ({ user, activeView, setActiveView, onLogout }) => {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [openDropdown, setOpenDropdown] = useState<string | null>(null);
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
@@ -248,18 +253,6 @@ const Header: React.FC<HeaderProps> = ({ user, activeView, setActiveView, onLogo
                             <span className="font-bold text-brand-blue text-xl tracking-tight whitespace-nowrap">학사 관리 시스템</span>
                         </div>
                         
-                        {/* Back Button */}
-                        {showBackButton && (
-                            <button 
-                                onClick={onBack} 
-                                className="flex items-center text-sm text-slate-500 hover:text-brand-blue font-medium border-l border-slate-300 pl-4 ml-4 whitespace-nowrap"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                                </svg>
-                                뒤로가기
-                            </button>
-                        )}
                     </div>
 
                     {/* Center Section: Navigation */}
@@ -341,13 +334,6 @@ const Header: React.FC<HeaderProps> = ({ user, activeView, setActiveView, onLogo
                     </div>
                     
                     <div className="flex items-center">
-                         {showBackButton && (
-                                <button onClick={onBack} className="p-2 text-slate-500 hover:text-brand-blue mr-2">
-                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                                    </svg>
-                                </button>
-                        )}
                         <button
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                             className="inline-flex items-center justify-center p-2 rounded-md text-slate-500 hover:text-brand-blue hover:bg-slate-100"
@@ -449,7 +435,7 @@ const App: React.FC = () => {
   const isFullWidthView = activeViewKey === 'professor_home' || activeViewKey === 'student_home';
 
   if (!user) {
-    return <Auth onLogin={handleLogin} onBack={() => {}} />;
+    return <Auth onLogin={handleLogin} />;
   }
 
   return (
@@ -459,8 +445,6 @@ const App: React.FC = () => {
         activeView={activeViewKey} 
         setActiveView={setActiveViewKey} 
         onLogout={handleLogout}
-        showBackButton={!isRootView}
-        onBack={() => setActiveViewKey(user.role === 'professor' ? 'professor_home' : 'student_home')}
       />
       
       {/* Conditional Rendering for Layout: Full Width for ProfessorHome/StudentHome vs Centered Box for others */}

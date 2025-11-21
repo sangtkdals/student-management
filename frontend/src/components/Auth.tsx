@@ -5,11 +5,10 @@ import { Button, Input, Modal } from './ui';
 
 interface AuthProps {
   onLogin: (user: User) => void;
-  onBack: () => void;
   initialRole?: UserRole;
 }
 
-const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = 'student' }) => {
+const Auth: React.FC<AuthProps> = ({ onLogin, initialRole = 'student' }) => {
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>(initialRole);
@@ -52,7 +51,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = 'student' })
   return (
     <div className="min-h-screen flex items-center justify-center bg-brand-gray-light p-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8 cursor-pointer" onClick={onBack}>
+        <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-brand-blue">학사 관리 시스템</h1>
         </div>
         <div className="bg-white p-8 rounded-lg border border-brand-gray shadow-sm">
@@ -94,12 +93,6 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = 'student' })
             <div>
               <Button type="submit" className="w-full !py-3 !text-base !font-bold">로그인</Button>
             </div>
-             
-             <div className="text-sm text-center pt-4 mt-4 border-t border-slate-200">
-                <span onClick={onBack} className="font-medium text-slate-600 hover:text-brand-blue cursor-pointer">
-                    &larr; 홈으로 돌아가기
-                </span>
-             </div>
           </form>
         </div>
          <p className="text-center text-sm text-slate-500 mt-6">
