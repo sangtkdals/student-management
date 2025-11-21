@@ -1,27 +1,19 @@
 import React, { useState, useEffect } from "react";
 import type { User, Course } from "../types";
-import { Card, Table, Button, Dropdown, DropdownItem } from "./ui";
-import { MOCK_COURSES, MOCK_STUDENT_RECORDS, MOCK_ANNOUNCEMENTS, MOCK_CALENDAR_EVENTS, ICONS } from "../constants";
+import { Card, Table, Button } from "./ui";
+import { MOCK_COURSES, MOCK_STUDENT_RECORDS, MOCK_ANNOUNCEMENTS, MOCK_CALENDAR_EVENTS } from "../constants";
 import { useNavigate } from "react-router-dom";
 
-// Based on usage with MOCK_STUDENT_RECORDS
-interface StudentRecord {
-  id: string;
-  name: string;
-  department: string;
-  attendance: "Present" | "Absent" | "Late";
-  grade?: string;
-}
+// --- Helper Components & Interfaces ---
 
 interface ProfessorHomeProps {
   user: User;
 }
 
-// Removed ProfessorHeader as requested to remove top tabs.
-
+// feature/main-ui의 최신 타입 필드명(courseTime 등) 적용
 const ProfessorVisualTimetable: React.FC<{ courses: Course[] }> = ({ courses }) => {
   const days = ["월", "화", "수", "목", "금"];
-  const timeLabels = Array.from({ length: 10 }, (_, i) => `${i + 9}:00`); // 9:00 to 18:00
+  const timeLabels = Array.from({ length: 10 }, (_, i) => `${i + 9}:00`);
   const dayMap: { [key: string]: number } = { 월: 0, 화: 1, 수: 2, 목: 3, 금: 4 };
   const courseColors = [
     "bg-blue-100 border-blue-300 text-blue-800",
@@ -31,7 +23,6 @@ const ProfessorVisualTimetable: React.FC<{ courses: Course[] }> = ({ courses }) 
     "bg-pink-100 border-pink-300 text-pink-800",
     "bg-indigo-100 border-indigo-300 text-indigo-800",
   ];
-  // Reduced height by 20% (60px -> 48px)
   const hourHeight = 48;
 
   const parseTime = (timeStr: string) => {
@@ -60,17 +51,15 @@ const ProfessorVisualTimetable: React.FC<{ courses: Course[] }> = ({ courses }) 
 
         const top = (startHour - 9 + startMinute / 60) * hourHeight;
         const height = ((endHour * 60 + endMinute - (startHour * 60 + startMinute)) / 60) * hourHeight;
-        const left = dayMap[slot.day] * 20; // 20% width for each day
-
-        const blockBaseClasses = "absolute rounded-lg p-1.5 text-[10px] flex flex-col overflow-hidden";
+        const left = dayMap[slot.day] * 20;
 
         blocks.push(
           <div
             key={`${course.courseCode}-${slotIndex}`}
-            className={`${blockBaseClasses} border ${courseColors[index % courseColors.length]}`}
+            className={`absolute rounded-lg p-1.5 text-[10px] flex flex-col overflow-hidden border ${courseColors[index % courseColors.length]}`}
             style={{
               top: `${top}px`,
-              height: `${height - 2}px`, // 2px margin
+              height: `${height - 2}px`,
               left: `calc(${left}% + 1px)`,
               width: "calc(20% - 2px)",
             }}
@@ -86,7 +75,6 @@ const ProfessorVisualTimetable: React.FC<{ courses: Course[] }> = ({ courses }) 
 
   return (
     <div className="flex select-none">
-      {/* Time labels column */}
       <div className="w-12 text-right text-xs text-slate-400 flex flex-col shrink-0">
         {timeLabels.map((time) => (
           <div key={time} style={{ height: `${hourHeight}px` }} className="relative -top-2 pr-2 shrink-0">
@@ -94,9 +82,7 @@ const ProfessorVisualTimetable: React.FC<{ courses: Course[] }> = ({ courses }) 
           </div>
         ))}
       </div>
-      {/* Timetable grid */}
       <div className="flex-1 grid grid-cols-5 relative" style={{ minHeight: `${10 * hourHeight}px` }}>
-        {/* Day Headers */}
         <div className="col-span-5 grid grid-cols-5 absolute top-0 left-0 w-full h-8 -translate-y-full">
           {days.map((day) => (
             <div key={day} className="text-center text-xs font-semibold text-slate-600 py-1">
@@ -104,11 +90,9 @@ const ProfessorVisualTimetable: React.FC<{ courses: Course[] }> = ({ courses }) 
             </div>
           ))}
         </div>
-        {/* Vertical lines */}
         {days.map((day, index) => (
           <div key={index} className="border-r border-slate-200 h-full"></div>
         ))}
-        {/* Horizontal lines */}
         {timeLabels.map((_, index) => (
           <div
             key={index}
@@ -116,12 +100,13 @@ const ProfessorVisualTimetable: React.FC<{ courses: Course[] }> = ({ courses }) 
             style={{ top: `${index * hourHeight}px`, zIndex: -1 }}
           ></div>
         ))}
-        {/* Course blocks */}
         {getCourseBlocks()}
       </div>
     </div>
   );
 };
+
+// --- Main Components ---
 
 export const ProfessorHome: React.FC<ProfessorHomeProps> = ({ user }) => {
   const navigate = useNavigate();
@@ -170,7 +155,7 @@ export const ProfessorHome: React.FC<ProfessorHomeProps> = ({ user }) => {
           <Card className="h-full">
             <div className="flex flex-col h-full">
               <div className="text-center mb-6">
-                <img src={user.avatarUrl} alt={user.name} className="h-24 w-24 rounded-full mx-auto border-4 border-white shadow-md" />
+                <img src={user.avatarUrl} alt={user.name} className="h-24 w-24 rounded-full mx-auto border-4 border-white shadow-md object-cover" />
                 <div className="mt-4">
                   <div className="font-bold text-xl text-slate-800">{user.name}</div>
                   <div className="text-sm text-slate-500">Professor</div>
@@ -190,10 +175,6 @@ export const ProfessorHome: React.FC<ProfessorHomeProps> = ({ user }) => {
                   <span className="text-slate-700 text-sm truncate max-w-[150px]" title={user.email}>
                     {user.email}
                   </span>
-                </div>
-                <div className="flex justify-between border-b border-brand-gray-light pb-2">
-                  <span className="text-slate-500 text-sm font-medium">연구실</span>
-                  <span className="text-slate-700 text-sm">{user.officeRoom ?? "공학관 401호"}</span>
                 </div>
               </div>
               <div className="mt-6">
@@ -295,7 +276,6 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
     alert("변경사항이 저장되었습니다.");
   };
 
-  // Calculate effective courses for timetable (current minus marked for deletion)
   const activeCourses = localCourses.filter((c) => !markedForDeletion.has(c.courseCode));
 
   return (
@@ -360,26 +340,7 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
                         }`}
                         title={isMarked ? "삭제 취소" : "강의 목록에서 제거 (저장 필요)"}
                       >
-                        {isMarked ? (
-                          <div className="flex items-center text-xs font-bold">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                              <path
-                                fillRule="evenodd"
-                                d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v3.283a1 1 0 01-2 0V13.109A7.002 7.002 0 014.08 8.29a1 1 0 01.928-1.232z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                            복구
-                          </div>
-                        ) : (
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path
-                              fillRule="evenodd"
-                              d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        )}
+                         {isMarked ? <span className="text-xs font-bold">복구</span> : <span className="text-xs font-bold">삭제</span>}
                       </button>
 
                       {isMarked && (
@@ -412,51 +373,136 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
   );
 };
 
-export const ProfessorStudentManagement: React.FC<{ user: User; initialTab?: "grades" | "list" }> = ({ user, initialTab = "grades" }) => {
+// --- Student Management Logic (Imported from feature/professor, adapted for main-ui types) ---
+
+interface WeeklyRecord { attendance: string; score: number; note: string; }
+
+const AttendanceAndGradesView: React.FC<{ selectedCourse: Course, mode: 'attendance' | 'grades', setMode: (m: 'attendance' | 'grades') => void }> = ({ selectedCourse, mode, setMode }) => {
+    // Mock Logic for Attendance
+    const [selectedWeek, setSelectedWeek] = useState(1);
+    const [weeklyData, setWeeklyData] = useState<{ [studentId: string]: { [week: number]: WeeklyRecord } }>({});
+    const totalWeeks = 15;
+
+    // Mock Logic for Grades
+    const [studentGrades, setStudentGrades] = useState<{ [studentId: string]: { mid: number, final: number, assign: number, attend: number } }>({});
+
+    useEffect(() => {
+        // Initialize Attendance Data
+        const initialAttendance: { [studentId: string]: { [week: number]: WeeklyRecord } } = {};
+        MOCK_STUDENT_RECORDS.forEach(student => {
+            initialAttendance[student.id] = {};
+            for (let i = 1; i <= totalWeeks; i++) {
+                initialAttendance[student.id][i] = { attendance: Math.random() > 0.9 ? '결석' : '출석', score: 10, note: '' };
+            }
+        });
+        setWeeklyData(initialAttendance);
+
+        // Initialize Grades Data
+        const initialGrades: any = {};
+        MOCK_STUDENT_RECORDS.forEach(s => { initialGrades[s.id] = { mid: 0, final: 0, assign: 0, attend: 0 }; });
+        setStudentGrades(initialGrades);
+    }, []);
+
+    // Handlers
+    const handleAttendanceChange = (studentId: string, field: keyof WeeklyRecord, val: string | number) => {
+        setWeeklyData(prev => ({
+            ...prev,
+            [studentId]: { ...prev[studentId], [selectedWeek]: { ...prev[studentId][selectedWeek], [field]: val } }
+        }));
+    };
+
+    const handleGradeChange = (sid: string, field: string, val: number) => {
+        setStudentGrades(prev => ({ ...prev, [sid]: { ...prev[sid], [field]: val } }));
+    };
+
+    return (
+        <div>
+             <div className="mb-4 flex space-x-2">
+                <Button size="sm" variant={mode === 'attendance' ? 'primary' : 'secondary'} onClick={() => setMode('attendance')}>출석 관리</Button>
+                <Button size="sm" variant={mode === 'grades' ? 'primary' : 'secondary'} onClick={() => setMode('grades')}>성적 입력</Button>
+            </div>
+
+            {mode === 'attendance' ? (
+                 <>
+                    <div className="mb-4 flex items-center space-x-3">
+                        <span className="font-bold text-slate-700">주차 선택:</span>
+                        <select value={selectedWeek} onChange={(e) => setSelectedWeek(parseInt(e.target.value))} className="px-3 py-1.5 border border-slate-300 rounded-md text-sm">
+                            {Array.from({ length: totalWeeks }, (_, i) => i + 1).map(week => <option key={week} value={week}>{week}주차</option>)}
+                        </select>
+                    </div>
+                    <Table headers={["학번", "이름", "출결 상태", "비고"]}>
+                        {MOCK_STUDENT_RECORDS.map(student => {
+                            const record = weeklyData[student.id]?.[selectedWeek] || { attendance: '출석', score: 0, note: '' };
+                            return (
+                                <tr key={student.id}>
+                                    <td className="px-6 py-4 text-sm text-slate-500">{student.id}</td>
+                                    <td className="px-6 py-4 text-sm font-medium">{student.name}</td>
+                                    <td className="px-6 py-4 text-sm">
+                                        <select value={record.attendance} onChange={(e) => handleAttendanceChange(student.id, 'attendance', e.target.value)} className="px-2 py-1 rounded text-xs font-bold border border-slate-300">
+                                            <option value="출석">출석</option>
+                                            <option value="지각">지각</option>
+                                            <option value="결석">결석</option>
+                                        </select>
+                                    </td>
+                                    <td className="px-6 py-4 text-sm">
+                                        <input type="text" value={record.note} onChange={(e) => handleAttendanceChange(student.id, 'note', e.target.value)} className="w-full border border-slate-300 rounded-md text-sm px-2 py-1" placeholder="비고 입력" />
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </Table>
+                    <div className="mt-6 flex justify-end"><Button onClick={() => alert('출결이 저장되었습니다.')}>출결 저장</Button></div>
+                </>
+            ) : (
+                <>
+                    <div className="overflow-x-auto border border-brand-gray rounded-lg">
+                        <table className="min-w-full divide-y divide-brand-gray">
+                            <thead className="bg-brand-gray-light">
+                                <tr>
+                                    <th className="px-4 py-3 text-left text-xs font-bold">학번</th>
+                                    <th className="px-4 py-3 text-left text-xs font-bold">이름</th>
+                                    <th className="px-2 py-3 text-center text-xs font-bold">중간(30)</th>
+                                    <th className="px-2 py-3 text-center text-xs font-bold">기말(30)</th>
+                                    <th className="px-2 py-3 text-center text-xs font-bold">과제(20)</th>
+                                    <th className="px-2 py-3 text-center text-xs font-bold">출석(20)</th>
+                                    <th className="px-4 py-3 text-center text-xs font-bold bg-blue-50">총점</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-brand-gray">
+                                {MOCK_STUDENT_RECORDS.map(s => {
+                                    const g = studentGrades[s.id] || { mid: 0, final: 0, assign: 0, attend: 0 };
+                                    const total = (g.mid * 0.3) + (g.final * 0.3) + (g.assign * 0.2) + (g.attend * 0.2);
+                                    return (
+                                        <tr key={s.id} className="hover:bg-slate-50">
+                                            <td className="px-4 py-3 text-sm text-slate-500">{s.id}</td>
+                                            <td className="px-4 py-3 text-sm font-medium">{s.name}</td>
+                                            <td className="px-2 py-3 text-center"><input type="number" className="w-14 text-center border rounded text-sm" value={g.mid} onChange={e => handleGradeChange(s.id, 'mid', parseInt(e.target.value)||0)} /></td>
+                                            <td className="px-2 py-3 text-center"><input type="number" className="w-14 text-center border rounded text-sm" value={g.final} onChange={e => handleGradeChange(s.id, 'final', parseInt(e.target.value)||0)} /></td>
+                                            <td className="px-2 py-3 text-center"><input type="number" className="w-14 text-center border rounded text-sm" value={g.assign} onChange={e => handleGradeChange(s.id, 'assign', parseInt(e.target.value)||0)} /></td>
+                                            <td className="px-2 py-3 text-center"><input type="number" className="w-14 text-center border rounded text-sm" value={g.attend} onChange={e => handleGradeChange(s.id, 'attend', parseInt(e.target.value)||0)} /></td>
+                                            <td className="px-4 py-3 text-center font-bold text-slate-700 bg-blue-50">{total.toFixed(1)}</td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div className="p-4 flex justify-end border-t border-brand-gray bg-slate-50"><Button onClick={() => alert("성적이 저장되었습니다.")}>성적 저장</Button></div>
+                </>
+            )}
+        </div>
+    );
+}
+
+export const ProfessorStudentManagement: React.FC<{ user: User; viewType?: "attendance" | "grades" }> = ({ user, viewType }) => {
   const myCourses = MOCK_COURSES.filter((c) => c.professorName === user.name);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(myCourses.length > 0 ? myCourses[0] : null);
-  const [activeTab, setActiveTab] = useState<"grades" | "list">(initialTab);
+  const [activeTab, setActiveTab] = useState<"management" | "list">("management");
+  const [managementMode, setManagementMode] = useState<'attendance'|'grades'>(viewType || 'attendance');
 
-  const attendanceMap: { [key: string]: string } = {
-    Present: "출석",
-    Absent: "결석",
-    Late: "지각",
-  };
-
-  const SelectedCourseGradeAttendance = () => {
-    if (!selectedCourse) return null;
-    return (
-      <>
-        <Table headers={["학번", "이름", "소속", "출결", "성적"]}>
-          {MOCK_STUDENT_RECORDS.map((student) => (
-            <tr key={student.id}>
-              <td className="px-6 py-4 text-sm">{student.id}</td>
-              <td className="px-6 py-4 text-sm font-medium">{student.name}</td>
-              <td className="px-6 py-4 text-sm">{student.department}</td>
-              <td className="px-6 py-4 text-sm">{attendanceMap[student.attendance] || student.attendance}</td>
-              <td className="px-6 py-4 text-sm">
-                <select className="border-slate-300 rounded-md focus:ring-brand-blue focus:border-brand-blue text-sm">
-                  <option>미입력</option>
-                  <option>A+</option>
-                  <option>A0</option>
-                  <option>B+</option>
-                  <option>B0</option>
-                  <option>C+</option>
-                  <option>C0</option>
-                  <option>D+</option>
-                  <option>D0</option>
-                  <option>F</option>
-                </select>
-              </td>
-            </tr>
-          ))}
-        </Table>
-        <div className="mt-6 flex justify-end">
-          <Button>성적 저장</Button>
-        </div>
-      </>
-    );
-  };
+  useEffect(() => {
+      if(viewType) setManagementMode(viewType);
+  }, [viewType]);
 
   const SelectedCourseStudentList = () => {
     if (!selectedCourse) return null;
@@ -502,9 +548,9 @@ export const ProfessorStudentManagement: React.FC<{ user: User; initialTab?: "gr
           <div className="border-b border-slate-200">
             <nav className="-mb-px flex space-x-6" aria-label="Tabs">
               <button
-                onClick={() => setActiveTab("grades")}
+                onClick={() => setActiveTab("management")}
                 className={`whitespace-nowrap py-3 px-1 border-b-2 font-bold text-sm transition-colors ${
-                  activeTab === "grades"
+                  activeTab === "management"
                     ? "border-brand-blue text-brand-blue"
                     : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
                 }`}
@@ -524,7 +570,7 @@ export const ProfessorStudentManagement: React.FC<{ user: User; initialTab?: "gr
             </nav>
           </div>
           <div className="pt-6">
-            {activeTab === "grades" && <SelectedCourseGradeAttendance />}
+            {activeTab === "management" && <AttendanceAndGradesView selectedCourse={selectedCourse} mode={managementMode} setMode={setManagementMode} />}
             {activeTab === "list" && <SelectedCourseStudentList />}
           </div>
         </div>
@@ -537,34 +583,58 @@ export const ProfessorStudentManagement: React.FC<{ user: User; initialTab?: "gr
   );
 };
 
-// --- Placeholder Views ---
+// --- Other Views (Merged Logic) ---
 
-export const ProfessorSyllabus: React.FC = () => (
-  <Card title="강의계획서">
-    <p className="text-slate-600">강의계획서를 작성하고 수정할 수 있습니다. (UI 구현 영역)</p>
-    <div className="mt-4 space-x-2">
-      <Button>계획서 보기</Button>
-      <Button variant="secondary">계획서 수정</Button>
-    </div>
-  </Card>
-);
+export const ProfessorSyllabus: React.FC = () => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [syllabus, setSyllabus] = useState({ overview: '이 강의는 React와 TypeScript를 활용한 웹 개발 기초를 다룹니다.', objectives: '최신 웹 기술 습득', textbook: '모던 리액트 Deep Dive', evaluation: '중간 30%, 기말 30%, 과제 20%, 출석 20%' });
+
+    return (
+        <Card title="강의계획서 관리" titleAction={<Button size="sm" onClick={() => setIsEditing(!isEditing)}>{isEditing ? '저장' : '수정'}</Button>}>
+             <div className="space-y-6">
+                <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">강의 개요</label>
+                    <textarea className="w-full border border-slate-300 p-3 rounded-md text-sm focus:ring-brand-blue focus:border-brand-blue" rows={3} disabled={!isEditing} value={syllabus.overview} onChange={e => setSyllabus({...syllabus, overview: e.target.value})} />
+                </div>
+                <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">강의 목표</label>
+                    <textarea className="w-full border border-slate-300 p-3 rounded-md text-sm focus:ring-brand-blue focus:border-brand-blue" rows={2} disabled={!isEditing} value={syllabus.objectives} onChange={e => setSyllabus({...syllabus, objectives: e.target.value})} />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">교재</label>
+                        <input type="text" className="w-full border border-slate-300 p-3 rounded-md text-sm focus:ring-brand-blue focus:border-brand-blue" disabled={!isEditing} value={syllabus.textbook} onChange={e => setSyllabus({...syllabus, textbook: e.target.value})} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">평가 방법</label>
+                        <input type="text" className="w-full border border-slate-300 p-3 rounded-md text-sm focus:ring-brand-blue focus:border-brand-blue" disabled={!isEditing} value={syllabus.evaluation} onChange={e => setSyllabus({...syllabus, evaluation: e.target.value})} />
+                    </div>
+                </div>
+             </div>
+        </Card>
+    );
+};
 
 export const ProfessorCourseMaterials: React.FC = () => (
-  <Card title="강의 자료">
-    <p className="text-slate-600">강의 자료를 업로드하고 관리할 수 있습니다. (UI 구현 영역)</p>
-    <div className="mt-4 space-x-2">
-      <Button>새 파일 업로드</Button>
-      <Button variant="secondary">파일 관리</Button>
+  <Card title="강의 자료 관리">
+    <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-lg bg-slate-50">
+        <p className="text-slate-500 mb-4">등록된 강의 자료가 없습니다.</p>
+        <div className="space-x-3">
+            <Button>+ 새 자료 업로드</Button>
+            <Button variant="secondary">자료 관리</Button>
+        </div>
     </div>
   </Card>
 );
 
 export const ProfessorAssignments: React.FC = () => (
   <Card title="과제 관리">
-    <p className="text-slate-600">온라인 과제를 등록하고 제출 현황을 관리할 수 있습니다. (UI 구현 영역)</p>
-    <div className="mt-4 space-x-2">
-      <Button>과제 등록</Button>
-      <Button variant="secondary">제출 현황 보기</Button>
+    <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-lg bg-slate-50">
+        <p className="text-slate-500 mb-4">진행 중인 과제가 없습니다.</p>
+        <div className="space-x-3">
+            <Button>+ 과제 등록</Button>
+            <Button variant="secondary">제출 현황</Button>
+        </div>
     </div>
   </Card>
 );
@@ -581,7 +651,10 @@ export const ProfessorTimetable: React.FC<{ user: User }> = ({ user }) => {
 };
 
 export const ProfessorCourseEvaluation: React.FC = () => (
-  <Card title="강의평가 확인">
-    <p className="text-slate-600">강의평가 결과를 확인할 수 있습니다. (UI 구현 영역)</p>
+  <Card title="강의평가 결과">
+    <div className="text-center py-16 bg-slate-50 rounded-lg border border-slate-200">
+         <svg className="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
+        <p className="text-slate-600">아직 강의 평가가 완료되지 않았거나 데이터가 없습니다.</p>
+    </div>
   </Card>
 );

@@ -1,16 +1,31 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import path from 'path';
+import { defineConfig, loadEnv } from 'vite';
+import react from '@vitejs/plugin-react';
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  server: {
-    proxy: {
-      // '/api'로 시작하는 요청은 http://localhost:8080 으로 전달
-      "/api": {
-        target: "http://localhost:8080",
-        changeOrigin: true,
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  return {
+    plugins: [react()],
+    server: {
+      port: 3000,
+      host: '0.0.0.0',
+      proxy: {
+        // '/api'로 시작하는 요청은 http://localhost:8080 으로 전달
+        "/api": {
+          target: "http://localhost:8080",
+          changeOrigin: true,
+        },
       },
     },
-  },
+    define: {
+      'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+    },
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
+      }
+    }
+  };
 });

@@ -2,7 +2,8 @@ import React from "react";
 import type { User, Course, Grade, Post, AcademicSchedule, StudentRecord } from "./types";
 
 // Fix: Replaced JSX.Element with React.ReactElement to resolve "Cannot find namespace 'JSX'" error.
-export const ICONS: { [key: string]: React.ReactElement } = {
+// Fix: Specify ReactElement generic to include className for cloneElement compatibility.
+export const ICONS: { [key: string]: React.ReactElement<{ className?: string }> } = {
   dashboard: (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
       <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
@@ -302,6 +303,36 @@ export const MOCK_CALENDAR_EVENTS: AcademicSchedule[] = [
     endDate: "2024-05-05",
     category: "holiday",
     recurrenceType: "YEARLY",
+  },
+  {
+    scheduleId: 4,
+    academicYear: 2024,
+    semester: 1,
+    title: "기말고사",
+    startDate: "2024-06-10",
+    endDate: "2024-06-14",
+    category: "academic",
+    recurrenceType: "NONE",
+  },
+  {
+    scheduleId: 5,
+    academicYear: 2024,
+    semester: 1,
+    title: "여름방학 시작",
+    startDate: "2024-06-22",
+    endDate: "2024-06-22",
+    category: "academic",
+    recurrenceType: "NONE",
+  },
+  {
+    scheduleId: 6,
+    academicYear: 2024,
+    semester: 2,
+    title: "2학기 개강",
+    startDate: "2024-09-02",
+    endDate: "2024-09-02",
+    category: "academic",
+    recurrenceType: "NONE",
   },
 ];
 
