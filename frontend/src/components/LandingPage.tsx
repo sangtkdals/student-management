@@ -7,7 +7,7 @@ interface LandingPageProps {
     onNavigateToAuth: (role: UserRole) => void;
 }
 
-const InfoCard = ({ icon, title, items, linkText }: { icon: React.ReactElement<{ className?: string }>, title: string, items: string[], linkText: string }) => (
+const InfoCard = ({ icon, title, items, linkText }: { icon: React.ReactElement<{ className?: string }>; title: string; items: string[]; linkText: string }) => (
     <div className="bg-white rounded-lg border border-brand-gray p-6 h-full flex flex-col">
         <div className="flex items-center mb-4">
             <div className="text-brand-blue">{React.cloneElement(icon, { className: "h-6 w-6" })}</div>
@@ -21,7 +21,9 @@ const InfoCard = ({ icon, title, items, linkText }: { icon: React.ReactElement<{
             ))}
         </ul>
         <div className="mt-6 text-right">
-            <a href="#" className="text-sm font-medium text-brand-blue hover:underline">{linkText} &rarr;</a>
+            <a href="#" className="text-sm font-medium text-brand-blue hover:underline">
+                {linkText} &rarr;
+            </a>
         </div>
     </div>
 );

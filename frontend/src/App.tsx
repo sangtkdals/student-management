@@ -1,446 +1,483 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
-import type { User, UserRole } from './types';
-import Auth from './components/Auth';
-import LandingPage from './components/LandingPage';
-import { ICONS } from './constants';
+import React, { useState, useCallback } from "react";
+import { Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";
+import type { User, UserRole } from "./types";
+
+// Components
+import Auth from "./components/Auth";
+import LandingPage from "./components/LandingPage";
+import { UserProfile, NoticeBoard, AcademicCalendar } from "./components/CommonViews";
+import { ICONS, MOCK_COURSES, MOCK_ANNOUNCEMENTS, MOCK_CALENDAR_EVENTS } from "./constants";
+
+// Student Views (Imported from feature/professor)
 import { 
-    StudentHome, StudentAllGrades, StudentCourseRegistration, StudentTuitionHistory, StudentLeaveApplication, StudentGraduationCheck,
-    StudentTuitionPayment, StudentLeaveHistory, StudentReturnApplication, StudentReturnHistory, StudentCertificateIssuance, StudentTimetable, StudentCurrentGrades
+    StudentHome, StudentAllGrades, StudentCourseRegistration, StudentTuitionHistory, 
+    StudentLeaveApplication, StudentGraduationCheck, StudentTuitionPayment, 
+    StudentLeaveHistory, StudentReturnApplication, StudentReturnHistory, 
+    StudentCertificateIssuance, StudentTimetable, StudentCurrentGrades
 } from './components/StudentViews';
+
+// Professor Views (Imported from feature/professor)
 import {
     ProfessorHome, ProfessorLectureTimetable, ProfessorSyllabus, ProfessorCourseMaterials,
     ProfessorAssignments, ProfessorCourseEvaluation, ProfessorStudentManagement
 } from './components/ProfessorViews';
+
+// Admin Views
 import {
     AdminDashboard, AdminUserManagement, AdminSystemManagement
 } from './components/AdminViews';
-import {
-    UserProfile, NoticeBoard, AcademicCalendar
-} from './components/CommonViews';
 
-type ViewType = string;
 
-interface NavItem {
-    key: ViewType;
-    label: string;
-    icon: React.ReactElement<{ className?: string }>;
-    roles: UserRole[];
-    component: React.ComponentType<any>;
-}
+// --- Navigation Structures (Based on feature/main-ui but enriched) ---
 
-interface MenuItem {
-    key?: string;
-    label: string;
-    icon: React.ReactElement<{ className?: string }>;
-    children?: { key: string; label: string }[];
-}
-
-const ALL_VIEWS: NavItem[] = [
-    // Common
-    { key: 'dashboard', label: '홈', icon: ICONS.dashboard, roles: ['student', 'professor', 'admin'], component: () => <></> }, // Special case, handled by redirect
-    { key: 'profile', label: '내 정보', icon: ICONS.profile, roles: ['student', 'professor', 'admin'], component: UserProfile },
-    { key: 'announcements', label: '공지사항', icon: ICONS.announcement, roles: ['student', 'professor', 'admin'], component: NoticeBoard },
-    { key: 'calendar', label: '학사일정', icon: ICONS.calendar, roles: ['student', 'professor', 'admin'], component: AcademicCalendar },
-    
-    // Student Views
-    { key: 'student_home', label: '학생 홈', icon: ICONS.dashboard, roles: ['student'], component: StudentHome },
-    { key: 'course_registration', label: '수강신청', icon: ICONS.courses, roles: ['student'], component: StudentCourseRegistration },
-    { key: 'all_grades', label: '전체 성적 조회', icon: ICONS.grades, roles: ['student'], component: StudentAllGrades },
-    { key: 'tuition_history', label: '등록금 내역', icon: ICONS.tuition, roles: ['student'], component: StudentTuitionHistory },
-    { key: 'leave_application', label: '휴학 신청', icon: ICONS.leave, roles: ['student'], component: StudentLeaveApplication },
-    { key: 'graduation_check', label: '졸업 요건', icon: ICONS.graduation, roles: ['student'], component: StudentGraduationCheck },
-    { key: 'tuition_payment', label: '등록금 납부', icon: ICONS.tuition, roles: ['student'], component: StudentTuitionPayment },
-    { key: 'leave_history', label: '휴학 내역', icon: ICONS.leave, roles: ['student'], component: StudentLeaveHistory },
-    { key: 'return_application', label: '복학 신청', icon: ICONS.leave, roles: ['student'], component: StudentReturnApplication },
-    { key: 'return_history', label: '복학 내역', icon: ICONS.leave, roles: ['student'], component: StudentReturnHistory },
-    { key: 'certificate_issuance', label: '증명서 발급', icon: ICONS.profile, roles: ['student'], component: StudentCertificateIssuance },
-    { key: 'timetable', label: '시간표 조회', icon: ICONS.calendar, roles: ['student'], component: StudentTimetable },
-    { key: 'current_grades', label: '금학기 성적', icon: ICONS.grades, roles: ['student'], component: StudentCurrentGrades },
-
-    // Professor Views
-    { key: 'professor_home', label: '교수 홈', icon: ICONS.dashboard, roles: ['professor'], component: ProfessorHome },
-    { key: 'lecture_timetable', label: '강의 시간표', icon: ICONS.calendar, roles: ['professor'], component: ProfessorLectureTimetable },
-    
-    // Updated Student Management Keys
-    { key: 'student_attendance', label: '수강생 출결', icon: ICONS.users, roles: ['professor'], component: (props: any) => <ProfessorStudentManagement {...props} viewType="attendance" /> },
-    { key: 'grade_management', label: '성적 관리', icon: ICONS.grades, roles: ['professor'], component: (props: any) => <ProfessorStudentManagement {...props} viewType="grades" /> },
-    
-    { key: 'syllabus', label: '강의계획서', icon: ICONS.courses, roles: ['professor'], component: ProfessorSyllabus },
-    { key: 'course_materials', label: '강의 자료', icon: ICONS.courses, roles: ['professor'], component: ProfessorCourseMaterials },
-    { key: 'assignments', label: '과제 관리', icon: ICONS.courses, roles: ['professor'], component: ProfessorAssignments },
-    { key: 'course_evaluation', label: '강의평가', icon: ICONS.grades, roles: ['professor'], component: ProfessorCourseEvaluation },
-    
-    // Admin Views
-    { key: 'manage_users', label: '사용자 관리', icon: ICONS.users, roles: ['admin'], component: AdminUserManagement },
-    { key: 'manage_system', label: '시스템 관리', icon: ICONS.system, roles: ['admin'], component: AdminSystemManagement }
+const STUDENT_MENU = [
+  {
+    label: "수강/성적",
+    path: "/student/course-registration",
+    sub: ["/student/course-registration", "/student/timetable", "/student/all-grades", "/student/current-grades"],
+  },
+  { label: "등록/장학", path: "/student/tuition-history", sub: ["/student/tuition-payment", "/student/tuition-history"] },
+  {
+    label: "학적/졸업",
+    path: "/student/leave-application",
+    sub: [
+      "/student/leave-application",
+      "/student/graduation-check",
+      "/student/certificate-issuance",
+      "/student/leave-history",
+      "/student/return-application",
+      "/student/return-history",
+    ],
+  },
 ];
 
-// Menu structures... (Same as before)
-const PROFESSOR_MENU_STRUCTURE: MenuItem[] = [
-    { 
-        label: '강의 관리', 
-        icon: ICONS.courses, 
-        children: [
-            { key: 'lecture_timetable', label: '강의 시간표' },
-            { key: 'syllabus', label: '강의계획서' },
-            { key: 'course_materials', label: '강의 자료' },
-            { key: 'assignments', label: '과제 관리' },
-            { key: 'course_evaluation', label: '강의평가' }
-        ]
-    },
-    { 
-        label: '학생 관리', 
-        icon: ICONS.users, 
-        children: [
-            { key: 'student_attendance', label: '수강생 출결' },
-            { key: 'grade_management', label: '성적 관리' }
-        ]
-    }
+const PROFESSOR_MENU = [
+  {
+    label: "강의 관리",
+    path: "/professor/timetable",
+    sub: ["/professor/timetable", "/professor/syllabus", "/professor/course-materials", "/professor/assignments"],
+  },
+  { 
+    label: "학생 관리", 
+    path: "/professor/student-attendance", 
+    sub: ["/professor/student-attendance", "/professor/grade-management"] 
+  },
+  { label: "연구/행정", path: "/professor/course-evaluation", sub: ["/professor/course-evaluation"] },
 ];
 
-const STUDENT_MENU_STRUCTURE: MenuItem[] = [
-    {
-        label: '수강/성적',
-        icon: ICONS.courses,
-        children: [
-            { key: 'course_registration', label: '수강 신청' },
-            { key: 'timetable', label: '시간표 조회' },
-            { key: 'current_grades', label: '금학기 성적' },
-            { key: 'all_grades', label: '전체 성적' }
-        ]
-    },
-    {
-        label: '등록금',
-        icon: ICONS.tuition,
-        children: [
-            { key: 'tuition_payment', label: '납부' },
-            { key: 'tuition_history', label: '내역 조회' }
-        ]
-    },
-    {
-        label: '학적 변동',
-        icon: ICONS.leave,
-        children: [
-            { key: 'leave_application', label: '휴학 신청' },
-            { key: 'leave_history', label: '휴학 내역' },
-            { key: 'return_application', label: '복학 신청' },
-            { key: 'return_history', label: '복학 내역' }
-        ]
-    },
-    { key: 'graduation_check', label: '졸업 요건', icon: ICONS.graduation },
-    { key: 'certificate_issuance', label: '증명서', icon: ICONS.profile }
+const ADMIN_MENU = [
+  { label: "사용자 관리", path: "/admin/user-management" },
+  { label: "시스템 관리", path: "/admin/system-management" },
 ];
 
-const ADMIN_MENU_STRUCTURE: MenuItem[] = [
-    { key: 'manage_users', label: '사용자 관리', icon: ICONS.users },
-    { key: 'manage_system', label: '시스템 관리', icon: ICONS.system }
-];
+// --- Components (TopNavigation, DashboardHero from feature/main-ui) ---
 
-interface HeaderProps {
-    user: User;
-    onLogout: () => void;
-}
-
-const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
-    const navigate = useNavigate();
-    const location = useLocation();
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-    const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-    
-    const navRef = useRef<HTMLDivElement>(null);
-    const profileRef = useRef<HTMLDivElement>(null);
-
-    const activeView = location.pathname.substring(1); // Remove leading slash
-
-    const menuStructure = user.role === 'professor' ? PROFESSOR_MENU_STRUCTURE 
-                        : user.role === 'student' ? STUDENT_MENU_STRUCTURE 
-                        : ADMIN_MENU_STRUCTURE;
-
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (navRef.current && !navRef.current.contains(event.target as Node)) {
-                setOpenDropdown(null);
-            }
-            if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
-                setProfileDropdownOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, []);
-
-    const handleNavClick = (key: string) => {
-        navigate('/' + key);
-        setMobileMenuOpen(false);
-        setOpenDropdown(null);
-    };
-
-    const renderDesktopMenu = () => {
-        return menuStructure.map((item, index) => {
-            if (item.key === 'student_home' || item.key === 'professor_home') return null;
-
-            if (item.children) {
-                const isActive = item.children.some(child => child.key === activeView);
-                const isOpen = openDropdown === item.label;
-                
-                return (
-                    <div key={index} className="relative">
-                        <button 
-                            onClick={() => setOpenDropdown(isOpen ? null : item.label)}
-                            className={`px-3 py-2 rounded-md text-sm font-medium flex items-center transition-colors whitespace-nowrap ${isActive ? 'text-brand-blue font-bold' : 'text-slate-600 hover:text-brand-blue'}`}
-                        >
-                            {item.label}
-                            <svg className={`ml-1 h-3 w-3 transition-transform ${isOpen ? 'transform rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
-                        
-                        {isOpen && (
-                            <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none animate-fade-in-down z-50">
-                                {item.children.map(child => (
-                                    <button
-                                        key={child.key}
-                                        onClick={() => handleNavClick(child.key)}
-                                        className={`block w-full text-left px-4 py-2 text-sm whitespace-nowrap ${activeView === child.key ? 'bg-blue-50 text-brand-blue font-semibold' : 'text-slate-700 hover:bg-slate-50'}`}
-                                    >
-                                        {child.label}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                );
-            }
-            
-            return (
-                <button
-                    key={item.key}
-                    onClick={() => handleNavClick(item.key!)}
-                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${activeView === item.key ? 'text-brand-blue font-bold' : 'text-slate-600 hover:text-brand-blue'}`}
-                >
-                    {item.label}
-                </button>
-            );
-        });
-    };
-
-    return (
-        <header className="bg-white border-b border-brand-gray shadow-sm sticky top-0 z-50 h-16 flex-shrink-0 relative">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full relative">
-                <div className="hidden md:flex justify-between items-center h-full relative">
-                    <div className="flex items-center">
-                        <div 
-                            className="flex items-center cursor-pointer" 
-                            onClick={() => handleNavClick(user.role === 'professor' ? 'professor_home' : 'student_home')}
-                        >
-                             <span className="text-brand-blue mr-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" />
-                                </svg>
-                            </span>
-                            <span className="font-bold text-brand-blue text-xl tracking-tight whitespace-nowrap">학사 관리 시스템</span>
-                        </div>
-                    </div>
-
-                    <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center space-x-6 z-20" ref={navRef}>
-                        <button 
-                            onClick={() => handleNavClick('announcements')}
-                            className={`text-sm font-medium transition-colors whitespace-nowrap ${activeView === 'announcements' ? 'text-brand-blue font-bold' : 'text-slate-600 hover:text-brand-blue'}`}
-                        >
-                            공지사항
-                        </button>
-                        <button 
-                            onClick={() => handleNavClick('calendar')}
-                            className={`text-sm font-medium transition-colors whitespace-nowrap ${activeView === 'calendar' ? 'text-brand-blue font-bold' : 'text-slate-600 hover:text-brand-blue'}`}
-                        >
-                            학사일정
-                        </button>
-
-                        <div className="h-4 w-px bg-slate-300 mx-1"></div>
-                        {renderDesktopMenu()}
-
-                        {user.role === 'professor' && (
-                             <button 
-                                onClick={() => handleNavClick('dashboard')}
-                                className="text-sm font-medium text-slate-600 hover:text-brand-blue whitespace-nowrap"
-                            >
-                                연구/행정
-                            </button>
-                        )}
-                    </div>
-
-                     <div className="flex items-center relative z-20" ref={profileRef}>
-                         <div 
-                            className="flex items-center cursor-pointer py-1.5 px-2 rounded-full hover:bg-slate-50 transition-colors"
-                            onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                        >
-                             <div className="text-right mr-3">
-                                <p className="text-sm font-bold text-slate-800 leading-tight whitespace-nowrap">{user.name}</p>
-                                <p className="text-xs text-slate-500 capitalize leading-tight whitespace-nowrap">{user.role}</p>
-                            </div>
-                             <img 
-                                className="h-9 w-9 rounded-full border border-slate-200 object-cover" 
-                                src={user.avatarUrl} 
-                                alt={user.name} 
-                            />
-                            <svg className="ml-2 h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </div>
-
-                        {profileDropdownOpen && (
-                            <div className="absolute right-0 top-full mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
-                                <button onClick={() => {handleNavClick('profile'); setProfileDropdownOpen(false);}} className="block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 whitespace-nowrap">
-                                    내 정보 관리
-                                </button>
-                                <button onClick={() => {onLogout(); setProfileDropdownOpen(false);}} className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 whitespace-nowrap">
-                                    로그아웃
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                <div className="md:hidden flex justify-between items-center h-full">
-                     <div className="flex items-center" onClick={() => handleNavClick(user.role === 'professor' ? 'professor_home' : 'student_home')}>
-                        <span className="text-brand-blue mr-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
-                            </svg>
-                        </span>
-                        <span className="font-bold text-brand-blue text-lg">학사 관리</span>
-                    </div>
-                    
-                    <div className="flex items-center">
-                        <button
-                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                            className="inline-flex items-center justify-center p-2 rounded-md text-slate-500 hover:text-brand-blue hover:bg-slate-100"
-                        >
-                             <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {mobileMenuOpen && (
-                <div className="md:hidden bg-white border-t border-slate-200 absolute w-full z-50 shadow-xl">
-                    <div className="px-4 py-3 border-b border-slate-100 flex items-center">
-                        <img src={user.avatarUrl} className="h-8 w-8 rounded-full mr-3" alt="" />
-                        <div>
-                            <p className="text-sm font-bold text-slate-800">{user.name}</p>
-                            <p className="text-xs text-slate-500 capitalize">{user.role}</p>
-                        </div>
-                    </div>
-                    <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-                         <button onClick={() => handleNavClick('announcements')} className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-50">공지사항</button>
-                         <button onClick={() => handleNavClick('calendar')} className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-50">학사일정</button>
-                         
-                        {menuStructure.map((item, index) => (
-                            <div key={index}>
-                                {item.children ? (
-                                    <div className="space-y-1">
-                                        <div className="px-3 py-2 text-base font-bold text-brand-blue flex items-center bg-blue-50 rounded-md">
-                                            {item.label}
-                                        </div>
-                                        <div className="pl-6 space-y-1">
-                                            {item.children.map(child => (
-                                                <button
-                                                    key={child.key}
-                                                    onClick={() => handleNavClick(child.key)}
-                                                    className={`block w-full text-left px-3 py-2 rounded-md text-sm font-medium ${activeView === child.key ? 'text-brand-blue font-bold' : 'text-slate-600 hover:text-brand-blue'}`}
-                                                >
-                                                    {child.label}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <button
-                                        key={item.key}
-                                        onClick={() => handleNavClick(item.key!)}
-                                        className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-50"
-                                    >
-                                        {item.label}
-                                    </button>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                    <div className="pt-4 pb-4 border-t border-slate-200">
-                         <button
-                            onClick={onLogout}
-                            className="flex w-full items-center px-5 py-2 text-base font-medium text-red-600 hover:bg-red-50"
-                        >
-                            로그아웃
-                        </button>
-                    </div>
-                </div>
-            )}
-        </header>
-    );
-};
-
-const App: React.FC = () => {
-  const [user, setUser] = useState<User | null>(null);
+const TopNavigation: React.FC<{
+  user: User;
+  onLogout: () => void;
+}> = ({ user, onLogout }) => {
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handleLogin = (loggedInUser: User) => {
-    setUser(loggedInUser);
-    const homePath = loggedInUser.role === 'professor' ? '/professor_home' : (loggedInUser.role === 'student' ? '/student_home' : '/dashboard');
-    navigate(homePath);
-  };
+  const menus = user.role === "student" ? STUDENT_MENU : user.role === "professor" ? PROFESSOR_MENU : ADMIN_MENU;
+  const homePath = user.role === "professor" ? "/professor" : user.role === "student" ? "/student" : "/admin/dashboard";
 
-  const handleLogout = () => {
-    setUser(null);
-    navigate('/');
-  };
-
-  if (!user) {
-    return (
-        <Routes>
-            <Route path="*" element={<Auth onLogin={handleLogin} />} />
-        </Routes>
-    );
-  }
-
-  const activeViewKey = location.pathname.substring(1) || 'dashboard';
-  const isRootView = ['student_home', 'professor_home', 'dashboard'].includes(activeViewKey);
-  const isFullWidthView = activeViewKey === 'professor_home' || activeViewKey === 'student_home';
+  const isActiveMenu = useCallback(
+    (menuPath: string, subPaths?: string[]) => {
+      if (location.pathname === menuPath) return true;
+      if (subPaths && subPaths.some((subPath) => location.pathname.startsWith(subPath))) return true;
+      return false;
+    },
+    [location.pathname]
+  );
 
   return (
-    <div className="flex flex-col h-screen bg-brand-gray-light font-sans text-slate-800 overflow-hidden">
-      <Header 
-        user={user} 
-        onLogout={handleLogout}
-      />
-      
-      <main className={`flex-1 relative ${isFullWidthView ? 'bg-white overflow-x-hidden overflow-y-auto' : 'bg-brand-gray-light p-4 sm:p-6 lg:p-8 overflow-x-hidden overflow-y-auto'}`}>
-           <div className={isFullWidthView ? 'w-full h-full' : 'max-w-7xl mx-auto pb-10'}>
-                <Routes>
-                    {ALL_VIEWS.map(view => (
-                        <Route 
-                            key={view.key} 
-                            path={`/${view.key}`} 
-                            element={<view.component user={user} />} 
-                        />
-                    ))}
-                    {/* Default redirects based on role */}
-                    <Route path="/" element={<Navigate to={user.role === 'professor' ? '/professor_home' : '/student_home'} replace />} />
-                    <Route path="*" element={<div>Page Not Found</div>} />
-                </Routes>
-           </div>
-      </main>
+    <header className="bg-white border-b border-brand-gray sticky top-0 z-50 shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
+          <div className="flex items-center cursor-pointer" onClick={() => navigate(homePath)}>
+            <span className="text-brand-blue mr-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" />
+                </svg>
+            </span>
+            <h1 className="text-xl font-bold text-brand-blue tracking-tight">학사 관리 시스템</h1>
+          </div>
+
+          {/* Main Nav Links */}
+          <nav className="hidden md:flex space-x-6">
+            <button
+              onClick={() => navigate("/announcements")}
+              className={`text-sm font-medium transition-colors ${
+                isActiveMenu("/announcements") ? "text-brand-blue font-bold" : "text-slate-600 hover:text-brand-blue"
+              }`}
+            >
+              공지사항
+            </button>
+            <button
+              onClick={() => navigate("/calendar")}
+              className={`text-sm font-medium transition-colors ${
+                isActiveMenu("/calendar") ? "text-brand-blue font-bold" : "text-slate-600 hover:text-brand-blue"
+              }`}
+            >
+              학사일정
+            </button>
+            <div className="h-4 w-px bg-slate-300 my-auto"></div>
+            {menus.map((menu: any) => (
+              <button
+                key={menu.label}
+                onClick={() => navigate(menu.path)}
+                className={`text-sm font-medium transition-colors ${
+                  isActiveMenu(menu.path, menu.sub) ? "text-brand-blue font-bold" : "text-slate-600 hover:text-brand-blue"
+                }`}
+              >
+                {menu.label}
+              </button>
+            ))}
+          </nav>
+
+          {/* User Profile */}
+          <div className="relative">
+            <button className="flex items-center space-x-2 focus:outline-none py-1 px-2 rounded-full hover:bg-slate-50" onClick={() => setIsProfileOpen(!isProfileOpen)}>
+              <div className="text-right hidden sm:block mr-1">
+                <div className="text-sm font-bold text-slate-800 leading-tight">{user.name}</div>
+                <div className="text-xs text-slate-500 capitalize leading-tight">{user.role}</div>
+              </div>
+              <img className="h-9 w-9 rounded-full border border-slate-200 object-cover" src={user.avatarUrl} alt={user.name} />
+            </button>
+
+            {isProfileOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 z-50">
+                <button
+                  onClick={() => {
+                    navigate("/profile");
+                    setIsProfileOpen(false);
+                  }}
+                  className="block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100"
+                >
+                  내 정보 관리
+                </button>
+                <div className="border-t border-slate-100 my-1"></div>
+                <button onClick={onLogout} className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-slate-100">
+                  로그아웃
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+      {isProfileOpen && <div className="fixed inset-0 z-40" onClick={() => setIsProfileOpen(false)}></div>}
+    </header>
+  );
+};
+
+const TodaySchedule: React.FC = () => {
+  const todayCourses = MOCK_COURSES.slice(0, 3);
+  const todos = [
+    { id: 1, text: "자료구조 과제 제출 (오늘 마감)" },
+    { id: 2, text: "도서 반납하기" },
+  ];
+
+  return (
+    <div className="bg-white/95 backdrop-blur-sm rounded-lg p-5 shadow-lg h-full border border-white/20">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="font-bold text-slate-800 flex items-center">
+          <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+          오늘의 시간표
+        </h3>
+        <span className="text-xs text-slate-500">2024.05.22 (수)</span>
+      </div>
+      <div className="space-y-3">
+        {todayCourses.map((course, idx) => (
+          <div key={idx} className="flex items-start border-l-2 border-brand-blue pl-3 py-1">
+            <div className="flex-1">
+              <p className="text-sm font-bold text-slate-800">{course.subjectName}</p>
+              <p className="text-xs text-slate-500">
+                {course.classroom} | {(course.courseTime ?? "").split(",")[0]}
+              </p>
+            </div>
+            <span className={`text-xs px-2 py-1 rounded ${idx === 0 ? "bg-blue-100 text-blue-800" : "bg-slate-100 text-slate-600"}`}>
+              {idx === 0 ? "수업중" : "예정"}
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 pt-4 border-t border-slate-100">
+        <h4 className="font-bold text-slate-800 text-sm mb-2">할 일 (To-Do)</h4>
+        <ul className="space-y-2">
+          {todos.map((todo) => (
+            <li key={todo.id} className="flex items-center text-sm text-slate-600">
+              <input type="checkbox" className="mr-2 rounded text-brand-blue" />
+              <span>{todo.text}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 };
 
-export default App;
+const DashboardHero: React.FC<{ user: User; navigate: ReturnType<typeof useNavigate> }> = ({ user, navigate }) => {
+  return (
+    <div className="bg-brand-blue w-full">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left: Profile */}
+          <div className="lg:col-span-1">
+            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-lg p-6 text-white h-full flex flex-col justify-between">
+              <div>
+                <div className="flex items-center space-x-4 mb-6">
+                  <img src={user.avatarUrl} alt={user.name} className="w-20 h-20 rounded-full border-2 border-white/50 object-cover" />
+                  <div>
+                    <h2 className="text-2xl font-bold">{user.name}</h2>
+                    <p className="text-blue-100 text-sm">{user.departmentName ?? ""}</p>
+                    <p className="text-blue-200 text-xs mt-1">
+                      {user.role === "student" ? "학부생" : "교수"} | {user.id}
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div className="bg-black/20 rounded p-3 flex justify-between items-center">
+                    <span className="text-blue-100 text-sm">이메일</span>
+                    <span className="font-medium text-sm truncate max-w-[150px]">{user.email}</span>
+                  </div>
+                  <div className="bg-black/20 rounded p-3 flex justify-between items-center">
+                    <span className="text-blue-100 text-sm">{user.role === "student" ? "이번 학기 평점" : "연구실"}</span>
+                    <span className="font-medium text-sm">{user.role === "student" ? "4.0 / 4.5" : "공학관 401호"}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-6">
+                <button
+                  onClick={() => navigate("/profile")}
+                  className="w-full py-2 bg-white text-brand-blue font-bold rounded hover:bg-blue-50 transition-colors text-sm"
+                >
+                  내 정보 관리
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Timetable & Tasks */}
+          <div className="lg:col-span-2">
+            <TodaySchedule />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const DashboardContent: React.FC<{ navigate: ReturnType<typeof useNavigate>; user: User }> = ({ navigate, user }) => {
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 -mt-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Notices */}
+        <div className="bg-white rounded-lg shadow-md border border-brand-gray p-6 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center text-brand-blue">
+              {ICONS.announcement}
+              <h3 className="ml-2 text-lg font-bold text-slate-800">공지사항</h3>
+            </div>
+            <button onClick={() => navigate("/announcements")} className="text-xs text-slate-500 hover:text-brand-blue">
+              더보기 +
+            </button>
+          </div>
+          <ul className="space-y-3">
+            {MOCK_ANNOUNCEMENTS.slice(0, 3).map((ann) => (
+              <li key={ann.postId} onClick={() => navigate("/announcements")} className="cursor-pointer group">
+                <p className="text-sm text-slate-700 group-hover:text-brand-blue font-medium truncate">{ann.title}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{ann.createdAt.slice(0, 10)}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Calendar */}
+        <div className="bg-white rounded-lg shadow-md border border-brand-gray p-6 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center text-brand-blue">
+              {ICONS.calendar}
+              <h3 className="ml-2 text-lg font-bold text-slate-800">주요 학사일정</h3>
+            </div>
+            <button onClick={() => navigate("/calendar")} className="text-xs text-slate-500 hover:text-brand-blue">
+              전체보기 +
+            </button>
+          </div>
+          <ul className="space-y-3">
+            {MOCK_CALENDAR_EVENTS.slice(0, 3).map((evt) => (
+              <li key={evt.scheduleId} className="flex items-start">
+                <div className="flex-shrink-0 w-12 text-center bg-slate-100 rounded p-1 mr-3">
+                  <p className="text-xs text-slate-500">{evt.startDate.split("-")[1]}월</p>
+                  <p className="text-sm font-bold text-slate-800">{evt.startDate.split("-")[2]}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-800">{evt.title}</p>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.5 rounded ${
+                      evt.category === "academic" ? "bg-blue-50 text-blue-600" : "bg-red-50 text-red-600"
+                    }`}
+                  >
+                    {evt.category === "academic" ? "학사" : "휴일"}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Quick Links */}
+        <div className="bg-white rounded-lg shadow-md border border-brand-gray p-6 hover:shadow-lg transition-shadow">
+          <div className="flex items-center mb-4 text-brand-blue">
+            {ICONS.system}
+            <h3 className="ml-2 text-lg font-bold text-slate-800">바로가기</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {user.role === "student" ? (
+              <>
+                <button
+                  onClick={() => navigate("/student/course-registration")}
+                  className="p-3 bg-slate-50 rounded-lg hover:bg-blue-50 hover:text-brand-blue transition-colors text-center"
+                >
+                  <div className="mx-auto mb-1 w-6 h-6">{ICONS.courses}</div>
+                  <span className="text-xs font-bold">수강신청</span>
+                </button>
+                <button
+                  onClick={() => navigate("/student/all-grades")}
+                  className="p-3 bg-slate-50 rounded-lg hover:bg-blue-50 hover:text-brand-blue transition-colors text-center"
+                >
+                  <div className="mx-auto mb-1 w-6 h-6">{ICONS.grades}</div>
+                  <span className="text-xs font-bold">성적조회</span>
+                </button>
+                <button
+                  onClick={() => navigate("/student/tuition-history")}
+                  className="p-3 bg-slate-50 rounded-lg hover:bg-blue-50 hover:text-brand-blue transition-colors text-center"
+                >
+                  <div className="mx-auto mb-1 w-6 h-6">{ICONS.tuition}</div>
+                  <span className="text-xs font-bold">등록금</span>
+                </button>
+                <button
+                  onClick={() => navigate("/student/certificate-issuance")}
+                  className="p-3 bg-slate-50 rounded-lg hover:bg-blue-50 hover:text-brand-blue transition-colors text-center"
+                >
+                  <div className="mx-auto mb-1 w-6 h-6">{ICONS.profile}</div>
+                  <span className="text-xs font-bold">증명서</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => navigate("/professor/timetable")}
+                  className="p-3 bg-slate-50 rounded-lg hover:bg-blue-50 hover:text-brand-blue transition-colors text-center"
+                >
+                  <div className="mx-auto mb-1 w-6 h-6">{ICONS.courses}</div>
+                  <span className="text-xs font-bold">내 강의</span>
+                </button>
+                <button
+                  onClick={() => navigate("/professor/student-attendance")}
+                  className="p-3 bg-slate-50 rounded-lg hover:bg-blue-50 hover:text-brand-blue transition-colors text-center"
+                >
+                  <div className="mx-auto mb-1 w-6 h-6">{ICONS.users}</div>
+                  <span className="text-xs font-bold">출결 관리</span>
+                </button>
+                <button
+                  onClick={() => navigate("/professor/grade-management")}
+                  className="p-3 bg-slate-50 rounded-lg hover:bg-blue-50 hover:text-brand-blue transition-colors text-center"
+                >
+                  <div className="mx-auto mb-1 w-6 h-6">{ICONS.grades}</div>
+                  <span className="text-xs font-bold">성적 관리</span>
+                </button>
+                <button
+                  onClick={() => navigate("/professor/course-evaluation")}
+                  className="p-3 bg-slate-50 rounded-lg hover:bg-blue-50 hover:text-brand-blue transition-colors text-center"
+                >
+                  <div className="mx-auto mb-1 w-6 h-6">{ICONS.grades}</div>
+                  <span className="text-xs font-bold">강의평가</span>
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const App: React.FC = () => {
+  const [user, setUser] = useState<User | null>(null);
+  const [authRole, setAuthRole] = useState<UserRole>("student");
+  const navigate = useNavigate();
+
+  const handleLogin = (loggedInUser: User) => {
+    setUser(loggedInUser);
+    if (loggedInUser.role === "student") {
+      navigate("/student");
+    } else if (loggedInUser.role === "professor") {
+      navigate("/professor");
+    } else if (loggedInUser.role === "admin") {
+      navigate("/admin/dashboard");
+    }
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    setAuthRole("student");
+    navigate("/");
+  };
+
+  // Authenticated Application Wrapper
+  const AuthenticatedApp = ({ user, onLogout }: { user: User; onLogout: () => void }) => {
+    const navigate = useNavigate();
+    const location = useLocation();
+    // Show dashboard hero on specific home pages
+    const isDashboard = ["/", "/student", "/professor", "/admin/dashboard"].includes(location.pathname);
+
+    return (
+      <div className="min-h-screen bg-brand-gray-light flex flex-col font-sans">
+        <TopNavigation user={user} onLogout={onLogout} />
+
+        {/* Hero Section - Only visible on Dashboard Home */}
+        {isDashboard && <DashboardHero user={user} navigate={navigate} />}
+
+        <main className="flex-1">
+          <Routes>
+            {/* Main Role Dashboards */}
+            <Route path="/" element={
+                user.role === "student" ? <StudentHome user={user} /> : 
+                user.role === "professor" ? <ProfessorHome user={user} /> : 
+                <DashboardContent user={user} navigate={navigate} />
+            } />
+            <Route path="/student" element={<StudentHome user={user} />} />
+            <Route path="/professor" element={<ProfessorHome user={user} />} />
+            
+            {/* Common Routes */}
+            <Route path="/profile" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><UserProfile user={user} /></div>} />
+            <Route path="/announcements" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><NoticeBoard /></div>} />
+            <Route path="/calendar" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><AcademicCalendar /></div>} />
+
+            {/* Student Specific Routes */}
+            {user.role === "student" && (
+              <>
+                <Route path="/student/course-registration" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><StudentCourseRegistration /></div>} />
+                <Route path="/student/all-grades" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><StudentAllGrades /></div>} />
+                <Route path="/student/tuition-history" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><StudentTuitionHistory /></div>} />
+                <Route path="/student/leave-application" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><StudentLeaveApplication /></div>} />
+                <Route path="/student/graduation-check" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><StudentGraduationCheck /></div>} />
+                <Route path="/student/tuition-payment" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><StudentTuitionPayment /></div>} />
+                <Route path="/student/leave-history" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><StudentLeaveHistory /></div>} />
+                <Route path="/student/return-application" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><StudentReturnApplication /></div>} />
+                <Route path="/student/return-history" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><StudentReturnHistory /></div>} />
+                <Route path="/student/certificate-issuance" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><StudentCertificateIssuance /></div>} />
+                <Route path="/student/timetable" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><StudentTimetable /></div>} />
+                <Route path="/student/current-grades" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><StudentCurrentGrades /></div>} />
+              </>
+            )}
+
+            {/* Professor Specific Routes */}
+            {user.role === "professor" && (
+              <>
+                <Route path="/professor/timetable" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><ProfessorLectureTimetable /><
