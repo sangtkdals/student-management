@@ -3,7 +3,7 @@
 // =====================================================
 
 /** 사용자 권한 (m_type) */
-export type UserRole = "STUDENT" | "PROFESSOR" | "ADMIN";
+export type UserRole = "STUDENT" | "PROFESSOR" | "ADMIN" | "student" | "professor" | "admin";
 
 /** 학적 상태 (enrollment_status) */
 export type EnrollmentStatus = "ENROLLED" | "LEAVE" | "GRADUATED";
@@ -58,6 +58,7 @@ export interface User {
 
   // UI용 확장 필드 (DB에는 없지만 조인해서 가져올 경우)
   departmentName?: string;
+  department?: string; // for constants.tsx compatibility
   avatarUrl?: string; // 기존 코드 호환성 유지 (DB엔 없음)
 }
 
@@ -123,6 +124,7 @@ export interface Post {
 
   // UI용
   writerName?: string;
+  author?: string; // for CommonViews.tsx compatibility
   attachments?: Attachment[];
 }
 
@@ -201,6 +203,10 @@ export interface Grade {
 
   // UI용 편의 필드 (Enrollment -> Course -> Subject Join)
   courseName?: string;
+  courseId?: string; // for constants.tsx compatibility
+  credits?: number; // for constants.tsx compatibility
+  letterGrade?: string; // for constants.tsx compatibility
+  gpa?: number; // for constants.tsx compatibility
   courseCode?: string;
   credit?: number;
   year?: number; // Course.academicYear
@@ -248,5 +254,33 @@ export interface AcademicSchedule {
   startDate: string;
   endDate: string;
   backgroundColor?: string;
+  category?: "academic" | "holiday" | "event"; // for ProfessorViews.tsx, CommonViews.tsx
   recurrenceType: "NONE" | "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY";
+}
+
+// =====================================================
+// Mock Data Types (Not in DB)
+// =====================================================
+export interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  author: string;
+  date: string;
+}
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+  category: "academic" | "holiday";
+}
+
+export interface StudentRecord {
+  id: string;
+  name: string;
+  department: string;
+  attendance: string;
+  grade: string | null;
 }
