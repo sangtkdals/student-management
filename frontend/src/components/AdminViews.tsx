@@ -47,14 +47,13 @@ export const AdminSystemManagement: React.FC = () => (
     <div className="mb-4 flex justify-end">
       <Button>새 강의 개설</Button>
     </div>
-    <Table headers={["과목코드", "과목명", "담당교수", "학점", "개설학과"]}>
+    <Table headers={["과목코드", "과목명", "담당교수", "학점"]}>
       {MOCK_COURSES.map((course) => (
-        <tr key={course.id}>
-          <td className="px-6 py-4 text-sm">{course.id}</td>
-          <td className="px-6 py-4 text-sm font-medium">{course.name}</td>
-          <td className="px-6 py-4 text-sm">{course.professor}</td>
-          <td className="px-6 py-4 text-sm">{course.credits}</td>
-          <td className="px-6 py-4 text-sm">{course.department}</td>
+        <tr key={course.courseCode}>
+          <td className="px-6 py-4 text-sm">{course.courseCode}</td>
+          <td className="px-6 py-4 text-sm font-medium">{course.subjectName}</td>
+          <td className="px-6 py-4 text-sm">{course.professorName}</td>
+          <td className="px-6 py-4 text-sm">{course.credit}</td>
         </tr>
       ))}
     </Table>
