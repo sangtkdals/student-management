@@ -26,16 +26,16 @@ public class AuthController {
         String role = payload.get("role");
         String major = payload.get("major"); // This might need handling with Department entity
 
-        if (memberRepository.findByMId(userId).isPresent()) {
+        if (memberRepository.findByMemberId(userId).isPresent()) {
             return ResponseEntity.badRequest().body("이미 존재하는 ID입니다.");
         }
 
         Member member = new Member();
-        member.setMId(userId);
-        member.setMPwd(password);
-        member.setMName(name);
-        member.setMType(role);
-        // member.setMajorField(major); // Assuming major is stored in major_field or needs Dept code logic
+        member.setMemberId(userId);
+        member.setPassword(password);
+        member.setName(name);
+        member.setMemberType(role);
+        member.setMajorField(major);
 
         memberRepository.save(member);
         return ResponseEntity.ok("회원가입 성공");
@@ -46,13 +46,13 @@ public class AuthController {
         String userId = loginData.get("userId");
         String password = loginData.get("password");
 
-        Member member = memberRepository.findByMId(userId).orElse(null);
+        Member member = memberRepository.findByMemberId(userId).orElse(null);
 
-        if (member != null && member.getMPwd().equals(password)) {
+        if (member != null && member.getPassword().equals(password)) {
             Map<String, Object> response = new HashMap<>();
-            response.put("userId", member.getMId());
-            response.put("name", member.getMName());
-            response.put("role", member.getMType());
+            response.put("userId", member.getMemberId());
+            response.put("name", member.getName());
+            response.put("role", member.getMemberType());
             response.put("major", member.getMajorField());
             return ResponseEntity.ok(response);
         } else {
