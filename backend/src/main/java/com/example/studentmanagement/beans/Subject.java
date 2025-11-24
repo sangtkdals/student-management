@@ -1,0 +1,31 @@
+package com.example.studentmanagement.beans;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+@Entity
+@Table(name = "subject")
+@Getter @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class Subject {
+    @Id
+    @Column(name = "s_code", length = 20)
+    private String sCode;
+
+    @Column(name = "s_name", length = 200)
+    private String sName;
+
+    @Column(name = "credit")
+    private Integer credit;
+
+    @Column(name = "s_type", length = 20)
+    private String sType;
+
+    @ManyToOne
+    @JoinColumn(name = "dept_code")
+    private Department department;
+
+    @Column(name = "s_desc", length = 2000)
+    private String sDesc;
+}
