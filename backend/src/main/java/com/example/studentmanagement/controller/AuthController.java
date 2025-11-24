@@ -26,7 +26,7 @@ public class AuthController {
         String role = payload.get("role");
         String major = payload.get("major"); // This might need handling with Department entity
 
-        if (memberRepository.findByMId(userId).isPresent()) {
+        if (memberRepository.findBymId(userId).isPresent()) {
             return ResponseEntity.badRequest().body("이미 존재하는 ID입니다.");
         }
 
@@ -46,7 +46,7 @@ public class AuthController {
         String userId = loginData.get("userId");
         String password = loginData.get("password");
 
-        Member member = memberRepository.findByMId(userId).orElse(null);
+        Member member = memberRepository.findBymId(userId).orElse(null);
 
         if (member != null && member.getMPwd().equals(password)) {
             Map<String, Object> response = new HashMap<>();
