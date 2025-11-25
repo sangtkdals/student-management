@@ -11,8 +11,8 @@ import { ICONS, MOCK_COURSES, MOCK_ANNOUNCEMENTS, MOCK_CALENDAR_EVENTS } from ".
 // Student Views
 import {
   StudentHome,
-  StudentAllGrades,
   StudentCourseRegistration,
+  StudentGradeCenter,
   StudentTuitionHistory,
   StudentLeaveApplication,
   StudentGraduationCheck,
@@ -22,7 +22,6 @@ import {
   StudentReturnHistory,
   StudentCertificateIssuance,
   StudentTimetable,
-  StudentCurrentGrades,
 } from "./components/StudentViews";
 
 // Professor Views
@@ -49,11 +48,17 @@ interface MenuNode {
 
 const STUDENT_MENU: MenuNode[] = [
   {
-    label: "수강/성적",
+    label: "수강",
     path: "",
     children: [
         { label: "수강신청", path: "/student/course-registration" },
         { label: "시간표 조회", path: "/student/timetable" },
+    ],
+  },
+  {
+    label: "성적",
+    path: "",
+    children: [
         { label: "금학기 성적", path: "/student/current-grades" },
         { label: "전체 성적", path: "/student/all-grades" },
     ],
@@ -591,7 +596,7 @@ const App: React.FC = () => {
                   path="/student/all-grades"
                   element={
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                      <StudentAllGrades />
+                      <StudentGradeCenter />
                     </div>
                   }
                 />
@@ -671,7 +676,7 @@ const App: React.FC = () => {
                   path="/student/current-grades"
                   element={
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                      <StudentCurrentGrades />
+                      <StudentGradeCenter />
                     </div>
                   }
                 />

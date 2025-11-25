@@ -10,11 +10,16 @@ interface AuthProps {
 }
 
 const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = 'student' }) => {
+  // View State (login vs register)
   const [view, setView] = useState<'login' | 'register'>('login');
+  
+  // Login State
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>(initialRole);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
+  
+  // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
 
@@ -55,14 +60,17 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = 'student' })
 
         if (response.ok) {
             const data = await response.json();
+            // Merge 브랜치의 안전한 타입 매핑 로직 적용
             const adaptedUser: User = {
-                id: data.userId,
-                memberNo: data.memberNo || data.userId,
-                name: data.name,
-                role: data.role.toLowerCase() as UserRole,
+                id: data.userId, // m_id
+                memberNo: data.memberNo || data.userId, // m_no (필수)
+                name: data.name, // m_name
+                role: data.role.toLowerCase() as UserRole, // m_type
                 email: data.email || `${data.userId}@university.ac.kr`,
-                deptCode: data.deptCode || "UNKNOWN",
-                departmentName: data.departmentName || "Unknown Dept",
+                deptCode: data.deptCode || "UNKNOWN", // deptCode (필수)
+                
+                // 선택적 필드
+                departmentName: data.major || data.departmentName || "Unknown Dept",
                 avatarUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
             };
             onLogin(adaptedUser);
@@ -70,7 +78,6 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = 'student' })
         } else {
             const errorText = await response.text();
             console.warn("Backend login failed:", errorText);
-            // Fallthrough to mock if backend fails (optional, but good for dev)
         }
     } catch (err) {
         console.warn("Backend connection failed, trying mock login.");
@@ -82,6 +89,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = 'student' })
     const adminUser = usersArray.find(u => u.id === userId && u.role === 'admin');
     
     let isAuthenticated = false;
+    // 데모용 하드코딩 비밀번호 체크
     if (user && password === '1234') isAuthenticated = true;
 
     if (isAuthenticated && user) {
@@ -101,7 +109,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = 'student' })
         };
         onLogin(safeAdmin);
     } else {
-        setError('로그인 실패: ID 또는 비밀번호를 확인하세요.');
+        setError('로그인 실패: ID 또는 비밀번호를 확인하세요. (데모 비번: 1234)');
     }
   };
 
@@ -137,6 +145,9 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = 'student' })
 
   const closeModal = () => setIsModalOpen(false);
 
+  // ----------------------------------------------------------------
+  // View: Registration
+  // ----------------------------------------------------------------
   if (view === 'register') {
       return (
         <div className="min-h-screen flex items-center justify-center bg-brand-gray-light p-4 overflow-y-auto">
@@ -235,7 +246,9 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = 'student' })
       );
   }
 
-  // Login View
+  // ----------------------------------------------------------------
+  // View: Login
+  // ----------------------------------------------------------------
   return (
       <div className="min-h-screen flex items-center justify-center bg-brand-gray-light p-4">
         <div className="w-full max-w-md">
@@ -271,11 +284,11 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = 'student' })
                     </div>
                 </form>
             </div>
-        </div>
-        <Modal isOpen={isModalOpen} onClose={closeModal} title="알림">
-            <div className="p-4">{modalMessage}</div>
-        </Modal>
+            <Modal isOpen={isModalOpen} onClose={closeModal} title="알림">
+                <div className="p-4">{modalMessage}</div>
+            </Modal>
       </div>
+    </div>
   );
 };
 
