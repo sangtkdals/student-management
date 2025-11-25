@@ -1,3 +1,4 @@
+import DEUCourseRegistrationApp from "../DEUCourseRegistrationApp";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { User, Course } from "../types";
@@ -132,84 +133,13 @@ export const StudentHome: React.FC<{ user: User }> = ({ user }) => {
 // --- Other Components (Course Registration, Grades, etc.) ---
 
 export const StudentCourseRegistration: React.FC = () => {
-  const [cart, setCart] = useState<Course[]>([]);
-
-  // MOCK_COURSES has updated field names in main-ui feature
-  const availableCourses = MOCK_COURSES.filter((c) => !cart.find((item) => item.courseCode === c.courseCode));
-
-  const handleAddToCart = (course: Course) => {
-    setCart([...cart, course]);
-  };
-
-  const handleRemoveFromCart = (courseCode: string) => {
-    setCart(cart.filter((c) => c.courseCode !== courseCode));
-  };
-
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card title="개설 강좌 목록">
-          <div className="overflow-y-auto max-h-[500px]">
-            <Table headers={["코드", "과목명", "교수", "학점", "시간", "신청"]}>
-              {availableCourses.map((course) => (
-                <tr key={course.courseCode}>
-                  <td className="px-4 py-3 text-sm">{course.courseCode}</td>
-                  <td className="px-4 py-3 text-sm font-bold text-slate-700">{course.subjectName}</td>
-                  <td className="px-4 py-3 text-sm">{course.professorName}</td>
-                  <td className="px-4 py-3 text-sm">{course.credit}</td>
-                  <td className="px-4 py-3 text-xs text-slate-500">{course.courseTime}</td>
-                  <td className="px-4 py-3">
-                    <Button size="sm" onClick={() => handleAddToCart(course)}>
-                      담기
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </Table>
-          </div>
-        </Card>
-
-        <div className="space-y-8">
-          <Card title="수강 바구니">
-            <div className="overflow-y-auto max-h-[250px]">
-              {cart.length === 0 ? (
-                <p className="text-center py-8 text-slate-500">담긴 강좌가 없습니다.</p>
-              ) : (
-                <Table headers={["코드", "과목명", "학점", "취소"]}>
-                  {cart.map((course) => (
-                    <tr key={course.courseCode}>
-                      <td className="px-4 py-3 text-sm">{course.courseCode}</td>
-                      <td className="px-4 py-3 text-sm font-medium">{course.subjectName}</td>
-                      <td className="px-4 py-3 text-sm">{course.credit}</td>
-                      <td className="px-4 py-3">
-                        <Button size="sm" variant="secondary" onClick={() => handleRemoveFromCart(course.courseCode)}>
-                          취소
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </Table>
-              )}
-            </div>
-            {cart.length > 0 && (
-              <div className="mt-4 flex justify-end pt-4 border-t border-slate-100">
-                <Button onClick={() => alert("수강신청이 완료되었습니다.")}>수강신청 확정</Button>
-              </div>
-            )}
-          </Card>
-
-          <Card title="신청 유의사항" className="bg-yellow-50 border-yellow-200">
-            <ul className="list-disc list-inside text-sm text-slate-700 space-y-1">
-              <li>수강신청 변경 기간은 3월 8일까지입니다.</li>
-              <li>최대 수강 가능 학점은 18학점입니다. (직전 학기 평점 4.0 이상 시 21학점)</li>
-              <li>폐강 기준: 수강 인원 10명 미만 시 폐강될 수 있습니다.</li>
-            </ul>
-          </Card>
-        </div>
-      </div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <DEUCourseRegistrationApp />
     </div>
   );
 };
+
 
 export const StudentAllGrades: React.FC = () => {
   // MOCK_GRADES has updated field names in main-ui feature
