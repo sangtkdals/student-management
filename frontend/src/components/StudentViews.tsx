@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import type { User, Course } from "../types";
 import { Card, Button, Table } from "./ui";
 import { MOCK_COURSES, MOCK_GRADES, ICONS, MOCK_ANNOUNCEMENTS, MOCK_CALENDAR_EVENTS } from "../constants";
@@ -211,8 +211,42 @@ export const StudentCourseRegistration: React.FC = () => {
   );
 };
 
-export const StudentAllGrades: React.FC = () => {
-  // MOCK_GRADES has updated field names in main-ui feature
+const CurrentSemesterGrades: React.FC = () => {
+  const currentSemester = "2023-2"; // 현재 학기 예시 (나중에 DB 연동 필요)
+  const currentGrades = MOCK_GRADES.filter((g) => `${g.year}-${g.semester}` === currentSemester);
+
+  return (
+    <Card title={`금학기(${currentSemester}) 성적 상세 조회`}>
+      {currentGrades.length === 0 ? (
+        <p className="text-center py-8 text-slate-500">등록된 성적이 없습니다.</p>
+      ) : (
+        <Table headers={["과목코드", "과목명", "학점", "성적", "평점"]}>
+          {currentGrades.map((grade) => (
+            <tr key={grade.gradeId}>
+              <td className="px-6 py-4 text-sm text-slate-500">{grade.courseCode}</td>
+              <td className="px-6 py-4 text-sm font-medium text-slate-800">{grade.courseName}</td>
+              <td className="px-6 py-4 text-sm text-center">{grade.credit}</td>
+              <td className="px-6 py-4 text-sm font-bold text-brand-blue text-center">{grade.gradeLetter}</td>
+              <td className="px-6 py-4 text-sm text-center">{grade.gradePoint}</td>
+            </tr>
+          ))}
+        </Table>
+      )}
+    </Card>
+  );
+};
+
+const AllSemesterGrades: React.FC = () => {
+  
+  const totalCredits = MOCK_GRADES.reduce((sum, g) => sum + (g.credit || 0), 0);
+  
+  const totalWeightedPoints = MOCK_GRADES.reduce(
+    (sum, g) => sum + (g.gradePoint || 0) * (g.credit || 0), 
+    0
+  );
+  const overallGPA = totalCredits > 0 ? totalWeightedPoints / totalCredits : 0;
+
+
   const gradesBySemester = MOCK_GRADES.reduce((acc, grade) => {
     const key = `${grade.year}-${grade.semester}`;
     if (!acc[key]) acc[key] = [];
@@ -221,36 +255,100 @@ export const StudentAllGrades: React.FC = () => {
   }, {} as { [key: string]: typeof MOCK_GRADES });
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {Object.entries(gradesBySemester)
-        .sort()
-        .reverse()
-        .map(([semester, grades]) => {
-          const totalCredits = grades.reduce((sum, g) => sum + g.credit, 0);
-          const semesterGPA = grades.reduce((sum, g) => sum + g.gradePoint * g.credit, 0) / totalCredits;
+    <div className="space-y-6">
+      
+      <Card title="전체 성적 요약">
+        <div className="grid grid-cols-2 gap-4 p-2">
 
-          return (
-            <Card key={semester} title={`${semester.split("-")[0]}년 ${semester.split("-")[1]}학기 성적`}>
-              <div className="mb-4 p-3 bg-blue-50 rounded-lg flex justify-between items-center">
-                <span className="font-bold text-slate-700">
-                  학기 평점: <span className="text-brand-blue text-lg ml-2">{isNaN(semesterGPA) ? "0.00" : semesterGPA.toFixed(2)}</span>
-                </span>
-                <span className="text-sm text-slate-500">이수 학점: {totalCredits}</span>
-              </div>
-              <Table headers={["과목코드", "과목명", "학점", "성적", "평점"]}>
-                {grades.map((grade) => (
-                  <tr key={grade.gradeId}>
-                    <td className="px-6 py-4 text-sm text-slate-500">{grade.courseCode}</td>
-                    <td className="px-6 py-4 text-sm font-medium text-slate-800">{grade.courseName}</td>
-                    <td className="px-6 py-4 text-sm text-center">{grade.credit}</td>
-                    <td className="px-6 py-4 text-sm font-bold text-brand-blue text-center">{grade.gradeLetter}</td>
-                    <td className="px-6 py-4 text-sm text-center">{grade.gradePoint}</td>
-                  </tr>
-                ))}
-              </Table>
-            </Card>
-          );
-        })}
+          <div className="flex flex-col items-center justify-center p-6 bg-blue-50 rounded-xl border border-blue-100">
+            <span className="text-sm font-bold text-slate-500 mb-2">총 평점 평균 (GPA)</span>
+            <div className="flex items-end">
+              <span className="text-4xl font-extrabold text-brand-blue">
+                {overallGPA.toFixed(2)}
+              </span>
+              <span className="text-lg text-slate-400 mb-1 ml-1">/ 4.5</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center justify-center p-6 bg-slate-50 rounded-xl border border-slate-200">
+            <span className="text-sm font-bold text-slate-500 mb-2">총 이수 학점</span>
+            <div className="flex items-end">
+              <span className="text-4xl font-extrabold text-slate-700">
+                {totalCredits}
+              </span>
+              <span className="text-lg text-slate-400 mb-1 ml-1">학점</span>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <div className="border-t border-slate-200 my-4"></div>
+
+      {Object.entries(gradesBySemester).sort().reverse().map(([semester, grades]) => {
+        const semTotalCredits = grades.reduce((sum, g) => sum + (g.credit || 0), 0);
+        const semGPA = grades.reduce((sum, g) => sum + (g.gradePoint || 0) * (g.credit || 0), 0) / semTotalCredits;
+
+        return (
+          <Card key={semester} title={`${semester.split("-")[0]}년 ${semester.split("-")[1]}학기`}>
+            <div className="mb-4 p-3 bg-white border border-slate-200 rounded-lg flex justify-between items-center shadow-sm">
+              <span className="font-bold text-slate-700 text-sm">
+                학기 평점: <span className="text-brand-blue text-lg ml-2">{isNaN(semGPA) ? "0.00" : semGPA.toFixed(2)}</span>
+              </span>
+              <span className="text-sm text-slate-500 font-medium">이수: {semTotalCredits}학점</span>
+            </div>
+            <Table headers={["과목명", "학점", "성적", "평점"]}>
+              {grades.map((grade) => (
+                <tr key={grade.gradeId}>
+                  <td className="px-6 py-4 text-sm font-medium text-slate-800">{grade.courseName}</td>
+                  <td className="px-6 py-4 text-sm text-center">{grade.credit}</td>
+                  <td className="px-6 py-4 text-sm font-bold text-brand-blue text-center">{grade.gradeLetter}</td>
+                  <td className="px-6 py-4 text-sm text-center">{grade.gradePoint}</td>
+                </tr>
+              ))}
+            </Table>
+          </Card>
+        );
+      })}
+    </div>
+  );
+};
+
+export const StudentGradeCenter: React.FC = () => {
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState<"current" | "all">("current");
+
+  useEffect(() => {
+    if (location.pathname.includes("all-grades")) {
+      setActiveTab("all");
+    } else {
+      setActiveTab("current");
+    }
+  }, [location.pathname]);
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <div className="flex space-x-1 bg-slate-100 p-1 rounded-lg w-fit">
+        <button
+          onClick={() => setActiveTab("current")}
+          className={`px-6 py-2.5 text-sm font-bold rounded-md transition-all ${
+            activeTab === "current" ? "bg-white text-brand-blue shadow-sm" : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          금학기 성적
+        </button>
+        <button
+          onClick={() => setActiveTab("all")}
+          className={`px-6 py-2.5 text-sm font-bold rounded-md transition-all ${
+            activeTab === "all" ? "bg-white text-brand-blue shadow-sm" : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          전체 성적
+        </button>
+      </div>
+
+      <div className="animate-fade-in">
+        {activeTab === "current" ? <CurrentSemesterGrades /> : <AllSemesterGrades />}
+      </div>
     </div>
   );
 };
@@ -297,6 +395,4 @@ export const StudentCertificateIssuance: React.FC = () => (
   <PlaceholderView title="증명서 발급" desc="재학증명서, 성적증명서 등 각종 증명서를 발급받을 수 있습니다." />
 );
 export const StudentTimetable: React.FC = () => <PlaceholderView title="시간표 조회" desc="이번 학기 수강 신청한 과목의 시간표를 확인합니다." />;
-export const StudentCurrentGrades: React.FC = () => (
-  <PlaceholderView title="금학기 성적 조회" desc="이번 학기 중간/기말 고사 성적 및 과제 점수를 확인합니다." />
-);
+
