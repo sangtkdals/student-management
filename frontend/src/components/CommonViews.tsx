@@ -3,6 +3,7 @@ import type { User, AcademicSchedule, CalendarEvent, Post } from "../types";
 import { Card, Button, Input } from "./ui";
 import { MOCK_CALENDAR_EVENTS } from "../constants";
 import axios from "axios";
+import { changePassword } from "../api/services";
 
 interface UserProfileProps {
   user: User;
@@ -14,27 +15,64 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
         email: user.email,
         phoneNumber: user.phoneNumber || '',
         address: user.address || '',
+        currentPassword: '',
         newPassword: '',
         confirmPassword: ''
     });
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSave = () => {
-        // Validation logic here
-        if (formData.newPassword && formData.newPassword !== formData.confirmPassword) {
-            alert("새 비밀번호가 일치하지 않습니다.");
-            return;
+    const handleSave = async () => {
+        setError('');
+        setSuccess('');
+
+        // 비밀번호 변경 검증
+        if (formData.newPassword) {
+            if (!formData.currentPassword) {
+                setError('현재 비밀번호를 입력해주세요.');
+                return;
+            }
+
+            if (formData.newPassword.length < 4) {
+                setError('새 비밀번호는 최소 4자 이상이어야 합니다.');
+                return;
+            }
+
+            if (formData.newPassword !== formData.confirmPassword) {
+                setError('새 비밀번호가 일치하지 않습니다.');
+                return;
+            }
+
+            if (formData.currentPassword === formData.newPassword) {
+                setError('새 비밀번호는 현재 비밀번호와 달라야 합니다.');
+                return;
+            }
+
+            try {
+                // 백엔드 API로 비밀번호 변경 요청
+                await changePassword(user.id, formData.currentPassword, formData.newPassword);
+                setSuccess('비밀번호가 성공적으로 변경되었습니다.');
+                
+                // 비밀번호 필드 초기화
+                setFormData(prev => ({
+                    ...prev,
+                    currentPassword: '',
+                    newPassword: '',
+                    confirmPassword: ''
+                }));
+            } catch (err) {
+                setError('비밀번호 변경에 실패했습니다. 현재 비밀번호를 확인해주세요.');
+                return;
+            }
         }
 
-        // In a real app, trigger API update here
-        alert("정보가 성공적으로 수정되었습니다.");
-
-        // Update visual state if this were a real connected component, 
-        // but for now we just exit edit mode
+        // 다른 정보 저장 (실제 구현 시 백엔드 API 호출)
+        setSuccess('정보가 성공적으로 수정되었습니다.');
         setIsEditing(false);
     };
 
@@ -43,9 +81,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
             email: user.email,
             phoneNumber: user.phoneNumber || '',
             address: user.address || '',
+            currentPassword: '',
             newPassword: '',
             confirmPassword: ''
         });
+        setError('');
+        setSuccess('');
         setIsEditing(false);
     };
 
@@ -67,7 +108,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
                         />
                         <div className="mt-4 text-center">
                             <h3 className="text-xl font-bold text-slate-800">{user.name}</h3>
-                            <p className="text-sm text-slate-500">{user.role === 'student' ? '학생' : user.role === 'professor' ? '교수' : '관리자'}</p>
+                            <p className="text-sm text-slate-500">
+                                {user.role === 'student' ? '학생' : user.role === 'professor' ? '교수' : '관리자'}
+                            </p>
                         </div>
                     </div>
 
@@ -102,7 +145,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
                                 />
                                 <Input
                                     label={user.role === 'professor' ? '교번' : '학번'}
-                                    value={user.id}
+                                    value={user.memberNo || user.id}
                                     disabled
                                     readOnly
                                     className="bg-slate-100 text-slate-500 cursor-not-allowed"
@@ -139,6 +182,15 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
                                     <h4 className="font-bold text-brand-blue text-sm uppercase tracking-wider">보안</h4>
                                 </div>
                                 <Input
+                                    label="현재 비밀번호"
+                                    name="currentPassword"
+                                    type="password"
+                                    value={formData.currentPassword}
+                                    onChange={handleChange}
+                                    placeholder="비밀번호 변경 시 필수"
+                                />
+                                <div></div>
+                                <Input
                                     label="새 비밀번호"
                                     name="newPassword"
                                     type="password"
@@ -154,6 +206,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
                                     onChange={handleChange}
                                     placeholder="비밀번호 재입력"
                                 />
+
+                                {error && <p className="text-sm text-red-600 md:col-span-2">{error}</p>}
+                                {success && <p className="text-sm text-green-600 md:col-span-2">{success}</p>}
 
                                 <div className="md:col-span-2 flex justify-end space-x-3 pt-6 border-t mt-2">
                                     <Button variant="secondary" onClick={handleCancel}>취소</Button>
@@ -179,8 +234,10 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
                                     <span className="block text-base font-semibold text-slate-800">{user.id}</span>
                                 </div>
                                 <div>
-                                    <span className="block text-xs font-medium text-slate-500 mb-1">{user.role === 'professor' ? '교번' : '학번'}</span>
-                                    <span className="block text-base font-semibold text-slate-800">{user.id}</span>
+                                    <span className="block text-xs font-medium text-slate-500 mb-1">
+                                        {user.role === 'professor' ? '교번' : '학번'}
+                                    </span>
+                                    <span className="block text-base font-semibold text-slate-800">{user.memberNo || user.id}</span>
                                 </div>
 
                                 <div className="border-b border-slate-100 pb-2 col-span-1 md:col-span-2 mt-2">
@@ -261,7 +318,9 @@ const MonthCalendar: React.FC<{ year: number; month: number; events: CalendarIte
   const firstDayOfMonth = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  const blanks = Array.from({ length: firstDayOfMonth }, (_, i) => <div key={`blank-${i}`} className="border-r border-b border-slate-200"></div>);
+  const blanks = Array.from({ length: firstDayOfMonth }, (_, i) => (
+    <div key={`blank-${i}`} className="border-r border-b border-slate-200"></div>
+  ));
 
   const dayCells = Array.from({ length: daysInMonth }, (_, i) => {
     const day = i + 1;
@@ -274,7 +333,7 @@ const MonthCalendar: React.FC<{ year: number; month: number; events: CalendarIte
     const dayEvents = events.filter((e) => {
       const eventStartDate = new Date(e.startDate);
       eventStartDate.setHours(0, 0, 0, 0);
-      const eventEndDate = new Date(e.endDate); // CalendarEvent, AcademicSchedule 모두 endDate 존재
+      const eventEndDate = new Date(e.endDate);
       eventEndDate.setHours(0, 0, 0, 0);
       return currentDate >= eventStartDate && currentDate <= eventEndDate;
     });
@@ -336,11 +395,12 @@ const MonthCalendar: React.FC<{ year: number; month: number; events: CalendarIte
 };
 
 export const AcademicCalendar: React.FC = () => {
-  // Mock 데이터 타입 캐스팅
   const events = MOCK_CALENDAR_EVENTS as CalendarItem[];
 
   const allYears = [...new Set(events.map((e) => new Date(e.startDate).getFullYear()))].sort();
-  const [selectedYear, setSelectedYear] = useState(allYears.length > 0 ? allYears[allYears.length - 1] : new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState(
+    allYears.length > 0 ? allYears[allYears.length - 1] : new Date().getFullYear()
+  );
 
   const eventsForYear = events.filter((event) => new Date(event.startDate).getFullYear() === selectedYear);
   const months = Array.from({ length: 12 }, (_, i) => i);

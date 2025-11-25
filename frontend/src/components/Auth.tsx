@@ -256,34 +256,65 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = "student" })
         </div>
         <div className="bg-white p-8 rounded-lg border border-brand-gray shadow-sm">
           <form onSubmit={handleLogin} className="space-y-6">
-            <div className="grid grid-cols-2 gap-2 p-1 bg-brand-gray-light rounded-md">
+            {/* 3개 역할 버튼 (학생/교수/관리자) */}
+            <div className="grid grid-cols-3 gap-2 p-1 bg-brand-gray-light rounded-md">
               <button
                 type="button"
                 onClick={() => setRole("student")}
-                className={`w-full px-4 py-2 text-sm font-bold rounded ${role === "student" ? "bg-brand-blue text-white" : "text-slate-500"}`}
+                className={`w-full px-4 py-2 text-sm font-bold rounded transition-colors ${
+                  role === "student" ? "bg-brand-blue text-white shadow-sm" : "text-slate-500 hover:bg-slate-200"
+                }`}
               >
                 학생
               </button>
               <button
                 type="button"
                 onClick={() => setRole("professor")}
-                className={`w-full px-4 py-2 text-sm font-bold rounded ${role === "professor" ? "bg-brand-blue text-white" : "text-slate-500"}`}
+                className={`w-full px-4 py-2 text-sm font-bold rounded transition-colors ${
+                  role === "professor" ? "bg-brand-blue text-white shadow-sm" : "text-slate-500 hover:bg-slate-200"
+                }`}
               >
                 교수
               </button>
+              <button
+                type="button"
+                onClick={() => setRole("admin")}
+                className={`w-full px-4 py-2 text-sm font-bold rounded transition-colors ${
+                  role === "admin" ? "bg-brand-blue text-white shadow-sm" : "text-slate-500 hover:bg-slate-200"
+                }`}
+              >
+                관리자
+              </button>
             </div>
 
-            <Input label="ID" value={userId} onChange={(e) => setUserId(e.target.value)} />
-            <Input label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <Input 
+              label="사용자 ID" 
+              value={userId} 
+              onChange={(e) => setUserId(e.target.value)} 
+              placeholder="학생: aaa / 교수: bbb / 관리자: admin001"
+              required
+            />
+            <Input 
+              label="비밀번호" 
+              type="password" 
+              value={password} 
+              onChange={(e) => setPassword(e.target.value)} 
+              placeholder="••••••••"
+              required
+            />
 
             {error && <p className="text-sm text-red-600 text-center">{error}</p>}
 
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full !py-3 !text-base !font-bold">
               로그인
             </Button>
 
             <div className="text-center pt-2">
-              <button type="button" onClick={() => setView("register")} className="text-sm text-slate-500 hover:text-brand-blue underline">
+              <button 
+                type="button" 
+                onClick={() => setView("register")} 
+                className="text-sm text-slate-500 hover:text-brand-blue underline"
+              >
                 계정이 없으신가요? 회원가입
               </button>
             </div>

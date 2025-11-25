@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./mvnw clean compile:*)",
+      "Bash(./gradlew clean build:*)",
+      "Bash(./gradlew bootRun:*)",
+      "Bash(./gradlew clean bootRun:*)",
+      "Bash(docker-compose ps:*)",
+      "Bash(./gradlew eclipse:*)",
+      "Bash(dir:*)",
+      "Bash(npm install)",
+      "Bash(npm run dev:*)",
+      "Bash(curl:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(.gradlew clean build:*)",
+      "Bash(timeout:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
