@@ -6,17 +6,15 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface LeaveOfAbsenceRepository extends JpaRepository<LeaveOfAbsence, Long> {
+public interface LeaveOfAbsenceRepository extends JpaRepository<LeaveOfAbsence, Integer> {
 
-    // 특정 학생의 모든 휴학/복학 신청 내역 조회 (최신순)
-    List<LeaveOfAbsence> findByStudentIdOrderByApplicationDateDesc(Long studentId);
+    List<LeaveOfAbsence> findByStuNoOrderByApplicationDateDesc(String stuNo);
 
-    // 특정 학생의 특정 타입 신청 내역 조회 (휴학 또는 복학)
-    List<LeaveOfAbsence> findByStudentIdAndTypeOrderByApplicationDateDesc(Long studentId, String type);
+    List<LeaveOfAbsence> findByApprovalStatusOrderByApplicationDateDesc(String approvalStatus);
 
-    // 특정 학생의 특정 상태 신청 내역 조회
-    List<LeaveOfAbsence> findByStudentIdAndStatusOrderByApplicationDateDesc(Long studentId, String status);
+    List<LeaveOfAbsence> findByStuNoAndApprovalStatus(String stuNo, String approvalStatus);
 
-    // 특정 학생의 특정 타입 및 상태 신청 내역 조회
-    List<LeaveOfAbsence> findByStudentIdAndTypeAndStatus(Long studentId, String type, String status);
+    List<LeaveOfAbsence> findByLeaveType(String leaveType);
+
+    List<LeaveOfAbsence> findAllByOrderByApplicationDateDesc();
 }

@@ -7,6 +7,7 @@ import com.example.studentmanagement.dto.LeaveOfAbsenceResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -14,96 +15,67 @@ import java.util.stream.Collectors;
 @Transactional
 public class LeaveOfAbsenceService {
 
-    private final LeaveOfAbsenceRepository leaveOfAbsenceRepository;
+    private final LeaveOfAbsenceRepository leaveRepository;
 
-    public LeaveOfAbsenceService(LeaveOfAbsenceRepository leaveOfAbsenceRepository) {
-        this.leaveOfAbsenceRepository = leaveOfAbsenceRepository;
+    public LeaveOfAbsenceService(LeaveOfAbsenceRepository leaveRepository) {
+        this.leaveRepository = leaveRepository;
     }
 
-    /**
-     * 휴학/복학 신청 생성
-     */
-    public LeaveOfAbsenceResponse createApplication(Long studentId, LeaveOfAbsenceRequest request) {
-        LeaveOfAbsence leaveOfAbsence = new LeaveOfAbsence();
-        leaveOfAbsence.setStudentId(studentId);
-        leaveOfAbsence.setType(request.getType());
-        leaveOfAbsence.setCategory(request.getCategory());
-        leaveOfAbsence.setYear(request.getYear());
-        leaveOfAbsence.setSemester(request.getSemester());
-        leaveOfAbsence.setReason(request.getReason());
-        leaveOfAbsence.setContactNumber(request.getContactNumber());
-        leaveOfAbsence.setAddress(request.getAddress());
-        leaveOfAbsence.setDocuments(request.getDocuments());
+    public LeaveOfAbsenceResponse createApplication(LeaveOfAbsenceRequest request) {
+        LeaveOfAbsence leave = new LeaveOfAbsence();
+        leave.setStuNo(request.getStuNo());
+        leave.setLeaveType(request.getLeaveType());
+        leave.setStartYear(request.getStartYear());
+        leave.setStartSemester(request.getStartSemester());
+        leave.setEndYear(request.getEndYear());
+        leave.setEndSemester(request.getEndSemester());
+        leave.setApplicationReason(request.getApplicationReason());
+        leave.setApplicationDate(request.getApplicationDate() != null ? request.getApplicationDate() : LocalDateTime.now());
+        leave.setApprovalStatus("PENDING");
 
-        LeaveOfAbsence saved = leaveOfAbsenceRepository.save(leaveOfAbsence);
-        return LeaveOfAbsenceResponse.fromEntity(saved);
+        return LeaveOfAbsenceResponse.fromEntity(leaveRepository.save(leave));
     }
 
-    /**
-     * 특정 학생의 모든 신청 내역 조회
-     */
     @Transactional(readOnly = true)
-    public List<LeaveOfAbsenceResponse> getAllApplicationsByStudent(Long studentId) {
-        List<LeaveOfAbsence> applications = leaveOfAbsenceRepository.findByStudentIdOrderByApplicationDateDesc(studentId);
-        return applications.stream()
-                .map(LeaveOfAbsenceResponse::fromEntity)
-                .collect(Collectors.toList());
+    public List<LeaveOfAbsenceResponse> getAllApplications() {
+        return leaveRepository.findAllByOrderByApplicationDateDesc()
+                .stream().map(LeaveOfAbsenceResponse::fromEntity).collect(Collectors.toList());
     }
 
-    /**
-     * 특정 학생의 특정 타입 신청 내역 조회 (휴학 또는 복학)
-     */
     @Transactional(readOnly = true)
-    public List<LeaveOfAbsenceResponse> getApplicationsByStudentAndType(Long studentId, String type) {
-        List<LeaveOfAbsence> applications = leaveOfAbsenceRepository.findByStudentIdAndTypeOrderByApplicationDateDesc(studentId, type);
-        return applications.stream()
-                .map(LeaveOfAbsenceResponse::fromEntity)
-                .collect(Collectors.toList());
+    public LeaveOfAbsenceResponse getApplicationById(Integer applicationId) {
+        LeaveOfAbsence leave = leaveRepository.findById(applicationId)
+                .orElseThrow(() -> new RuntimeException("신청을 찾을 수 없습니다."));
+        return LeaveOfAbsenceResponse.fromEntity(leave);
     }
 
-    /**
-     * 특정 신청 내역 상세 조회
-     */
     @Transactional(readOnly = true)
-    public LeaveOfAbsenceResponse getApplicationById(Long id) {
-        LeaveOfAbsence application = leaveOfAbsenceRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("신청 내역을 찾을 수 없습니다."));
-        return LeaveOfAbsenceResponse.fromEntity(application);
+    public List<LeaveOfAbsenceResponse> getApplicationsByStuNo(String stuNo) {
+        return leaveRepository.findByStuNoOrderByApplicationDateDesc(stuNo)
+                .stream().map(LeaveOfAbsenceResponse::fromEntity).collect(Collectors.toList());
     }
 
-    /**
-     * 신청 상태 업데이트 (관리자용 - 승인/거절 처리)
-     */
-    public LeaveOfAbsenceResponse updateApplicationStatus(Long id, String status, String rejectReason) {
-        LeaveOfAbsence application = leaveOfAbsenceRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("신청 내역을 찾을 수 없습니다."));
+    @Transactional(readOnly = true)
+    public List<LeaveOfAbsenceResponse> getApplicationsByStatus(String approvalStatus) {
+        return leaveRepository.findByApprovalStatusOrderByApplicationDateDesc(approvalStatus)
+                .stream().map(LeaveOfAbsenceResponse::fromEntity).collect(Collectors.toList());
+    }
 
-        application.setStatus(status);
-        if ("거절".equals(status) && rejectReason != null) {
-            application.setRejectReason(rejectReason);
+    public LeaveOfAbsenceResponse updateApplicationStatus(Integer applicationId, String approvalStatus, String approverId, String rejectReason) {
+        LeaveOfAbsence leave = leaveRepository.findById(applicationId)
+                .orElseThrow(() -> new RuntimeException("신청을 찾을 수 없습니다."));
+
+        leave.setApprovalStatus(approvalStatus);
+        leave.setApprovalDate(LocalDateTime.now());
+        leave.setApproverId(approverId);
+        if (rejectReason != null) {
+            leave.setRejectReason(rejectReason);
         }
 
-        LeaveOfAbsence updated = leaveOfAbsenceRepository.save(application);
-        return LeaveOfAbsenceResponse.fromEntity(updated);
+        return LeaveOfAbsenceResponse.fromEntity(leaveRepository.save(leave));
     }
 
-    /**
-     * 신청 취소 (학생이 신청완료 상태일 때만 가능)
-     */
-    public void cancelApplication(Long id, Long studentId) {
-        LeaveOfAbsence application = leaveOfAbsenceRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("신청 내역을 찾을 수 없습니다."));
-
-        // 본인의 신청인지 확인
-        if (!application.getStudentId().equals(studentId)) {
-            throw new RuntimeException("본인의 신청만 취소할 수 있습니다.");
-        }
-
-        // 신청완료 상태일 때만 취소 가능
-        if (!"신청완료".equals(application.getStatus())) {
-            throw new RuntimeException("신청완료 상태일 때만 취소할 수 있습니다.");
-        }
-
-        leaveOfAbsenceRepository.delete(application);
+    public void cancelApplication(Integer applicationId) {
+        leaveRepository.deleteById(applicationId);
     }
 }
