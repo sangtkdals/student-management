@@ -92,8 +92,8 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> loginData) {
-        String userId = loginData.get("userId");
-        String password = loginData.get("password");
+        String userId = loginData.get("m_id");
+        String password = loginData.get("m_pwd");
 
         Member member = memberRepository.findByMemberId(userId).orElse(null);
 
