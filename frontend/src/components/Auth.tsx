@@ -64,6 +64,9 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = "student" })
       if (response.ok) {
         const data = await response.json();
 
+        // 토큰 저장
+        localStorage.setItem("token", data.token);
+
         // 백엔드 응답(Map)을 프론트엔드 User 타입으로 변환
         const loggedInUser: User = {
           id: data.userId,
@@ -75,6 +78,10 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = "student" })
           departmentName: data.departmentName,
           avatarUrl: `https://picsum.photos/seed/${data.userId}/100/100`, // 임시 아바타 URL
         };
+        
+        // 사용자 정보 저장 (새로고침 시 유지용)
+        localStorage.setItem("user", JSON.stringify(loggedInUser));
+
         onLogin(loggedInUser);
       } else {
         // 서버가 4xx, 5xx 등의 에러 응답을 보냈을 때

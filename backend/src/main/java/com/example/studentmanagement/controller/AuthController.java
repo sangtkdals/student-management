@@ -4,6 +4,7 @@ import com.example.studentmanagement.beans.Department;
 import com.example.studentmanagement.beans.Member;
 import com.example.studentmanagement.repository.DepartmentRepository;
 import com.example.studentmanagement.repository.MemberRepository;
+import com.example.studentmanagement.util.JwtUtil;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,10 +21,12 @@ public class AuthController {
 
     private final MemberRepository memberRepository;
     private final DepartmentRepository departmentRepository;
+    private final JwtUtil jwtUtil;
 
-    public AuthController(MemberRepository memberRepository, DepartmentRepository departmentRepository) {
+    public AuthController(MemberRepository memberRepository, DepartmentRepository departmentRepository, JwtUtil jwtUtil) {
         this.memberRepository = memberRepository;
         this.departmentRepository = departmentRepository;
+        this.jwtUtil = jwtUtil;
     }
 
     @PostMapping("/register")
@@ -98,7 +101,10 @@ public class AuthController {
         Member member = memberRepository.findByMemberId(userId).orElse(null);
 
         if (member != null && member.getPassword().equals(password)) {
+            String token = jwtUtil.generateToken(member.getMemberId(), member.getMemberType(), member.getMemberNo());
+
             Map<String, Object> response = new HashMap<>();
+            response.put("token", token);
             response.put("userId", member.getMemberId());
             response.put("memberNo", member.getMemberNo());
             response.put("name", member.getName());
