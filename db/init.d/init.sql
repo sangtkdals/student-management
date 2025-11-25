@@ -20,8 +20,8 @@ INSERT INTO student (name, major) VALUES ('test3', 'dddd');
 -- =====================================================
 
 -- Create and select database
-CREATE DATABASE IF NOT EXISTS deu CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-USE deu;
+CREATE DATABASE IF NOT EXISTS `deu` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+USE `deu`;
 
 -- Ensure default engine is InnoDB for FK support
 SET default_storage_engine=INNODB;
@@ -303,3 +303,38 @@ CREATE INDEX idx_attach_post ON attachment(post_id);
 -- End of schema
 -- =====================================================
 
+-- =====================================================
+-- Sample Data Insertion
+-- =====================================================
+
+-- 관리자 계정 추가 (공지사항 작성자)
+INSERT INTO department (dept_code, dept_name, college_name) VALUES ('ADM', '관리부서', '본부');
+INSERT INTO member (m_id, m_pwd, m_name, m_type, m_no, m_email, dept_code)
+VALUES ('admin', 'admin', '관리자', 'ADMIN', 'admin001', 'admin@deu.ac.kr', 'ADM');
+
+-- 공지사항 게시판 추가
+INSERT INTO board (board_code, board_name, write_auth) VALUES ('announcements', '공지사항', 'ADMIN');
+
+-- 샘플 공지사항 추가
+INSERT INTO post (board_id, post_title, post_content, writer_id)
+SELECT board_id, '2025학년도 2학기 수강신청 안내', '2025학년도 2학기 수강신청이 8월 10일부터 시작됩니다. 학생 여러분의 많은 관심 바랍니다.', 'admin001'
+FROM board WHERE board_code = 'announcements';
+
+INSERT INTO post (board_id, post_title, post_content, writer_id)
+SELECT board_id, '중앙도서관 리모델링 공사 안내', '중앙도서관이 더 나은 환경을 제공하기 위해 9월 1일부터 12월 31일까지 리모델링 공사를 진행합니다. 이용에 불편을 드려 죄송합니다.', 'admin001'
+FROM board WHERE board_code = 'announcements';
+
+INSERT INTO post (board_id, post_title, post_content, writer_id)
+SELECT board_id, '2025년 동아리 박람회 개최 안내', '9월 5일부터 7일까지 학생회관 앞에서 2025년 동아리 박람회가 개최됩니다. 다양한 동아리를 만나보세요!', 'admin001'
+FROM board WHERE board_code = 'announcements';
+
+-- 컴퓨터공학과 추가
+INSERT INTO department (dept_code, dept_name, college_name) VALUES ('CS', '컴퓨터공학과', 'IT융합대학');
+
+-- 샘플 학생 계정 추가
+INSERT INTO member (m_id, m_pwd, m_name, m_type, m_no, m_email, dept_code, stu_grade, enrollment_status)
+VALUES ('student', '1234', '김학생', 'STUDENT', '20210001', 'student@deu.ac.kr', 'CS', 2, 'ENROLLED');
+
+-- 샘플 교수 계정 추가
+INSERT INTO member (m_id, m_pwd, m_name, m_type, m_no, m_email, dept_code, position)
+VALUES ('professor', '1234', '이교수', 'PROFESSOR', 'prof001', 'professor@deu.ac.kr', 'CS', '조교수');

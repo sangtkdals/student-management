@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 
 interface CardProps {
@@ -134,7 +133,7 @@ export const Dropdown: React.FC<DropdownProps> = ({ label, children }) => {
             <div>
                 <button
                     type="button"
-                    className="inline-flex justify-center w-full rounded-md border border-brand-gray shadow-sm px-4 py-2 bg-white text-sm font-medium text-slate-700 hover:bg-brand-gray-light focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-brand-blue"
+                    className="inline-flex justify-center w-full rounded-md border border-brand-gray shadow-sm px-4 py-2 bg-white text-sm font-medium text-slate-700 hover:bg-brand-gray-light focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-brand-blue whitespace-nowrap"
                     onClick={() => setIsOpen(!isOpen)}
                 >
                     {label}
@@ -172,7 +171,7 @@ interface DropdownItemProps {
 export const DropdownItem: React.FC<DropdownItemProps> = ({ children, onClick }) => (
     <a href="#"
        onClick={(e) => { e.preventDefault(); onClick(); }}
-       className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900"
+       className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 whitespace-nowrap"
        role="menuitem"
     >
         {children}

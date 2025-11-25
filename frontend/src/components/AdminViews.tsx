@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Card, Table, Button } from './ui';
 import { MOCK_COURSES, MOCK_ANNOUNCEMENTS } from '../constants';
-import type { Announcement } from '../types';
+import type { Announcement, User } from '../types';
 
 // ===== 관리자 대시보드 =====
 export const AdminDashboard: React.FC = () => {
@@ -368,11 +368,13 @@ export const AdminAnnouncementManagement: React.FC = () => {
         }
 
         const announcement: Announcement = {
-            id: `ANN${Date.now()}`,
+            postId: Date.now(),
             title: newAnnouncement.title,
             content: newAnnouncement.content,
-            author: newAnnouncement.author,
-            date: new Date().toISOString().split('T')[0],
+            writerName: newAnnouncement.author,
+            createdAt: new Date().toISOString(),
+            isPinned: false,
+            views: 0
         };
 
         setAnnouncements([announcement, ...announcements]);
@@ -381,9 +383,9 @@ export const AdminAnnouncementManagement: React.FC = () => {
         alert('공지사항이 등록되었습니다.');
     };
 
-    const handleDelete = (id: string) => {
+    const handleDelete = (id: number) => {
         if (window.confirm('정말 삭제하시겠습니까?')) {
-            setAnnouncements(announcements.filter(ann => ann.id !== id));
+            setAnnouncements(announcements.filter(ann => ann.postId !== id));
         }
     };
 
@@ -448,15 +450,15 @@ export const AdminAnnouncementManagement: React.FC = () => {
 
                 <div className="space-y-3">
                     {announcements.map(ann => (
-                        <div key={ann.id} className="p-4 bg-white border border-slate-200 rounded-lg hover:shadow-md transition-shadow">
+                        <div key={ann.postId} className="p-4 bg-white border border-slate-200 rounded-lg hover:shadow-md transition-shadow">
                             <div className="flex justify-between items-start">
                                 <div className="flex-1">
                                     <h3 className="text-lg font-bold text-slate-800 mb-1">{ann.title}</h3>
                                     <p className="text-sm text-slate-600 mb-2">{ann.content}</p>
                                     <div className="flex items-center gap-4 text-xs text-slate-500">
-                                        <span>작성자: {ann.author}</span>
+                                        <span>작성자: {ann.writerName}</span>
                                         <span>•</span>
-                                        <span>{ann.date}</span>
+                                        <span>{ann.createdAt.slice(0, 10)}</span>
                                     </div>
                                 </div>
                                 <div className="flex gap-2 ml-4">
@@ -464,7 +466,7 @@ export const AdminAnnouncementManagement: React.FC = () => {
                                         수정
                                     </button>
                                     <button
-                                        onClick={() => handleDelete(ann.id)}
+                                        onClick={() => handleDelete(ann.postId)}
                                         className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded"
                                     >
                                         삭제
@@ -740,13 +742,13 @@ export const AdminSystemManagement: React.FC = () => (
         </div>
         <Table headers={['과목코드', '과목명', '담당교수', '학점', '개설학과', '시간', '관리']}>
             {MOCK_COURSES.map(course => (
-                <tr key={course.id} className="hover:bg-slate-50">
-                    <td className="px-6 py-4 text-sm font-mono text-slate-700">{course.id}</td>
-                    <td className="px-6 py-4 text-sm font-medium text-slate-900">{course.name}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600">{course.professor}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600">{course.credits}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600">{course.department}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600">{course.time}</td>
+                <tr key={course.courseCode || course.id} className="hover:bg-slate-50">
+                    <td className="px-6 py-4 text-sm font-mono text-slate-700">{course.courseCode || course.id}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-slate-900">{course.subjectName || course.name}</td>
+                    <td className="px-6 py-4 text-sm text-slate-600">{course.professorName || course.professor}</td>
+                    <td className="px-6 py-4 text-sm text-slate-600">{course.credit || course.credits}</td>
+                    <td className="px-6 py-4 text-sm text-slate-600">{course.deptName || course.department}</td>
+                    <td className="px-6 py-4 text-sm text-slate-600">{course.courseTime || course.time}</td>
                     <td className="px-6 py-4 text-sm">
                         <div className="flex gap-2">
                             <button className="text-brand-blue hover:text-brand-blue-dark font-medium">수정</button>
