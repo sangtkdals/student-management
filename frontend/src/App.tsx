@@ -11,8 +11,8 @@ import { ICONS, MOCK_COURSES, MOCK_ANNOUNCEMENTS, MOCK_CALENDAR_EVENTS } from ".
 // Student Views
 import {
   StudentHome,
-  StudentAllGrades,
   StudentCourseRegistration,
+  StudentGradeCenter,
   StudentTuitionHistory,
   StudentLeaveApplication,
   StudentGraduationCheck,
@@ -22,7 +22,6 @@ import {
   StudentReturnHistory,
   StudentCertificateIssuance,
   StudentTimetable,
-  StudentCurrentGrades,
 } from "./components/StudentViews";
 
 // Professor Views
@@ -44,9 +43,14 @@ import { AdminDashboard, AdminUserManagement, AdminSystemManagement } from "./co
 
 const STUDENT_MENU = [
   {
-    label: "수강/성적",
+    label: "수강",
     path: "/student/course-registration",
-    sub: ["/student/course-registration", "/student/timetable", "/student/all-grades", "/student/current-grades"],
+    sub: ["/student/course-registration", "/student/timetable"],
+  },
+  {
+    label: "성적",
+    path: "/student/all-grades",
+    sub: ["/student/all-grades", "/student/current-grades"],
   },
   { label: "등록/장학", path: "/student/tuition-history", sub: ["/student/tuition-payment", "/student/tuition-history"] },
   {
@@ -527,7 +531,7 @@ const App: React.FC = () => {
                   path="/student/all-grades"
                   element={
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                      <StudentAllGrades />
+                      <StudentGradeCenter />
                     </div>
                   }
                 />
@@ -607,7 +611,7 @@ const App: React.FC = () => {
                   path="/student/current-grades"
                   element={
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                      <StudentCurrentGrades />
+                      <StudentGradeCenter />
                     </div>
                   }
                 />
