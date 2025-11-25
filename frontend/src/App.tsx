@@ -43,9 +43,14 @@ import { AdminDashboard, AdminUserManagement, AdminSystemManagement } from "./co
 
 const STUDENT_MENU = [
   {
-    label: "수강/성적",
+    label: "수강",
     path: "/student/course-registration",
-    sub: ["/student/course-registration", "/student/timetable", "/student/all-grades", "/student/current-grades"],
+    sub: ["/student/course-registration", "/student/timetable"],
+  },
+  {
+    label: "성적",
+    path: "/student/all-grades",
+    sub: ["/student/all-grades", "/student/current-grades"],
   },
   { label: "등록/장학", path: "/student/tuition-history", sub: ["/student/tuition-payment", "/student/tuition-history"] },
   {
