@@ -11,8 +11,8 @@ import { ICONS, MOCK_COURSES, MOCK_ANNOUNCEMENTS, MOCK_CALENDAR_EVENTS } from ".
 // Student Views
 import {
   StudentHome,
-  StudentAllGrades,
   StudentCourseRegistration,
+  StudentGradeCenter,
   StudentTuitionHistory,
   StudentLeaveApplication,
   StudentGraduationCheck,
@@ -22,7 +22,6 @@ import {
   StudentReturnHistory,
   StudentCertificateIssuance,
   StudentTimetable,
-  StudentCurrentGrades,
 } from "./components/StudentViews";
 
 // Professor Views
@@ -527,7 +526,7 @@ const App: React.FC = () => {
                   path="/student/all-grades"
                   element={
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                      <StudentAllGrades />
+                      <StudentGradeCenter />
                     </div>
                   }
                 />
@@ -607,7 +606,7 @@ const App: React.FC = () => {
                   path="/student/current-grades"
                   element={
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                      <StudentCurrentGrades />
+                      <StudentGradeCenter />
                     </div>
                   }
                 />
