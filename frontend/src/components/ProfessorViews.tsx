@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import type { User, Course } from "../types";
-import { Card, Table, Button } from "./ui";
+import { Card, Table, Button, Modal, Input } from "./ui";
 import { MOCK_COURSES, MOCK_STUDENT_RECORDS, MOCK_ANNOUNCEMENTS, MOCK_CALENDAR_EVENTS } from "../constants";
 import { useNavigate } from "react-router-dom";
 
@@ -251,6 +251,14 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
   const initialCourses = MOCK_COURSES.filter((c) => c.professorName === user.name);
   const [localCourses, setLocalCourses] = useState<Course[]>(initialCourses);
   const [markedForDeletion, setMarkedForDeletion] = useState<Set<string>>(new Set());
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const [newCourse, setNewCourse] = useState({
+    subjectName: "",
+    courseCode: "",
+    courseTime: "",
+    classroom: "",
+    subjectCode: "CS101" // Default
+  });
 
   const hasChanges = markedForDeletion.size > 0;
 
@@ -276,6 +284,30 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
     alert("변경사항이 저장되었습니다.");
   };
 
+  const handleRegisterCourse = (e: React.FormEvent) => {
+      e.preventDefault();
+      const courseToAdd: Course = {
+          ...newCourse,
+          academicYear: 2024,
+          semester: 1,
+          professorNo: user.memberNo,
+          courseClass: "01",
+          professorName: user.name,
+          // department: user.departmentName || "Computer Science", // Course 타입에 department 없음
+          credit: 3, 
+          currentStudents: 0,
+          maxStudents: 40,
+          status: "OPEN",
+          objectives: "",
+          content: "",
+          textbookInfo: "",
+          evaluationMethod: ""
+      };
+      setLocalCourses([...localCourses, courseToAdd]);
+      setIsRegisterModalOpen(false);
+      setNewCourse({ subjectName: "", courseCode: "", courseTime: "", classroom: "", subjectCode: "CS101" });
+  };
+
   const activeCourses = localCourses.filter((c) => !markedForDeletion.has(c.courseCode));
 
   return (
@@ -294,7 +326,7 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
           <div className="lg:col-span-2 p-6 bg-brand-gray-light border-l border-brand-gray flex flex-col h-full">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-bold text-slate-800">강의 목록 (2024년 1학기)</h3>
-              <Button size="sm" onClick={() => alert("기능 구현 예정: 강의 등록")}>
+              <Button size="sm" onClick={() => setIsRegisterModalOpen(true)}>
                 + 강의 등록
               </Button>
             </div>
@@ -357,18 +389,59 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
             </div>
 
             <div className="mt-4 pt-4 border-t border-slate-300 flex justify-end">
-              <Button
-                size="sm"
+              <button
                 onClick={handleSave}
                 disabled={!hasChanges}
-                className={hasChanges ? "bg-red-600 hover:bg-red-700 text-white animate-pulse" : "bg-slate-300 text-slate-500 cursor-not-allowed"}
+                className={`text-sm transition-all ${
+                  hasChanges 
+                    ? "text-brand-blue font-bold hover:underline cursor-pointer" 
+                    : "text-slate-400 font-normal cursor-not-allowed"
+                }`}
               >
                 {hasChanges ? `${markedForDeletion.size}개 변경사항 저장` : "변경사항 저장"}
-              </Button>
+              </button>
             </div>
           </div>
         </div>
       </Card>
+
+      <Modal isOpen={isRegisterModalOpen} onClose={() => setIsRegisterModalOpen(false)} title="새 강의 등록">
+          <form onSubmit={handleRegisterCourse} className="space-y-4">
+              <Input 
+                label="과목명" 
+                value={newCourse.subjectName} 
+                onChange={e => setNewCourse({...newCourse, subjectName: e.target.value})} 
+                required 
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <Input 
+                    label="과목코드" 
+                    value={newCourse.courseCode} 
+                    onChange={e => setNewCourse({...newCourse, courseCode: e.target.value})} 
+                    required 
+                    placeholder="예: CS101"
+                />
+                <Input 
+                    label="강의실" 
+                    value={newCourse.classroom} 
+                    onChange={e => setNewCourse({...newCourse, classroom: e.target.value})} 
+                    required 
+                />
+              </div>
+              <Input 
+                label="강의 시간" 
+                value={newCourse.courseTime} 
+                onChange={e => setNewCourse({...newCourse, courseTime: e.target.value})} 
+                required 
+                placeholder="예: 월 10:00-12:00, 수 10:00-11:00"
+              />
+              
+              <div className="flex justify-end space-x-2 mt-6">
+                  <Button variant="secondary" onClick={() => setIsRegisterModalOpen(false)} type="button">취소</Button>
+                  <Button type="submit">등록</Button>
+              </div>
+          </form>
+      </Modal>
     </div>
   );
 };
@@ -587,11 +660,28 @@ export const ProfessorStudentManagement: React.FC<{ user: User; viewType?: "atte
 
 export const ProfessorSyllabus: React.FC = () => {
     const [isEditing, setIsEditing] = useState(false);
-    const [syllabus, setSyllabus] = useState({ overview: '이 강의는 React와 TypeScript를 활용한 웹 개발 기초를 다룹니다.', objectives: '최신 웹 기술 습득', textbook: '모던 리액트 Deep Dive', evaluation: '중간 30%, 기말 30%, 과제 20%, 출석 20%' });
+    const [syllabus, setSyllabus] = useState({ 
+        overview: '이 강의는 React와 TypeScript를 활용한 웹 개발 기초를 다룹니다.', 
+        objectives: '최신 웹 기술 습득', 
+        textbook: '모던 리액트 Deep Dive', 
+        evaluation: '중간 30%, 기말 30%, 과제 20%, 출석 20%',
+        credits: '3',
+        classTime: '월 10:00-12:00, 수 10:00-11:00'
+    });
 
     return (
         <Card title="강의계획서 관리" titleAction={<Button size="sm" onClick={() => setIsEditing(!isEditing)}>{isEditing ? '저장' : '수정'}</Button>}>
              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">취득 학점</label>
+                        <input type="text" className="w-full border border-slate-300 p-3 rounded-md text-sm focus:ring-brand-blue focus:border-brand-blue" disabled={!isEditing} value={syllabus.credits} onChange={e => setSyllabus({...syllabus, credits: e.target.value})} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">강의 요일/시간</label>
+                        <input type="text" className="w-full border border-slate-300 p-3 rounded-md text-sm focus:ring-brand-blue focus:border-brand-blue" disabled={!isEditing} value={syllabus.classTime} onChange={e => setSyllabus({...syllabus, classTime: e.target.value})} />
+                    </div>
+                </div>
                 <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">강의 개요</label>
                     <textarea className="w-full border border-slate-300 p-3 rounded-md text-sm focus:ring-brand-blue focus:border-brand-blue" rows={3} disabled={!isEditing} value={syllabus.overview} onChange={e => setSyllabus({...syllabus, overview: e.target.value})} />
@@ -615,31 +705,81 @@ export const ProfessorSyllabus: React.FC = () => {
     );
 };
 
-export const ProfessorCourseMaterials: React.FC = () => (
-  <Card title="강의 자료 관리">
-    <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-lg bg-slate-50">
-        <p className="text-slate-500 mb-4">등록된 강의 자료가 없습니다.</p>
-        <div className="space-x-3">
-            <Button>+ 새 자료 업로드</Button>
-            <Button variant="secondary">자료 관리</Button>
-        </div>
-    </div>
-  </Card>
-);
+export const ProfessorCourseMaterials: React.FC = () => {
+    const [materials, setMaterials] = useState([
+        { id: 1, title: '1주차 강의자료.pdf', date: '2024-03-04', size: '2.4MB' },
+        { id: 2, title: '2주차 강의자료.pdf', date: '2024-03-11', size: '3.1MB' }
+    ]);
 
-export const ProfessorAssignments: React.FC = () => (
-  <Card title="과제 관리">
-    <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-lg bg-slate-50">
-        <p className="text-slate-500 mb-4">진행 중인 과제가 없습니다.</p>
-        <div className="space-x-3">
-            <Button>+ 과제 등록</Button>
-            <Button variant="secondary">제출 현황</Button>
-        </div>
-    </div>
-  </Card>
-);
+    const handleUpload = () => {
+        const title = prompt('자료 제목을 입력하세요:');
+        if (title) {
+            setMaterials([...materials, { id: Date.now(), title: `${title}.pdf`, date: new Date().toISOString().split('T')[0], size: '1.5MB' }]);
+        }
+    };
 
-export const ProfessorTimetable: React.FC<{ user: User }> = ({ user }) => {
+    return (
+        <Card title="강의 자료 관리" titleAction={<Button size="sm" onClick={handleUpload}>+ 자료 업로드</Button>}>
+            {materials.length > 0 ? (
+                <Table headers={['제목', '등록일', '크기', '관리']}>
+                    {materials.map(m => (
+                        <tr key={m.id}>
+                            <td className="px-6 py-4 text-sm font-medium text-slate-800">{m.title}</td>
+                            <td className="px-6 py-4 text-sm text-slate-500">{m.date}</td>
+                            <td className="px-6 py-4 text-sm text-slate-500">{m.size}</td>
+                            <td className="px-6 py-4 text-sm">
+                                <button className="text-red-600 hover:text-red-800" onClick={() => setMaterials(materials.filter(item => item.id !== m.id))}>삭제</button>
+                            </td>
+                        </tr>
+                    ))}
+                </Table>
+            ) : (
+                <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-lg bg-slate-50">
+                    <p className="text-slate-500 mb-4">등록된 강의 자료가 없습니다.</p>
+                </div>
+            )}
+        </Card>
+    );
+};
+
+export const ProfessorAssignments: React.FC = () => {
+    const [assignments, setAssignments] = useState([
+        { id: 1, title: '중간고사 대체 과제', deadline: '2024-04-20', submitted: 25, total: 30 }
+    ]);
+
+    const handleCreate = () => {
+        const title = prompt('과제 제목을 입력하세요:');
+        if (title) {
+            setAssignments([...assignments, { id: Date.now(), title, deadline: '2024-05-01', submitted: 0, total: 30 }]);
+        }
+    };
+
+    return (
+        <Card title="과제 관리" titleAction={<Button size="sm" onClick={handleCreate}>+ 과제 등록</Button>}>
+            {assignments.length > 0 ? (
+                <Table headers={['과제명', '마감일', '제출 현황', '관리']}>
+                    {assignments.map(a => (
+                        <tr key={a.id}>
+                            <td className="px-6 py-4 text-sm font-medium text-slate-800">{a.title}</td>
+                            <td className="px-6 py-4 text-sm text-slate-500">{a.deadline}</td>
+                            <td className="px-6 py-4 text-sm text-brand-blue font-bold">{a.submitted} / {a.total}</td>
+                            <td className="px-6 py-4 text-sm">
+                                <button className="text-brand-blue hover:underline mr-3">채점하기</button>
+                                <button className="text-red-600 hover:text-red-800" onClick={() => setAssignments(assignments.filter(item => item.id !== a.id))}>삭제</button>
+                            </td>
+                        </tr>
+                    ))}
+                </Table>
+            ) : (
+                <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-lg bg-slate-50">
+                    <p className="text-slate-500 mb-4">진행 중인 과제가 없습니다.</p>
+                </div>
+            )}
+        </Card>
+    );
+};
+
+export const ProfessorLectureTimetable: React.FC<{ user: User }> = ({ user }) => {
   const myCourses = MOCK_COURSES.filter((c) => c.professorName === user.name);
   return (
     <Card title="전체 강의 시간표 (2024년 1학기)">
@@ -649,12 +789,3 @@ export const ProfessorTimetable: React.FC<{ user: User }> = ({ user }) => {
     </Card>
   );
 };
-
-export const ProfessorCourseEvaluation: React.FC = () => (
-  <Card title="강의평가 결과">
-    <div className="text-center py-16 bg-slate-50 rounded-lg border border-slate-200">
-         <svg className="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
-        <p className="text-slate-600">아직 강의 평가가 완료되지 않았거나 데이터가 없습니다.</p>
-    </div>
-  </Card>
-);
