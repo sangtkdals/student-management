@@ -14,35 +14,31 @@ import java.util.Date;
 public class Member {
     @Id
     @Column(name = "m_id", length = 50)
-    private String mId;
+    private String memberId;
 
     @Column(name = "m_pwd")
-    private String mPwd;
+    private String password;
 
     @Column(name = "m_name", length = 100)
-    private String mName;
+    private String name;
 
     @Column(name = "m_type", length = 20)
-    private String mType;
+    private String memberType;
 
     @Column(name = "m_no", length = 20, unique = true)
-    private String mNo;
+    private String memberNo;
 
     @Column(name = "m_email", unique = true)
-    private String mEmail;
+    private String email;
 
     @Column(name = "m_phone", length = 20)
-    private String mPhone;
+    private String phone;
 
     @Column(name = "m_num", length = 14, unique = true)
-    private String mNum;
-
-    @Column(name = "m_birth")
-    @Temporal(TemporalType.DATE)
-    private Date mBirth;
+    private String residentNumber;
 
     @Column(name = "m_addr", length = 500)
-    private String mAddr;
+    private String address;
 
     @ManyToOne
     @JoinColumn(name = "dept_code")
