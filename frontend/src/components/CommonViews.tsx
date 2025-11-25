@@ -1,7 +1,8 @@
-import React, { useState } from "react";
-import type { User, AcademicSchedule, CalendarEvent, Announcement, Post } from "../types";
+import React, { useState, useEffect } from "react";
+import type { User, AcademicSchedule, CalendarEvent, Post } from "../types";
 import { Card, Button, Input } from "./ui";
-import { MOCK_ANNOUNCEMENTS, MOCK_CALENDAR_EVENTS } from "../constants";
+import { MOCK_CALENDAR_EVENTS } from "../constants";
+import axios from "axios";
 
 interface UserProfileProps {
   user: User;
@@ -11,10 +12,10 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => (
   <div className="space-y-8">
     <Card title="개인 정보">
       <div className="flex items-center space-x-6">
-        <img 
-            src={user.avatarUrl || "https://via.placeholder.com/150"} 
-            alt={user.name} 
-            className="h-24 w-24 rounded-full border border-slate-200 object-cover" 
+        <img
+          src={user.avatarUrl || "https://via.placeholder.com/150"}
+          alt={user.name}
+          className="h-24 w-24 rounded-full border border-slate-200 object-cover"
         />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
           <div>
@@ -25,7 +26,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => (
             <span className="font-semibold text-slate-600">학번/교번:</span> {user.memberNo}
           </div>
           <div>
-             {/* types.ts: deptCode는 필수, departmentName은 옵션 */}
+            {/* types.ts: deptCode는 필수, departmentName은 옵션 */}
             <span className="font-semibold text-slate-600">소속:</span> {user.departmentName || user.department || user.deptCode}
           </div>
           <div>
@@ -41,32 +42,42 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => (
   </div>
 );
 
-export const NoticeBoard: React.FC = () => (
-  <Card title="공지사항">
-    <ul className="divide-y divide-slate-200">
-      {/* MOCK 데이터가 Announcement 또는 Post 타입일 수 있음 */}
-      {(MOCK_ANNOUNCEMENTS as (Announcement | Post)[]).map((ann) => {
-        // 타입 가드 또는 공통 필드 사용
-        const id = 'postId' in ann ? ann.postId : ann.id;
-        const date = 'createdAt' in ann ? ann.createdAt : ann.date;
-        const author = 'author' in ann ? ann.author : 'writerName' in ann ? ann.writerName : 'Admin';
+export const NoticeBoard: React.FC = () => {
+  const [announcements, setAnnouncements] = useState<Post[]>([]);
 
-        return (
-            <li key={id} className="py-4">
+  useEffect(() => {
+    axios
+      .get("/api/announcements")
+      .then((response) => {
+        const posts = response.data.map((post: any) => ({
+          postId: post.postId,
+          title: post.postTitle,
+          content: post.postContent,
+          createdAt: post.createdAt,
+          writerName: post.writer.mName,
+        }));
+        setAnnouncements(posts);
+      })
+      .catch((error) => console.error("Error fetching announcements:", error));
+  }, []);
+
+  return (
+    <Card title="공지사항">
+      <ul className="divide-y divide-slate-200">
+        {announcements.map((ann) => (
+          <li key={ann.postId} className="py-4">
             <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-slate-800">{ann.title}</h3>
-                <span className="text-sm text-slate-500">
-                    {date.substring(0, 10)}
-                </span>
+              <h3 className="text-lg font-semibold text-slate-800">{ann.title}</h3>
+              <span className="text-sm text-slate-500">{new Date(ann.createdAt).toLocaleDateString()}</span>
             </div>
             <p className="mt-2 text-slate-600">{ann.content}</p>
-            <p className="mt-2 text-xs text-slate-400">게시자: {author}</p>
-            </li>
-        );
-      })}
-    </ul>
-  </Card>
-);
+            <p className="mt-2 text-xs text-slate-400">게시자: {ann.writerName}</p>
+          </li>
+        ))}
+      </ul>
+    </Card>
+  );
+};
 
 // DB 타입(AcademicSchedule)과 Mock 타입(CalendarEvent) 호환 지원
 type CalendarItem = AcademicSchedule | CalendarEvent;
@@ -108,15 +119,23 @@ const MonthCalendar: React.FC<{ year: number; month: number; events: CalendarIte
 
     return (
       <div key={day} className="border-r border-b border-slate-200 p-2 min-h-[120px] flex flex-col relative">
-        <span className={`font-semibold ${isToday ? "bg-brand-blue text-white rounded-full h-6 w-6 flex items-center justify-center" : isHoliday || isSunday ? "text-red-500" : "text-slate-700"}`}>
+        <span
+          className={`font-semibold ${
+            isToday
+              ? "bg-brand-blue text-white rounded-full h-6 w-6 flex items-center justify-center"
+              : isHoliday || isSunday
+              ? "text-red-500"
+              : "text-slate-700"
+          }`}
+        >
           {day}
         </span>
         <div className="flex-grow space-y-1 mt-1 overflow-y-auto">
           {dayEvents.map((event) => {
             // 타입 호환: scheduleId(DB) vs id(Mock)
-            const id = 'scheduleId' in event ? event.scheduleId : event.id;
+            const id = "scheduleId" in event ? event.scheduleId : event.id;
             const colorClass = event.category && categoryColor[event.category] ? categoryColor[event.category] : "bg-gray-400 text-white";
-            
+
             return (
               <div key={id} title={event.title} className={`text-xs p-1 rounded-md truncate ${colorClass}`}>
                 {event.title}
@@ -130,10 +149,17 @@ const MonthCalendar: React.FC<{ year: number; month: number; events: CalendarIte
 
   return (
     <div>
-      <h3 className="text-xl font-bold text-slate-800 text-center mb-4">{year}년 {month + 1}월</h3>
+      <h3 className="text-xl font-bold text-slate-800 text-center mb-4">
+        {year}년 {month + 1}월
+      </h3>
       <div className="grid grid-cols-7 border-t border-l border-slate-200 bg-white">
         {daysOfWeek.map((day, index) => (
-          <div key={day} className={`text-center font-bold text-sm py-2 border-r border-b border-slate-200 bg-slate-50 ${index === 0 ? "text-red-500" : index === 6 ? "text-blue-500" : "text-slate-600"}`}>
+          <div
+            key={day}
+            className={`text-center font-bold text-sm py-2 border-r border-b border-slate-200 bg-slate-50 ${
+              index === 0 ? "text-red-500" : index === 6 ? "text-blue-500" : "text-slate-600"
+            }`}
+          >
             {day}
           </div>
         ))}
@@ -147,7 +173,7 @@ const MonthCalendar: React.FC<{ year: number; month: number; events: CalendarIte
 export const AcademicCalendar: React.FC = () => {
   // Mock 데이터 타입 캐스팅
   const events = MOCK_CALENDAR_EVENTS as CalendarItem[];
-  
+
   const allYears = [...new Set(events.map((e) => new Date(e.startDate).getFullYear()))].sort();
   const [selectedYear, setSelectedYear] = useState(allYears.length > 0 ? allYears[allYears.length - 1] : new Date().getFullYear());
 
@@ -165,12 +191,7 @@ export const AcademicCalendar: React.FC = () => {
       </div>
       <div className="space-y-12 max-h-[75vh] overflow-y-auto p-1">
         {months.map((month) => (
-          <MonthCalendar
-            key={month}
-            year={selectedYear}
-            month={month}
-            events={eventsForYear}
-          />
+          <MonthCalendar key={month} year={selectedYear} month={month} events={eventsForYear} />
         ))}
       </div>
     </Card>
