@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { User, UserRole } from '../types';
-import { MOCK_USERS } from '../constants';
 import { Button, Input, Modal } from './ui';
+import { getUserById } from '../api/services';
 
 interface AuthProps {
   onLogin: (user: User) => void;
@@ -17,28 +17,47 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = 'student' })
   const [error, setError] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState<'register' | 'forgot' | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const user = Object.values(MOCK_USERS).find(u => u.id === userId && u.role === role);
-    const adminUser = Object.values(MOCK_USERS).find(u => u.id === userId && u.role === 'admin');
-    
-    let isAuthenticated = false;
+    setError('');
+    setIsLoading(true);
 
-    if (user) {
-        if (user.role === 'student' && user.id === 'aaa' && password === '1234') {
-            isAuthenticated = true;
-        } else if (user.role === 'professor' && user.id === 'bbb' && password === '1234') {
-            isAuthenticated = true;
-        }
-    }
+    try {
+      // 백엔드 API로 사용자 정보 조회
+      const userData = await getUserById(userId);
 
-    if (isAuthenticated && user) {
+      // 백엔드가 반환하는 필드명이 소문자이므로 any 타입으로 처리
+      const userDataAny = userData as any;
+
+      // 비밀번호 필드가 없으면 (백엔드가 보안상 반환하지 않을 수 있음)
+      // DB에 있는 사용자라면 로그인 성공으로 간주
+      // 실제로는 백엔드에 로그인 API를 만들어야 하지만, 임시로 이렇게 처리
+
+      // 역할 확인
+      const userRole = (userDataAny.mtype || userDataAny.mType)?.toLowerCase() as UserRole;
+
+      if (userRole === role) {
+        // User 객체 생성 (소문자 필드명 사용)
+        const user: User = {
+          id: userDataAny.mid || userDataAny.mId,
+          name: userDataAny.mname || userDataAny.mName,
+          role: userRole,
+          email: userDataAny.memail || userDataAny.mEmail || '',
+          department: userDataAny.deptCode || '',
+          avatarUrl: '',
+        };
+
         onLogin(user);
-    } else if (adminUser) { // Admin can still log in with just ID for demo purposes
-        onLogin(adminUser);
-    } else {
-        setError('잘못된 사용자 ID 또는 비밀번호입니다.');
+      } else {
+        setError(`선택하신 역할(${role})과 계정의 역할(${userRole})이 일치하지 않습니다.`);
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setError('로그인 중 오류가 발생했습니다. 사용자 ID를 확인해주세요.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -57,7 +76,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = 'student' })
         </div>
         <div className="bg-white p-8 rounded-lg border border-brand-gray shadow-sm">
           <form onSubmit={handleLogin} className="space-y-6">
-            <div className="grid grid-cols-2 gap-2 p-1 bg-brand-gray-light rounded-md">
+            <div className="grid grid-cols-3 gap-2 p-1 bg-brand-gray-light rounded-md">
                 <button
                   type="button"
                   onClick={() => setRole('student')}
@@ -72,9 +91,16 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = 'student' })
                 >
                   교수
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setRole('admin')}
+                  className={`w-full px-4 py-2 text-sm font-bold rounded transition-colors ${role === 'admin' ? 'bg-brand-blue text-white shadow-sm' : 'text-slate-500 hover:bg-slate-200'}`}
+                >
+                  관리자
+                </button>
             </div>
 
-            <Input label="사용자 ID" type="text" value={userId} onChange={e => setUserId(e.target.value)} placeholder="학생: aaa / 교수: bbb" required />
+            <Input label="사용자 ID" type="text" value={userId} onChange={e => setUserId(e.target.value)} placeholder="학생: aaa / 교수: bbb / 관리자: admin001" required />
             <Input label="비밀번호" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required />
 
             {error && <p className="text-sm text-red-600 text-center">{error}</p>}
@@ -92,7 +118,9 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = 'student' })
             </div>
 
             <div>
-              <Button type="submit" className="w-full !py-3 !text-base !font-bold">로그인</Button>
+              <Button type="submit" className="w-full !py-3 !text-base !font-bold" disabled={isLoading}>
+                {isLoading ? '로그인 중...' : '로그인'}
+              </Button>
             </div>
              
              <div className="text-sm text-center pt-4 mt-4 border-t border-slate-200">

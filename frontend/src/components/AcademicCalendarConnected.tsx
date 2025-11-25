@@ -1,125 +1,14 @@
-import React, { useState } from 'react';
-import type { User, CalendarEvent } from '../types';
-import { Card, Button, Input } from './ui';
-import { MOCK_ANNOUNCEMENTS, MOCK_CALENDAR_EVENTS } from '../constants';
-import { changePassword } from '../api/services';
+import React, { useState, useEffect } from 'react';
+import { Card, Button } from './ui';
+import { getAllCalendarEvents, createCalendarEvent, deleteCalendarEvent } from '../api/services';
 
-interface UserProfileProps {
-  user: User;
+interface CalendarEvent {
+    id: string;
+    title: string;
+    startDate: string;
+    endDate: string;
+    category: 'academic' | 'holiday' | 'event';
 }
-
-export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-
-  const handlePasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
-
-    // 클라이언트 측 기본 검증
-    if (!currentPassword) {
-      setError('현재 비밀번호를 입력해주세요.');
-      return;
-    }
-
-    if (newPassword.length < 4) {
-      setError('새 비밀번호는 최소 4자 이상이어야 합니다.');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setError('새 비밀번호가 일치하지 않습니다.');
-      return;
-    }
-
-    if (currentPassword === newPassword) {
-      setError('새 비밀번호는 현재 비밀번호와 달라야 합니다.');
-      return;
-    }
-
-    try {
-      // 백엔드 API로 비밀번호 변경 요청
-      await changePassword(user.id, currentPassword, newPassword);
-
-      setSuccess('비밀번호가 성공적으로 변경되었습니다.');
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-    } catch (err) {
-      setError('비밀번호 변경에 실패했습니다. 현재 비밀번호를 확인해주세요.');
-    }
-  };
-
-  return (
-    <div className="space-y-8">
-      <Card title="개인 정보">
-        <div className="flex items-center space-x-6">
-          <img src={user.avatarUrl} alt={user.name} className="h-24 w-24 rounded-full" />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-            <div><span className="font-semibold text-slate-600">이름:</span> {user.name}</div>
-            <div><span className="font-semibold text-slate-600">학번/교번:</span> {user.id}</div>
-            <div><span className="font-semibold text-slate-600">소속:</span> {user.department}</div>
-            <div><span className="font-semibold text-slate-600">이메일:</span> {user.email}</div>
-          </div>
-        </div>
-        <div className="mt-6 flex justify-end">
-          <Button>정보 수정</Button>
-        </div>
-      </Card>
-      <Card title="비밀번호 변경">
-        <form onSubmit={handlePasswordChange} className="space-y-4 max-w-md">
-          <Input
-            label="현재 비밀번호"
-            type="password"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            required
-          />
-          <Input
-            label="새 비밀번호"
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            required
-          />
-          <Input
-            label="새 비밀번호 확인"
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-          />
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          {success && <p className="text-sm text-green-600">{success}</p>}
-          <div className="pt-2">
-            <Button type="submit">비밀번호 변경</Button>
-          </div>
-        </form>
-      </Card>
-    </div>
-  );
-};
-
-export const NoticeBoard: React.FC = () => (
-  <Card title="공지사항">
-    <ul className="divide-y divide-slate-200">
-      {MOCK_ANNOUNCEMENTS.map(ann => (
-        <li key={ann.id} className="py-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold text-slate-800">{ann.title}</h3>
-            <span className="text-sm text-slate-500">{ann.date}</span>
-          </div>
-          <p className="mt-2 text-slate-600">{ann.content}</p>
-          <p className="mt-2 text-xs text-slate-400">게시자: {ann.author}</p>
-        </li>
-      ))}
-    </ul>
-  </Card>
-);
 
 const MonthCalendar: React.FC<{ year: number; month: number; events: CalendarEvent[] }> = ({ year, month, events }) => {
     const today = new Date();
@@ -132,7 +21,7 @@ const MonthCalendar: React.FC<{ year: number; month: number; events: CalendarEve
         event: 'bg-purple-500 text-white',
     };
 
-    const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0 for Sunday
+    const firstDayOfMonth = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
     const blanks = Array.from({ length: firstDayOfMonth }, (_, i) => <div key={`blank-${i}`} className="border-r border-b border-slate-200"></div>);
@@ -141,10 +30,10 @@ const MonthCalendar: React.FC<{ year: number; month: number; events: CalendarEve
         const day = i + 1;
         const currentDate = new Date(year, month, day);
         currentDate.setHours(0, 0, 0, 0);
-        const dayOfWeek = currentDate.getDay(); // 0 for Sunday
+        const dayOfWeek = currentDate.getDay();
 
         const isToday = isCurrentMonth && today.getDate() === day;
-        
+
         const dayEvents = events.filter(e => {
             const eventStartDate = new Date(e.startDate);
             eventStartDate.setHours(0, 0, 0, 0);
@@ -152,7 +41,7 @@ const MonthCalendar: React.FC<{ year: number; month: number; events: CalendarEve
             eventEndDate.setHours(0, 0, 0, 0);
             return currentDate >= eventStartDate && currentDate <= eventEndDate;
         });
-        
+
         const isHoliday = dayEvents.some(event => event.category === 'holiday');
         const isSunday = dayOfWeek === 0;
 
@@ -188,11 +77,11 @@ const MonthCalendar: React.FC<{ year: number; month: number; events: CalendarEve
     );
 };
 
-
-export const AcademicCalendar: React.FC = () => {
+export const AcademicCalendarConnected: React.FC = () => {
     const currentYear = new Date().getFullYear();
-    const [events, setEvents] = useState<CalendarEvent[]>([...MOCK_CALENDAR_EVENTS]);
+    const [events, setEvents] = useState<CalendarEvent[]>([]);
     const [isAddingEvent, setIsAddingEvent] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const [newEvent, setNewEvent] = useState({
         title: '',
         startDate: '',
@@ -200,33 +89,92 @@ export const AcademicCalendar: React.FC = () => {
         category: 'academic' as 'academic' | 'holiday' | 'event'
     });
 
-    const months = Array.from({ length: 12 }, (_, i) => i); // 0-11 for Jan-Dec
+    const months = Array.from({ length: 12 }, (_, i) => i);
 
-    const handleAddEvent = () => {
+    useEffect(() => {
+        loadEvents();
+    }, []);
+
+    const loadEvents = async () => {
+        try {
+            setIsLoading(true);
+            const data = await getAllCalendarEvents();
+
+            const categoryMap: { [key: string]: 'academic' | 'holiday' | 'event' } = {
+                'ACADEMIC': 'academic',
+                'HOLIDAY': 'holiday',
+                'EVENT': 'event'
+            };
+
+            const mappedEvents: CalendarEvent[] = data.map((event: any) => ({
+                id: String(event.scheduleId || event.scheduleid || event.id),
+                title: event.eventName || event.eventname || '',
+                startDate: event.startDate || event.startdate || '',
+                endDate: event.endDate || event.enddate || '',
+                category: categoryMap[event.eventType || event.eventtype] || 'academic'
+            }));
+
+            setEvents(mappedEvents);
+        } catch (error) {
+            console.error('Failed to load calendar events:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleAddEvent = async () => {
         if (!newEvent.title || !newEvent.startDate || !newEvent.endDate) {
             alert('모든 필드를 입력해주세요.');
             return;
         }
 
-        const event: CalendarEvent = {
-            id: `event-${Date.now()}`,
-            title: newEvent.title,
-            startDate: newEvent.startDate,
-            endDate: newEvent.endDate,
-            category: newEvent.category
-        };
+        try {
+            const categoryMap: { [key: string]: string } = {
+                'academic': 'ACADEMIC',
+                'holiday': 'HOLIDAY',
+                'event': 'EVENT'
+            };
 
-        setEvents([...events, event]);
-        setNewEvent({ title: '', startDate: '', endDate: '', category: 'academic' });
-        setIsAddingEvent(false);
-        alert('일정이 추가되었습니다.');
-    };
+            await createCalendarEvent({
+                eventName: newEvent.title,
+                startDate: newEvent.startDate,
+                endDate: newEvent.endDate,
+                eventType: categoryMap[newEvent.category],
+                academicYear: currentYear
+            });
 
-    const handleDeleteEvent = (eventId: string) => {
-        if (window.confirm('이 일정을 삭제하시겠습니까?')) {
-            setEvents(events.filter(e => e.id !== eventId));
+            alert('일정이 추가되었습니다.');
+            setNewEvent({ title: '', startDate: '', endDate: '', category: 'academic' });
+            setIsAddingEvent(false);
+            await loadEvents();
+        } catch (error) {
+            console.error('Failed to create event:', error);
+            alert('일정 추가에 실패했습니다.');
         }
     };
+
+    const handleDeleteEvent = async (eventId: string) => {
+        if (window.confirm('이 일정을 삭제하시겠습니까?')) {
+            try {
+                await deleteCalendarEvent(Number(eventId));
+                alert('일정이 삭제되었습니다.');
+                await loadEvents();
+            } catch (error) {
+                console.error('Failed to delete event:', error);
+                alert('일정 삭제에 실패했습니다.');
+            }
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <Card title="학사일정">
+                <div className="flex justify-center items-center py-12">
+                    <div className="text-slate-500">로딩 중...</div>
+                </div>
+            </Card>
+        );
+    }
 
     return (
         <Card title="학사일정">

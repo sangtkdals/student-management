@@ -4,20 +4,31 @@ import type { User, UserRole, Course } from './types';
 import Auth from './components/Auth';
 import LandingPage from './components/LandingPage';
 import { ICONS, MOCK_COURSES, MOCK_ANNOUNCEMENTS, MOCK_CALENDAR_EVENTS } from './constants';
-import { 
-    StudentAllGrades, StudentCourseRegistration, StudentTuitionHistory, StudentLeaveApplication, StudentGraduationCheck,
-    StudentTuitionPayment, StudentLeaveHistory, StudentReturnApplication, StudentReturnHistory, StudentCertificateIssuance, StudentTimetable, StudentCurrentGrades
+import {
+    StudentGraduationCheck,
+    StudentCertificateIssuance, StudentTimetable
 } from './components/StudentViews';
 import {
     ProfessorMyLectures, ProfessorSyllabus, ProfessorCourseMaterials,
     ProfessorAssignments, ProfessorTimetable, ProfessorCourseEvaluation, ProfessorStudentManagement
 } from './components/ProfessorViews';
 import {
-    AdminDashboard, AdminUserManagement, AdminSystemManagement, AdminLeaveManagement
-} from './components/AdminViews';
+    AdminUserManagementConnected,
+    AdminTuitionManagementConnected,
+    AdminCourseManagementConnected
+} from './components/AdminViewsConnected';
+import { AdminLeaveManagementEnhanced } from './components/AdminLeaveManagementEnhanced';
+import { AdminDashboardConnected } from './components/AdminDashboardConnected';
 import {
-    UserProfile, NoticeBoard, AcademicCalendar
+    UserProfile
 } from './components/CommonViews';
+import { NoticeBoardConnected } from './components/NoticeBoardConnected';
+import { AcademicCalendarConnected } from './components/AcademicCalendarConnected';
+import { StudentLeaveManagementConnected } from './components/StudentLeaveManagementConnected';
+import { StudentCourseRegistrationConnected } from './components/StudentCourseRegistrationConnected';
+import { StudentAllGradesConnected, StudentCurrentGradesConnected } from './components/StudentGradesConnected';
+import { StudentTuitionHistoryConnected, StudentTuitionPaymentConnected } from './components/StudentTuitionConnected';
+import { AdminAnnouncementManagementConnected } from './components/AdminAnnouncementManagementConnected';
 import { Card, Button } from './components/ui';
 
 type ViewType = string;
@@ -34,22 +45,22 @@ const ALL_VIEWS: NavItem[] = [
     // Common
     { key: 'dashboard', label: '홈', icon: ICONS.dashboard, roles: ['student', 'professor', 'admin'], component: () => <></> },
     { key: 'profile', label: '내 정보', icon: ICONS.profile, roles: ['student', 'professor', 'admin'], component: UserProfile },
-    { key: 'announcements', label: '공지사항', icon: ICONS.announcement, roles: ['student', 'professor', 'admin'], component: NoticeBoard },
-    { key: 'calendar', label: '학사일정', icon: ICONS.calendar, roles: ['student', 'professor', 'admin'], component: AcademicCalendar },
-    
+    { key: 'announcements', label: '공지사항', icon: ICONS.announcement, roles: ['student', 'professor', 'admin'], component: NoticeBoardConnected },
+    { key: 'calendar', label: '학사일정', icon: ICONS.calendar, roles: ['student', 'professor', 'admin'], component: AcademicCalendarConnected },
+
     // Student Views
-    { key: 'course_registration', label: '수강신청', icon: ICONS.courses, roles: ['student'], component: StudentCourseRegistration },
-    { key: 'all_grades', label: '전체 성적 조회', icon: ICONS.grades, roles: ['student'], component: StudentAllGrades },
-    { key: 'tuition_history', label: '등록금 내역', icon: ICONS.tuition, roles: ['student'], component: StudentTuitionHistory },
-    { key: 'leave_application', label: '휴학 신청', icon: ICONS.leave, roles: ['student'], component: StudentLeaveApplication },
+    { key: 'course_registration', label: '수강신청', icon: ICONS.courses, roles: ['student'], component: StudentCourseRegistrationConnected },
+    { key: 'all_grades', label: '전체 성적 조회', icon: ICONS.grades, roles: ['student'], component: StudentAllGradesConnected },
+    { key: 'tuition_history', label: '등록금 내역', icon: ICONS.tuition, roles: ['student'], component: StudentTuitionHistoryConnected },
+    { key: 'leave_application', label: '휴학 신청', icon: ICONS.leave, roles: ['student'], component: StudentLeaveManagementConnected },
     { key: 'graduation_check', label: '졸업 요건', icon: ICONS.graduation, roles: ['student'], component: StudentGraduationCheck },
-    { key: 'tuition_payment', label: '등록금 납부', icon: ICONS.tuition, roles: ['student'], component: StudentTuitionPayment },
-    { key: 'leave_history', label: '휴학 내역', icon: ICONS.leave, roles: ['student'], component: StudentLeaveHistory },
-    { key: 'return_application', label: '복학 신청', icon: ICONS.leave, roles: ['student'], component: StudentReturnApplication },
-    { key: 'return_history', label: '복학 내역', icon: ICONS.leave, roles: ['student'], component: StudentReturnHistory },
+    { key: 'tuition_payment', label: '등록금 납부', icon: ICONS.tuition, roles: ['student'], component: StudentTuitionPaymentConnected },
+    { key: 'leave_history', label: '휴학 내역', icon: ICONS.leave, roles: ['student'], component: StudentLeaveManagementConnected },
+    { key: 'return_application', label: '복학 신청', icon: ICONS.leave, roles: ['student'], component: StudentLeaveManagementConnected },
+    { key: 'return_history', label: '복학 내역', icon: ICONS.leave, roles: ['student'], component: StudentLeaveManagementConnected },
     { key: 'certificate_issuance', label: '증명서 발급', icon: ICONS.profile, roles: ['student'], component: StudentCertificateIssuance },
     { key: 'timetable', label: '시간표 조회', icon: ICONS.calendar, roles: ['student'], component: StudentTimetable },
-    { key: 'current_grades', label: '금학기 성적', icon: ICONS.grades, roles: ['student'], component: StudentCurrentGrades },
+    { key: 'current_grades', label: '금학기 성적', icon: ICONS.grades, roles: ['student'], component: StudentCurrentGradesConnected },
 
     // Professor Views
     { key: 'my_lectures', label: '강의 목록', icon: ICONS.courses, roles: ['professor'], component: ProfessorMyLectures },
@@ -59,11 +70,13 @@ const ALL_VIEWS: NavItem[] = [
     { key: 'assignments', label: '과제 관리', icon: ICONS.courses, roles: ['professor'], component: ProfessorAssignments },
     { key: 'prof_timetable', label: '주간 시간표', icon: ICONS.calendar, roles: ['professor'], component: ProfessorTimetable },
     { key: 'course_evaluation', label: '강의평가', icon: ICONS.grades, roles: ['professor'], component: ProfessorCourseEvaluation },
-    
+
     // Admin Views
-    { key: 'manage_users', label: '사용자 관리', icon: ICONS.users, roles: ['admin'], component: AdminUserManagement },
-    { key: 'admin_leave_management', label: '휴학/복학 관리', icon: ICONS.leave, roles: ['admin'], component: AdminLeaveManagement },
-    { key: 'system', label: '시스템 관리', icon: ICONS.system, roles: ['admin'], component: AdminSystemManagement },
+    { key: 'manage_users', label: '사용자 관리', icon: ICONS.users, roles: ['admin'], component: AdminUserManagementConnected },
+    { key: 'admin_tuition_management', label: '등록금 관리', icon: ICONS.tuition, roles: ['admin'], component: AdminTuitionManagementConnected },
+    { key: 'admin_announcement_management', label: '공지사항 관리', icon: ICONS.announcement, roles: ['admin'], component: AdminAnnouncementManagementConnected },
+    { key: 'admin_leave_management', label: '휴학/복학 관리', icon: ICONS.leave, roles: ['admin'], component: AdminLeaveManagementEnhanced },
+    { key: 'system', label: '시스템 관리', icon: ICONS.system, roles: ['admin'], component: AdminCourseManagementConnected },
 ];
 
 // Top Navigation Menu Structure
@@ -81,6 +94,8 @@ const PROFESSOR_MENU = [
 
 const ADMIN_MENU = [
     { label: '사용자 관리', key: 'manage_users' },
+    { label: '등록금 관리', key: 'admin_tuition_management' },
+    { label: '공지사항 관리', key: 'admin_announcement_management' },
     { label: '휴학/복학 관리', key: 'admin_leave_management' },
     { label: '시스템 관리', key: 'system' },
 ];
@@ -208,7 +223,9 @@ const DashboardHero: React.FC<{ user: User, setActiveView: (view: ViewType) => v
                                     <div>
                                         <h2 className="text-2xl font-bold">{user.name}</h2>
                                         <p className="text-blue-100 text-sm">{user.department}</p>
-                                        <p className="text-blue-200 text-xs mt-1">{user.role === 'student' ? '학부생' : '교수'} | {user.id}</p>
+                                        <p className="text-blue-200 text-xs mt-1">
+                                            {user.role === 'student' ? '학부생' : user.role === 'professor' ? '교수' : '관리자'} | {user.id}
+                                        </p>
                                     </div>
                                 </div>
                                 <div className="space-y-3">
@@ -217,13 +234,17 @@ const DashboardHero: React.FC<{ user: User, setActiveView: (view: ViewType) => v
                                         <span className="font-medium text-sm truncate max-w-[150px]">{user.email}</span>
                                     </div>
                                     <div className="bg-black/20 rounded p-3 flex justify-between items-center">
-                                        <span className="text-blue-100 text-sm">{user.role === 'student' ? '이번 학기 평점' : '연구실'}</span>
-                                        <span className="font-medium text-sm">{user.role === 'student' ? '4.0 / 4.5' : '공학관 401호'}</span>
+                                        <span className="text-blue-100 text-sm">
+                                            {user.role === 'student' ? '이번 학기 평점' : user.role === 'professor' ? '연구실' : '권한'}
+                                        </span>
+                                        <span className="font-medium text-sm">
+                                            {user.role === 'student' ? '4.0 / 4.5' : user.role === 'professor' ? '공학관 401호' : '최고 관리자'}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
                             <div className="mt-6">
-                                <button 
+                                <button
                                     onClick={() => setActiveView('profile')}
                                     className="w-full py-2 bg-white text-brand-blue font-bold rounded hover:bg-blue-50 transition-colors text-sm"
                                 >
@@ -233,9 +254,71 @@ const DashboardHero: React.FC<{ user: User, setActiveView: (view: ViewType) => v
                         </div>
                     </div>
 
-                    {/* Right: Timetable & Tasks */}
+                    {/* Right: Schedule or Admin Info */}
                     <div className="lg:col-span-2">
-                        <TodaySchedule />
+                        {user.role === 'admin' ? (
+                            <div className="bg-white/95 backdrop-blur-sm rounded-lg p-5 shadow-lg h-full border border-white/20">
+                                <h3 className="font-bold text-slate-800 mb-4 flex items-center">
+                                    <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                                    시스템 현황
+                                </h3>
+                                <div className="grid grid-cols-2 gap-4 mb-6">
+                                    <div className="bg-blue-50 p-4 rounded-lg">
+                                        <p className="text-xs text-slate-600 mb-1">서버 상태</p>
+                                        <p className="text-lg font-bold text-green-600">정상 운영</p>
+                                    </div>
+                                    <div className="bg-yellow-50 p-4 rounded-lg">
+                                        <p className="text-xs text-slate-600 mb-1">대기중 처리</p>
+                                        <p className="text-lg font-bold text-yellow-600">확인 필요</p>
+                                    </div>
+                                </div>
+                                <div className="space-y-3">
+                                    <div className="border-l-4 border-blue-500 pl-3 py-2 bg-blue-50 rounded-r">
+                                        <p className="text-sm font-bold text-slate-800">시스템 공지</p>
+                                        <p className="text-xs text-slate-600">정기 점검: 매주 일요일 02:00-04:00</p>
+                                    </div>
+                                    <div className="border-l-4 border-green-500 pl-3 py-2 bg-green-50 rounded-r">
+                                        <p className="text-sm font-bold text-slate-800">백업 상태</p>
+                                        <p className="text-xs text-slate-600">마지막 백업: {new Date().toLocaleDateString('ko-KR')}</p>
+                                    </div>
+                                    <div className="border-l-4 border-purple-500 pl-3 py-2 bg-purple-50 rounded-r">
+                                        <p className="text-sm font-bold text-slate-800">접속 통계</p>
+                                        <p className="text-xs text-slate-600">오늘 접속자: 실시간 통계 확인 가능</p>
+                                    </div>
+                                </div>
+                                <div className="mt-6 pt-4 border-t border-slate-200">
+                                    <h4 className="font-bold text-slate-800 text-sm mb-3">빠른 작업</h4>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                            onClick={() => setActiveView('admin_announcement_management')}
+                                            className="px-3 py-2 bg-blue-100 text-blue-700 rounded text-xs font-semibold hover:bg-blue-200"
+                                        >
+                                            📢 공지 작성
+                                        </button>
+                                        <button
+                                            onClick={() => setActiveView('admin_leave_management')}
+                                            className="px-3 py-2 bg-yellow-100 text-yellow-700 rounded text-xs font-semibold hover:bg-yellow-200"
+                                        >
+                                            📝 휴학 승인
+                                        </button>
+                                        <button
+                                            onClick={() => setActiveView('manage_users')}
+                                            className="px-3 py-2 bg-green-100 text-green-700 rounded text-xs font-semibold hover:bg-green-200"
+                                        >
+                                            👥 사용자 관리
+                                        </button>
+                                        <button
+                                            onClick={() => setActiveView('system')}
+                                            className="px-3 py-2 bg-purple-100 text-purple-700 rounded text-xs font-semibold hover:bg-purple-200"
+                                        >
+                                            ⚙️ 시스템 설정
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <TodaySchedule />
+                        )}
                     </div>
                 </div>
             </div>
@@ -244,6 +327,15 @@ const DashboardHero: React.FC<{ user: User, setActiveView: (view: ViewType) => v
 };
 
 const DashboardContent: React.FC<{ setActiveView: (view: ViewType) => void, user: User }> = ({ setActiveView, user }) => {
+    // Admin인 경우 AdminDashboardConnected 사용
+    if (user.role === 'admin') {
+        return (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 -mt-6">
+                <AdminDashboardConnected />
+            </div>
+        );
+    }
+
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 -mt-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -344,13 +436,17 @@ const DashboardContent: React.FC<{ setActiveView: (view: ViewType) => void, user
                                     <div className="mx-auto mb-1 w-6 h-6">{ICONS.users}</div>
                                     <span className="text-xs font-bold">사용자 관리</span>
                                 </button>
+                                <button onClick={() => setActiveView('admin_tuition_management')} className="p-3 bg-slate-50 rounded-lg hover:bg-blue-50 hover:text-brand-blue transition-colors text-center">
+                                    <div className="mx-auto mb-1 w-6 h-6">{ICONS.tuition}</div>
+                                    <span className="text-xs font-bold">등록금 관리</span>
+                                </button>
+                                <button onClick={() => setActiveView('admin_announcement_management')} className="p-3 bg-slate-50 rounded-lg hover:bg-blue-50 hover:text-brand-blue transition-colors text-center">
+                                    <div className="mx-auto mb-1 w-6 h-6">{ICONS.announcement}</div>
+                                    <span className="text-xs font-bold">공지사항</span>
+                                </button>
                                 <button onClick={() => setActiveView('admin_leave_management')} className="p-3 bg-slate-50 rounded-lg hover:bg-blue-50 hover:text-brand-blue transition-colors text-center">
                                     <div className="mx-auto mb-1 w-6 h-6">{ICONS.leave}</div>
-                                    <span className="text-xs font-bold">휴/복학 관리</span>
-                                </button>
-                                <button onClick={() => setActiveView('system')} className="p-3 bg-slate-50 rounded-lg hover:bg-blue-50 hover:text-brand-blue transition-colors text-center">
-                                    <div className="mx-auto mb-1 w-6 h-6">{ICONS.system}</div>
-                                    <span className="text-xs font-bold">시스템 관리</span>
+                                    <span className="text-xs font-bold">휴/복학</span>
                                 </button>
                             </>
                         )}

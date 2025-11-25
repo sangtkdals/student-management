@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import type { User, Course } from '../types';
 import { Card, Table, Button, Dropdown, DropdownItem, Input } from './ui';
 import { MOCK_COURSES, MOCK_GRADES, MOCK_ANNOUNCEMENTS, ICONS } from '../constants';
 import { UserProfile } from './CommonViews';
+import { getAllLeaveApplications, createLeaveApplication } from '../api/services';
 
 
 interface StudentHomeProps {
