@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";
 import type { User, UserRole } from "./types";
 
@@ -27,13 +27,12 @@ import {
 // Professor Views
 import {
   ProfessorHome,
-  ProfessorTimetable, // 이름 변경 (ProfessorLectureTimetable -> ProfessorTimetable)
+  ProfessorLectureTimetable,
   ProfessorSyllabus,
   ProfessorCourseMaterials,
   ProfessorAssignments,
-  ProfessorCourseEvaluation,
   ProfessorStudentManagement,
-  ProfessorMyLectures, // 추가됨
+  ProfessorMyLectures,
 } from "./components/ProfessorViews";
 
 // Admin Views
@@ -41,47 +40,77 @@ import { AdminDashboard, AdminUserManagement, AdminSystemManagement } from "./co
 
 // --- Navigation Structures ---
 
-const STUDENT_MENU = [
+interface MenuNode {
+    label: string;
+    path: string;
+    children?: MenuNode[];
+}
+
+const STUDENT_MENU: MenuNode[] = [
   {
     label: "수강",
-    path: "/student/course-registration",
-    sub: ["/student/course-registration", "/student/timetable"],
+    path: "",
+    children: [
+        { label: "수강신청", path: "/student/course-registration" },
+        { label: "시간표 조회", path: "/student/timetable" },
+    ],
   },
   {
     label: "성적",
-    path: "/student/all-grades",
-    sub: ["/student/all-grades", "/student/current-grades"],
+    path: "",
+    children: [
+        { label: "금학기 성적", path: "/student/current-grades" },
+        { label: "전체 성적", path: "/student/all-grades" },
+    ],
   },
-  { label: "등록/장학", path: "/student/tuition-history", sub: ["/student/tuition-payment", "/student/tuition-history"] },
+  { 
+      label: "등록/장학", 
+      path: "", 
+      children: [
+          { label: "등록금 납부", path: "/student/tuition-payment" },
+          { label: "등록금 내역", path: "/student/tuition-history" },
+      ] 
+  },
   {
     label: "학적/졸업",
-    path: "/student/leave-application",
-    sub: [
-      "/student/leave-application",
-      "/student/graduation-check",
-      "/student/certificate-issuance",
-      "/student/leave-history",
-      "/student/return-application",
-      "/student/return-history",
+    path: "",
+    children: [
+      { label: "휴학 신청", path: "/student/leave-application" },
+      { label: "휴학 내역", path: "/student/leave-history" },
+      { label: "복학 신청", path: "/student/return-application" },
+      { label: "복학 내역", path: "/student/return-history" },
+      { label: "졸업 요건", path: "/student/graduation-check" },
+      { label: "증명서 발급", path: "/student/certificate-issuance" },
     ],
   },
 ];
 
-const PROFESSOR_MENU = [
+const PROFESSOR_MENU: MenuNode[] = [
   {
     label: "강의 관리",
-    path: "/professor/my-lectures", // 기본 경로 수정
-    sub: ["/professor/my-lectures", "/professor/timetable", "/professor/syllabus", "/professor/course-materials", "/professor/assignments"],
+    path: "",
+    children: [
+        { label: "강의 등록", path: "/professor/my-lectures" },
+        { label: "강의계획서", path: "/professor/syllabus" },
+        { label: "강의 자료", path: "/professor/course-materials" },
+        { label: "과제 관리", path: "/professor/assignments" },
+    ],
   },
   {
     label: "학생 관리",
-    path: "/professor/student-management",
-    sub: ["/professor/student-management", "/professor/student-attendance", "/professor/grade-management"],
+    path: "",
+    children: [
+        { label: "수강생 출결", path: "/professor/student-attendance" },
+        { label: "성적 관리", path: "/professor/grade-management" },
+    ],
   },
-  { label: "연구/행정", path: "/professor/course-evaluation", sub: ["/professor/course-evaluation"] },
+  {
+      label: "행정/연구",
+      path: "/professor/research",
+  }
 ];
 
-const ADMIN_MENU = [
+const ADMIN_MENU: MenuNode[] = [
   { label: "사용자 관리", path: "/admin/user-management" },
   { label: "시스템 관리", path: "/admin/system-management" },
 ];
@@ -93,6 +122,7 @@ const TopNavigation: React.FC<{
   onLogout: () => void;
 }> = ({ user, onLogout }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -100,9 +130,9 @@ const TopNavigation: React.FC<{
   const homePath = user.role === "professor" ? "/professor" : user.role === "student" ? "/student" : "/admin/dashboard";
 
   const isActiveMenu = useCallback(
-    (menuPath: string, subPaths?: string[]) => {
-      if (location.pathname === menuPath) return true;
-      if (subPaths && subPaths.some((subPath) => location.pathname.startsWith(subPath))) return true;
+    (menu: MenuNode) => {
+      if (menu.path && location.pathname === menu.path) return true;
+      if (menu.children && menu.children.some((child) => location.pathname.startsWith(child.path))) return true;
       return false;
     },
     [location.pathname]
@@ -135,11 +165,11 @@ const TopNavigation: React.FC<{
           </div>
 
           {/* Main Nav Links */}
-          <nav className="hidden md:flex space-x-6">
+          <nav className="hidden md:flex space-x-6 h-full items-center">
             <button
               onClick={() => navigate("/announcements")}
               className={`text-sm font-medium transition-colors ${
-                isActiveMenu("/announcements") ? "text-brand-blue font-bold" : "text-slate-600 hover:text-brand-blue"
+                location.pathname === "/announcements" ? "text-brand-blue font-bold" : "text-slate-600 hover:text-brand-blue"
               }`}
             >
               공지사항
@@ -147,22 +177,57 @@ const TopNavigation: React.FC<{
             <button
               onClick={() => navigate("/calendar")}
               className={`text-sm font-medium transition-colors ${
-                isActiveMenu("/calendar") ? "text-brand-blue font-bold" : "text-slate-600 hover:text-brand-blue"
+                location.pathname === "/calendar" ? "text-brand-blue font-bold" : "text-slate-600 hover:text-brand-blue"
               }`}
             >
               학사일정
             </button>
             <div className="h-4 w-px bg-slate-300 my-auto"></div>
-            {menus.map((menu: any) => (
-              <button
-                key={menu.label}
-                onClick={() => navigate(menu.path)}
-                className={`text-sm font-medium transition-colors ${
-                  isActiveMenu(menu.path, menu.sub) ? "text-brand-blue font-bold" : "text-slate-600 hover:text-brand-blue"
-                }`}
+            
+            {menus.map((menu) => (
+              <div 
+                key={menu.label} 
+                className="relative h-full flex items-center"
+                onMouseEnter={() => setHoveredMenu(menu.label)}
+                onMouseLeave={() => setHoveredMenu(null)}
               >
-                {menu.label}
-              </button>
+                <button
+                  onClick={() => {
+                      if (!menu.children && menu.path) navigate(menu.path);
+                  }}
+                  className={`text-sm font-medium transition-colors px-2 py-1 rounded-md flex items-center ${
+                    isActiveMenu(menu) ? "text-brand-blue font-bold bg-blue-50" : "text-slate-600 hover:text-brand-blue hover:bg-slate-50"
+                  } ${!menu.children ? 'cursor-pointer' : 'cursor-default'}`}
+                >
+                  {menu.label}
+                  {menu.children && (
+                      <svg className={`ml-1 h-3 w-3 transition-transform ${hoveredMenu === menu.label ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                  )}
+                </button>
+
+                {/* Dropdown */}
+                {menu.children && hoveredMenu === menu.label && (
+                    <div className="absolute top-full left-0 w-48 bg-white rounded-b-md shadow-lg py-2 border border-slate-100 animate-fade-in-down z-50">
+                        {menu.children.map((child) => (
+                            <button
+                                key={child.path}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(child.path);
+                                    setHoveredMenu(null);
+                                }}
+                                className={`block w-full text-left px-4 py-2 text-sm hover:bg-slate-50 ${
+                                    location.pathname === child.path ? "text-brand-blue font-bold bg-blue-50" : "text-slate-600"
+                                }`}
+                            >
+                                {child.label}
+                            </button>
+                        ))}
+                    </div>
+                )}
+              </div>
             ))}
           </nav>
 
@@ -400,32 +465,32 @@ const DashboardContent: React.FC<{ navigate: ReturnType<typeof useNavigate>; use
             ) : (
               <>
                 <button
-                  onClick={() => navigate("/professor/timetable")}
+                  onClick={() => navigate("/professor/my-lectures")}
                   className="p-3 bg-slate-50 rounded-lg hover:bg-blue-50 hover:text-brand-blue transition-colors text-center"
                 >
                   <div className="mx-auto mb-1 w-6 h-6">{ICONS.courses}</div>
                   <span className="text-xs font-bold">내 강의</span>
                 </button>
                 <button
-                  onClick={() => navigate("/professor/student-management")}
+                  onClick={() => navigate("/professor/student-attendance")}
                   className="p-3 bg-slate-50 rounded-lg hover:bg-blue-50 hover:text-brand-blue transition-colors text-center"
                 >
                   <div className="mx-auto mb-1 w-6 h-6">{ICONS.users}</div>
-                  <span className="text-xs font-bold">학생 관리</span>
+                  <span className="text-xs font-bold">출결 관리</span>
                 </button>
                 <button
-                  onClick={() => navigate("/professor/student-management")}
+                  onClick={() => navigate("/professor/grade-management")}
                   className="p-3 bg-slate-50 rounded-lg hover:bg-blue-50 hover:text-brand-blue transition-colors text-center"
                 >
                   <div className="mx-auto mb-1 w-6 h-6">{ICONS.grades}</div>
                   <span className="text-xs font-bold">성적 관리</span>
                 </button>
                 <button
-                  onClick={() => navigate("/professor/course-evaluation")}
+                  onClick={() => navigate("/professor/syllabus")}
                   className="p-3 bg-slate-50 rounded-lg hover:bg-blue-50 hover:text-brand-blue transition-colors text-center"
                 >
                   <div className="mx-auto mb-1 w-6 h-6">{ICONS.grades}</div>
-                  <span className="text-xs font-bold">강의평가</span>
+                  <span className="text-xs font-bold">강의계획서</span>
                 </button>
               </>
             )}
@@ -621,24 +686,8 @@ const App: React.FC = () => {
             {/* Professor Specific Routes */}
             {user.role === "professor" && (
               <>
-                <Route
-                  path="/professor/timetable"
-                  element={
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                      <ProfessorTimetable user={user} />
-                    </div>
-                  }
-                />
-
                 {/* Reusing the component with different viewType props as per feature/professor logic */}
-                <Route
-                  path="/professor/student-management"
-                  element={
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                      <ProfessorStudentManagement user={user} />
-                    </div>
-                  }
-                />
+                
                 <Route
                   path="/professor/student-attendance"
                   element={
@@ -689,10 +738,10 @@ const App: React.FC = () => {
                   }
                 />
                 <Route
-                  path="/professor/course-evaluation"
+                  path="/professor/research"
                   element={
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                      <ProfessorCourseEvaluation />
+                      <div className="text-center py-12 text-slate-500">준비 중인 기능입니다.</div>
                     </div>
                   }
                 />

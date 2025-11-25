@@ -311,3 +311,14 @@ FROM board WHERE board_code = 'announcements';
 INSERT INTO post (board_id, post_title, post_content, writer_id)
 SELECT board_id, '2025년 동아리 박람회 개최 안내', '9월 5일부터 7일까지 학생회관 앞에서 2025년 동아리 박람회가 개최됩니다. 다양한 동아리를 만나보세요!', 'admin001'
 FROM board WHERE board_code = 'announcements';
+
+-- 컴퓨터공학과 추가
+INSERT INTO department (dept_code, dept_name, college_name) VALUES ('CS', '컴퓨터공학과', 'IT융합대학');
+
+-- 샘플 학생 계정 추가
+INSERT INTO member (m_id, m_pwd, m_name, m_type, m_no, m_email, dept_code, stu_grade, enrollment_status)
+VALUES ('student', '1234', '김학생', 'STUDENT', '20210001', 'student@deu.ac.kr', 'CS', 2, 'ENROLLED');
+
+-- 샘플 교수 계정 추가
+INSERT INTO member (m_id, m_pwd, m_name, m_type, m_no, m_email, dept_code, position)
+VALUES ('professor', '1234', '이교수', 'PROFESSOR', 'prof001', 'professor@deu.ac.kr', 'CS', '조교수');
