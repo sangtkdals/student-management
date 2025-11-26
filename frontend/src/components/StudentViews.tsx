@@ -11,6 +11,49 @@ import {
   MOCK_CALENDAR_EVENTS,
 } from "../constants";
 
+// --- Mock Data & Types for Leave/Return (여기에 붙여넣기) ---
+
+type LeaveRequest = {
+  id: number;
+  type: "일반휴학" | "군휴학" | "질병휴학" | "창업휴학";
+  applyDate: string;
+  startSemester: string;
+  endSemester: string;
+  reason: string;
+  status: "신청완료" | "승인완료" | "반려";
+};
+
+type ReturnRequest = {
+  id: number;
+  applyDate: string;
+  returnSemester: string;
+  type: "일반복학" | "제대복학";
+  status: "신청완료" | "승인완료" | "반려";
+};
+
+// 초기 더미 데이터
+const MOCK_LEAVE_HISTORY: LeaveRequest[] = [
+  {
+    id: 1,
+    type: "일반휴학",
+    applyDate: "2023-08-15",
+    startSemester: "2023-2",
+    endSemester: "2024-1",
+    reason: "개인 사정 및 자기계발",
+    status: "승인완료",
+  },
+];
+
+const MOCK_RETURN_HISTORY: ReturnRequest[] = [
+  {
+    id: 2,
+    applyDate: "2024-02-10",
+    returnSemester: "2024-1",
+    type: "일반복학",
+    status: "승인완료",
+  },
+];
+
 // --- StudentHome Component (Modified) ---
 export const StudentHome: React.FC<{ user: User }> = ({ user }) => {
   const navigate = useNavigate();
@@ -508,12 +551,154 @@ export const StudentTuitionHistory: React.FC = () => {
   );
 };
 
-export const StudentLeaveApplication: React.FC = () => (
-  <PlaceholderView
-    title="휴학 신청"
-    desc="일반 휴학 및 군 휴학을 신청할 수 있습니다."
-  />
-);
+export const StudentLeaveApplication: React.FC = () => {
+  const navigate = useNavigate();
+  const [leaveType, setLeaveType] = useState("일반휴학");
+  const [reason, setReason] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const handleSubmit = () => {
+    setIsSubmitting(true);
+    // API 호출 시뮬레이션
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setShowConfirm(false);
+      alert("휴학 신청이 완료되었습니다.");
+      navigate("/student/leave-history"); // 내역 페이지로 이동
+    }, 1500);
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <Card title="휴학 신청">
+        {/* 안내문 */}
+        <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+          <h4 className="font-bold text-blue-700 mb-2">📌 휴학 신청 유의사항</h4>
+          <ul className="list-disc list-inside text-sm text-blue-600 space-y-1">
+            <li>일반휴학은 1회에 1년(2학기) 이내로 신청 가능합니다.</li>
+            <li>도서관 대출 도서가 있을 경우 반납 후 신청 가능합니다.</li>
+            <li>등록금 납부 후 휴학할 경우, 복학 시 등록금은 이월됩니다.</li>
+          </ul>
+        </div>
+
+        <div className="space-y-6 max-w-2xl">
+          {/* 신청 정보 폼 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                신청 연도/학기
+              </label>
+              <input
+                type="text"
+                value="2025학년도 1학기"
+                disabled
+                className="w-full bg-slate-100 border border-slate-300 rounded-md py-2 px-3 text-slate-500 cursor-not-allowed"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                휴학 구분
+              </label>
+              <select
+                value={leaveType}
+                onChange={(e) => setLeaveType(e.target.value)}
+                className="w-full border border-slate-300 rounded-md py-2 px-3 focus:ring-brand-blue focus:border-brand-blue"
+              >
+                <option value="일반휴학">일반휴학</option>
+                <option value="군휴학">군휴학 (입영통지서 첨부 필수)</option>
+                <option value="질병휴학">질병휴학 (진단서 첨부 필수)</option>
+                <option value="창업휴학">창업휴학</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              휴학 기간 (예정)
+            </label>
+            <div className="flex items-center space-x-2">
+              <select className="flex-1 border border-slate-300 rounded-md py-2 px-3">
+                <option>2025-1학기 부터</option>
+              </select>
+              <span className="text-slate-500">~</span>
+              <select className="flex-1 border border-slate-300 rounded-md py-2 px-3">
+                <option>2025-2학기 까지 (1년)</option>
+                <option>2025-1학기 까지 (6개월)</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              신청 사유
+            </label>
+            <textarea
+              rows={4}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="구체적인 사유를 입력해주세요."
+              className="w-full border border-slate-300 rounded-md py-2 px-3 focus:ring-brand-blue focus:border-brand-blue"
+            />
+          </div>
+
+          {/* 파일 업로드 (군휴학/질병휴학 시 활성화 가정) */}
+          {(leaveType === "군휴학" || leaveType === "질병휴학") && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                증빙 서류 첨부
+              </label>
+              <input
+                type="file"
+                className="block w-full text-sm text-slate-500
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded-md file:border-0
+                  file:text-sm file:font-semibold
+                  file:bg-blue-50 file:text-brand-blue
+                  hover:file:bg-blue-100"
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                * PDF, JPG 파일만 업로드 가능 (최대 5MB)
+              </p>
+            </div>
+          )}
+
+          <div className="pt-4 flex justify-end">
+            <Button onClick={() => setShowConfirm(true)} disabled={!reason}>
+              휴학 신청하기
+            </Button>
+          </div>
+        </div>
+      </Card>
+
+      <Modal
+        isOpen={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        title="휴학 신청 확인"
+      >
+        <div className="space-y-4">
+          <p className="text-slate-700">
+            <strong>{leaveType}</strong>을 신청하시겠습니까?
+            <br />
+            제출 후에는 수정이 불가능하며, 취소는 행정실 문의가 필요할 수 있습니다.
+          </p>
+          <div className="flex justify-end space-x-2">
+            <Button
+              variant="secondary"
+              onClick={() => setShowConfirm(false)}
+              disabled={isSubmitting}
+            >
+              취소
+            </Button>
+            <Button onClick={handleSubmit} disabled={isSubmitting}>
+              {isSubmitting ? "처리중..." : "확인 및 신청"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    </div>
+  );
+};
 
 export const StudentGraduationCheck: React.FC = () => (
   <PlaceholderView
@@ -856,26 +1041,227 @@ export const StudentTuitionPayment: React.FC<StudentTuitionPaymentProps> = () =>
   );
 };
 
-export const StudentLeaveHistory: React.FC = () => (
-  <PlaceholderView
-    title="휴학 내역 조회"
-    desc="신청한 휴학 처리 현황 및 과거 내역을 확인합니다."
-  />
-);
+export const StudentLeaveHistory: React.FC = () => {
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <Card title="휴학 내역 조회">
+        <div className="mb-4 flex justify-between items-center">
+          <p className="text-sm text-slate-600">
+            총 <span className="font-bold text-brand-blue">{MOCK_LEAVE_HISTORY.length}</span>건의 휴학 내역이 있습니다.
+          </p>
+        </div>
 
-export const StudentReturnApplication: React.FC = () => (
-  <PlaceholderView
-    title="복학 신청"
-    desc="휴학 후 복학을 신청합니다."
-  />
-);
+        {MOCK_LEAVE_HISTORY.length === 0 ? (
+          <div className="text-center py-12 text-slate-500 bg-slate-50 rounded-lg border border-dashed border-slate-300">
+            휴학 내역이 존재하지 않습니다.
+          </div>
+        ) : (
+          <Table headers={["신청일자", "휴학구분", "휴학기간", "사유", "상태"]}>
+            {MOCK_LEAVE_HISTORY.map((item) => (
+              <tr key={item.id} className="hover:bg-slate-50">
+                <td className="px-6 py-4 text-sm text-center text-slate-600">
+                  {item.applyDate}
+                </td>
+                <td className="px-6 py-4 text-sm text-center font-medium text-slate-800">
+                  {item.type}
+                </td>
+                <td className="px-6 py-4 text-sm text-center text-slate-600">
+                  {item.startSemester} ~ {item.endSemester}
+                </td>
+                <td className="px-6 py-4 text-sm text-left text-slate-600 max-w-xs truncate">
+                  {item.reason}
+                </td>
+                <td className="px-6 py-4 text-sm text-center">
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                      item.status === "승인완료"
+                        ? "bg-green-100 text-green-700"
+                        : item.status === "반려"
+                        ? "bg-red-100 text-red-700"
+                        : "bg-yellow-100 text-yellow-700"
+                    }`}
+                  >
+                    {item.status}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </Table>
+        )}
+      </Card>
+    </div>
+  );
+};
 
-export const StudentReturnHistory: React.FC = () => (
-  <PlaceholderView
-    title="복학 내역 조회"
-    desc="복학 신청 처리 현황을 확인합니다."
-  />
-);
+export const StudentReturnApplication: React.FC = () => {
+  const navigate = useNavigate();
+  const [returnType, setReturnType] = useState("일반복학");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // 현재 휴학 상태인지 체크하는 로직 (Mock)
+  const isEligibleToReturn = true; 
+
+  const handleReturnSubmit = () => {
+    if (!window.confirm("복학을 신청하시겠습니까?")) return;
+    
+    setIsSubmitting(true);
+    setTimeout(() => {
+      setIsSubmitting(false);
+      alert("복학 신청이 접수되었습니다.");
+      navigate("/student/return-history");
+    }, 1000);
+  };
+
+  if (!isEligibleToReturn) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Card title="복학 신청">
+          <div className="text-center py-16">
+            <div className="text-slate-400 mb-4">
+               <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            </div>
+            <h3 className="text-lg font-bold text-slate-800">복학 신청 대상자가 아닙니다.</h3>
+            <p className="mt-2 text-slate-500">현재 재학 중이거나, 휴학 기간이 종료되지 않았습니다.</p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <Card title="복학 신청">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* 좌측: 현재 상태 정보 */}
+          <div className="md:col-span-1 bg-slate-50 p-6 rounded-lg border border-slate-200 h-fit">
+            <h4 className="font-bold text-slate-800 mb-4 flex items-center">
+              {ICONS.profile} <span className="ml-2">학생 정보</span>
+            </h4>
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-slate-500">학번</span>
+                <span className="font-medium text-slate-800">20211234</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">성명</span>
+                <span className="font-medium text-slate-800">김민준</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">현재 학적</span>
+                <span className="font-bold text-orange-600">휴학 (일반)</span>
+              </div>
+              <hr className="border-slate-200 my-2" />
+              <div className="flex justify-between">
+                <span className="text-slate-500">복학 예정 학기</span>
+                <span className="font-bold text-brand-blue">2025-1학기</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 우측: 신청 폼 */}
+          <div className="md:col-span-2 space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                복학 구분
+              </label>
+              <div className="flex space-x-4">
+                {["일반복학", "제대복학"].map((type) => (
+                  <label key={type} className="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      name="returnType"
+                      value={type}
+                      checked={returnType === type}
+                      onChange={(e) => setReturnType(e.target.value)}
+                      className="h-4 w-4 text-brand-blue border-slate-300 focus:ring-brand-blue"
+                    />
+                    <span className="ml-2 text-slate-700">{type}</span>
+                  </label>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-slate-500">
+                * 군휴학 자는 반드시 '제대복학'을 선택하고 전역증 사본을 제출해야 합니다.
+              </p>
+            </div>
+
+            {returnType === "제대복학" && (
+              <div className="animate-fade-in">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  전역증(병적증명서) 첨부
+                </label>
+                <input
+                  type="file"
+                  className="block w-full text-sm text-slate-500 border border-slate-300 rounded-md cursor-pointer bg-white focus:outline-none"
+                />
+              </div>
+            )}
+
+            <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-md">
+              <p className="text-sm text-yellow-800 font-medium">
+                [필독] 복학 신청 유의사항
+              </p>
+              <ul className="list-disc list-inside text-xs text-yellow-700 mt-2 space-y-1">
+                <li>복학 신청 승인 후 정해진 기간 내에 등록금을 납부해야 합니다.</li>
+                <li>수강신청 기간 이전에 복학 처리가 완료되어야 수강신청이 가능합니다.</li>
+              </ul>
+            </div>
+
+            <div className="flex justify-end pt-4">
+              <Button onClick={handleReturnSubmit} disabled={isSubmitting}>
+                {isSubmitting ? "처리중..." : "복학 신청하기"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+export const StudentReturnHistory: React.FC = () => {
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <Card title="복학 내역 조회">
+        <p className="mb-4 text-sm text-slate-600">
+          과거의 복학 신청 내역 및 처리 현황입니다.
+        </p>
+
+        {MOCK_RETURN_HISTORY.length === 0 ? (
+          <div className="text-center py-12 text-slate-500 bg-slate-50 rounded-lg border border-dashed border-slate-300">
+            복학 신청 내역이 없습니다.
+          </div>
+        ) : (
+          <Table headers={["신청일자", "복학구분", "복학학기", "상태"]}>
+            {MOCK_RETURN_HISTORY.map((item) => (
+              <tr key={item.id} className="hover:bg-slate-50">
+                <td className="px-6 py-4 text-sm text-center text-slate-600">
+                  {item.applyDate}
+                </td>
+                <td className="px-6 py-4 text-sm text-center font-medium text-slate-800">
+                  {item.type}
+                </td>
+                <td className="px-6 py-4 text-sm text-center text-slate-600">
+                  {item.returnSemester}
+                </td>
+                <td className="px-6 py-4 text-sm text-center">
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                      item.status === "승인완료"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-slate-100 text-slate-600"
+                    }`}
+                  >
+                    {item.status}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </Table>
+        )}
+      </Card>
+    </div>
+  );
+};
 
 export const StudentCertificateIssuance: React.FC = () => (
   <PlaceholderView
