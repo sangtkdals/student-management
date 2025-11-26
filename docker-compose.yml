@@ -1,4 +1,12 @@
 services:
+  # Redis 서비스
+  redis:
+    image: redis:latest
+    container_name: student-redis
+    restart: always
+    ports:
+      - "6379:6379"
+
   # MySQL 데이터베이스 서비스
   db:
     image: mysql:8.0
@@ -38,6 +46,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
     ports:
       - "8080:8080"
     environment:
@@ -46,6 +56,8 @@ services:
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
       SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
 
   # React 프론트엔드 서비스
   frontend:
