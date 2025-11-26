@@ -5,7 +5,7 @@ import com.example.studentmanagement.beans.Member;
 import com.example.studentmanagement.beans.Subject;
 import com.example.studentmanagement.repository.CourseRepository;
 import com.example.studentmanagement.repository.MemberRepository;
-import com.example.studentmanagement.repository.SubjectRepository; // Assuming this exists
+import com.example.studentmanagement.repository.SubjectRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,11 +14,12 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/courses")
+@CrossOrigin(origins = "*")
 public class CourseController {
 
     private final CourseRepository courseRepository;
     private final MemberRepository memberRepository;
-    private final SubjectRepository subjectRepository; // Need to verify if this exists
+    private final SubjectRepository subjectRepository;
 
     public CourseController(CourseRepository courseRepository, MemberRepository memberRepository, SubjectRepository subjectRepository) {
         this.courseRepository = courseRepository;
@@ -31,6 +32,7 @@ public class CourseController {
     public ResponseEntity<?> getCoursesByProfessor(@PathVariable("professorId") String professorId) {
         try {
             System.out.println("Fetching courses for professorNo: " + professorId);
+            // feature/professorFunc2의 Repository 메서드 사용
             List<Course> courses = courseRepository.findByProfessor_MemberNo(professorId);
             System.out.println("Found courses: " + courses.size());
             return ResponseEntity.ok(courses);
@@ -63,12 +65,7 @@ public class CourseController {
             // Set Subject
             String subjectCode = (String) payload.get("subjectCode");
             Subject subject = subjectRepository.findById(subjectCode).orElse(null);
-            if (subject == null) {
-                // For now, maybe create a dummy subject or return error?
-                // To keep it simple, if subject doesn't exist, we might need to handle it.
-                // Ideally subject should exist.
-                // Let's assume it exists or set null.
-            }
+            // Subject가 null일 경우에 대한 처리가 필요할 수 있으나, 기존 로직 유지
             course.setSubject(subject);
 
             // Set Professor
@@ -76,12 +73,6 @@ public class CourseController {
             Member professor = memberRepository.findByMemberNo(professorNo).orElse(null);
             course.setProfessor(professor);
 
-            // Credit is usually in Subject, but we might store it in Course if needed, 
-            // but the Course bean doesn't have a 'credit' field? 
-            // Wait, the schema doesn't have 'credit' in course table. It's in 'subject'.
-            // But the prompt CREATE TABLE for course didn't include 'credit'.
-            // The frontend sends it. We can ignore it or rely on Subject's credit.
-            
             courseRepository.save(course);
             return ResponseEntity.ok("강의가 등록되었습니다.");
 
@@ -99,8 +90,6 @@ public class CourseController {
             if (payload.containsKey("courseContent")) course.setCourseContent((String) payload.get("courseContent"));
             if (payload.containsKey("evaluationMethod")) course.setEvaluationMethod((String) payload.get("evaluationMethod"));
             if (payload.containsKey("textbookInfo")) course.setTextbookInfo((String) payload.get("textbookInfo"));
-            
-            // Add other fields if editable
             
             courseRepository.save(course);
             return ResponseEntity.ok("강의 정보가 수정되었습니다.");

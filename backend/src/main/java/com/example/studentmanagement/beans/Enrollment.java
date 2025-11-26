@@ -1,36 +1,78 @@
 package com.example.studentmanagement.beans;
 
 import jakarta.persistence.*;
-import lombok.*;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "enrollment")
-@Getter @Setter
-@NoArgsConstructor
-@AllArgsConstructor
 public class Enrollment {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "enrollment_id")
     private Integer enrollmentId;
 
-    @ManyToOne
-    @JoinColumn(name = "stu_no", referencedColumnName = "m_no")
-    private Member student;
+    @Column(name = "stu_no", length = 20)
+    private String stuNo;
 
-    @ManyToOne
-    @JoinColumn(name = "course_code")
-    private Course course;
+    @Column(name = "course_code", length = 20)
+    private String courseCode;
 
     @Column(name = "enrollment_date")
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date enrollmentDate;
+    private LocalDateTime enrollmentDate;
 
     @Column(name = "enrollment_status", length = 20)
     private String enrollmentStatus;
 
     @Column(name = "cancel_date")
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date cancelDate;
+    private LocalDateTime cancelDate;
+
+    // Getters and Setters
+    public Integer getEnrollmentId() {
+        return enrollmentId;
+    }
+
+    public void setEnrollmentId(Integer enrollmentId) {
+        this.enrollmentId = enrollmentId;
+    }
+
+    public String getStuNo() {
+        return stuNo;
+    }
+
+    public void setStuNo(String stuNo) {
+        this.stuNo = stuNo;
+    }
+
+    public String getCourseCode() {
+        return courseCode;
+    }
+
+    public void setCourseCode(String courseCode) {
+        this.courseCode = courseCode;
+    }
+
+    public LocalDateTime getEnrollmentDate() {
+        return enrollmentDate;
+    }
+
+    public void setEnrollmentDate(LocalDateTime enrollmentDate) {
+        this.enrollmentDate = enrollmentDate;
+    }
+
+    public String getEnrollmentStatus() {
+        return enrollmentStatus;
+    }
+
+    public void setEnrollmentStatus(String enrollmentStatus) {
+        this.enrollmentStatus = enrollmentStatus;
+    }
+
+    public LocalDateTime getCancelDate() {
+        return cancelDate;
+    }
+
+    public void setCancelDate(LocalDateTime cancelDate) {
+        this.cancelDate = cancelDate;
+    }
 }

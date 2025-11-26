@@ -3,6 +3,7 @@ import type { User, AcademicSchedule, CalendarEvent, Post } from "../types";
 import { Card, Button, Input } from "./ui";
 import { MOCK_CALENDAR_EVENTS } from "../constants";
 import axios from "axios";
+import { changePassword } from "../api/services";
 
 interface UserProfileProps {
   user: User;
@@ -218,7 +219,9 @@ const MonthCalendar: React.FC<{ year: number; month: number; events: CalendarIte
   const firstDayOfMonth = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  const blanks = Array.from({ length: firstDayOfMonth }, (_, i) => <div key={`blank-${i}`} className="border-r border-b border-slate-200"></div>);
+  const blanks = Array.from({ length: firstDayOfMonth }, (_, i) => (
+    <div key={`blank-${i}`} className="border-r border-b border-slate-200"></div>
+  ));
 
   const dayCells = Array.from({ length: daysInMonth }, (_, i) => {
     const day = i + 1;
@@ -231,7 +234,7 @@ const MonthCalendar: React.FC<{ year: number; month: number; events: CalendarIte
     const dayEvents = events.filter((e) => {
       const eventStartDate = new Date(e.startDate);
       eventStartDate.setHours(0, 0, 0, 0);
-      const eventEndDate = new Date(e.endDate); // CalendarEvent, AcademicSchedule 모두 endDate 존재
+      const eventEndDate = new Date(e.endDate);
       eventEndDate.setHours(0, 0, 0, 0);
       return currentDate >= eventStartDate && currentDate <= eventEndDate;
     });
@@ -293,11 +296,12 @@ const MonthCalendar: React.FC<{ year: number; month: number; events: CalendarIte
 };
 
 export const AcademicCalendar: React.FC = () => {
-  // Mock 데이터 타입 캐스팅
   const events = MOCK_CALENDAR_EVENTS as CalendarItem[];
 
   const allYears = [...new Set(events.map((e) => new Date(e.startDate).getFullYear()))].sort();
-  const [selectedYear, setSelectedYear] = useState(allYears.length > 0 ? allYears[allYears.length - 1] : new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState(
+    allYears.length > 0 ? allYears[allYears.length - 1] : new Date().getFullYear()
+  );
 
   const eventsForYear = events.filter((event) => new Date(event.startDate).getFullYear() === selectedYear);
   const months = Array.from({ length: 12 }, (_, i) => i);

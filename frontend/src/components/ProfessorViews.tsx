@@ -275,6 +275,7 @@ export const ProfessorHome: React.FC<ProfessorHomeProps> = ({ user }) => {
   );
 };
 
+
 export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
   const navigate = useNavigate();
   const [localCourses, setLocalCourses] = useState<Course[]>([]);
@@ -1117,6 +1118,7 @@ export const ProfessorCourseMaterials: React.FC = () => {
                             <td className="px-6 py-4 text-sm text-slate-500">{m.size}</td>
                             <td className="px-6 py-4 text-sm">
                                 <button className="text-red-600 hover:text-red-800" onClick={() => setMaterials(materials.filter(item => item.id !== m.id))}>삭제</button>
+
                             </td>
                         </tr>
                     ))}
@@ -1124,6 +1126,7 @@ export const ProfessorCourseMaterials: React.FC = () => {
             ) : (
                 <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-lg bg-slate-50">
                     <p className="text-slate-500 mb-4">등록된 강의 자료가 없습니다.</p>
+
                 </div>
             )}
         </Card>
@@ -1163,9 +1166,11 @@ export const ProfessorAssignments: React.FC = () => {
                     <p className="text-slate-500 mb-4">진행 중인 과제가 없습니다.</p>
                 </div>
             )}
+
         </Card>
     );
 };
+
 
 export const ProfessorLectureTimetable: React.FC<{ user: User }> = ({ user }) => {
   const [myCourses, setMyCourses] = useState<Course[]>([]);
@@ -1202,3 +1207,4 @@ export const ProfessorLectureTimetable: React.FC<{ user: User }> = ({ user }) =>
     </Card>
   );
 };
+

@@ -1,23 +1,26 @@
 package com.example.studentmanagement.beans;
 
 import jakarta.persistence.*;
-import lombok.*;
-import java.util.Date;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "tuition")
-@Getter @Setter
+@Getter
+@Setter
 @NoArgsConstructor
-@AllArgsConstructor
 public class Tuition {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "tuition_id")
     private Integer tuitionId;
 
-    @ManyToOne
-    @JoinColumn(name = "stu_no", referencedColumnName = "m_no")
-    private Member student;
+    @Column(name = "stu_no", length = 20)
+    private String stuNo;
 
     @Column(name = "academic_year")
     private Integer academicYear;
@@ -35,23 +38,44 @@ public class Tuition {
     private Integer paidAmount;
 
     @Column(name = "bill_date")
-    @Temporal(TemporalType.DATE)
-    private Date billDate;
+    private LocalDate billDate;
 
     @Column(name = "due_date")
-    @Temporal(TemporalType.DATE)
-    private Date dueDate;
+    private LocalDate dueDate;
 
     @Column(name = "paid_date")
-    @Temporal(TemporalType.DATE)
-    private Date paidDate;
+    private LocalDate paidDate;
 
     @Column(name = "payment_method", length = 50)
     private String paymentMethod;
 
-    @Column(name = "receipt_no", length = 50, unique = true)
+    @Column(name = "receipt_no", unique = true, length = 50)
     private String receiptNo;
 
     @Column(name = "payment_status", length = 20)
-    private String paymentStatus;
+    private String paymentStatus; // UNPAID, PAID, OVERDUE
+
+    @PrePersist
+    protected void onCreate() {
+        updatePaymentStatus();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatePaymentStatus();
+    }
+
+    private void updatePaymentStatus() {
+        if (paidAmount == null) paidAmount = 0;
+        int totalDue = (tuitionAmount != null ? tuitionAmount : 0)
+                     - (scholarshipAmount != null ? scholarshipAmount : 0);
+
+        if (paidAmount >= totalDue && totalDue > 0) {
+            paymentStatus = "PAID";
+        } else if (paidAmount == 0) {
+            paymentStatus = "UNPAID";
+        } else {
+            paymentStatus = "UNPAID";
+        }
+    }
 }
