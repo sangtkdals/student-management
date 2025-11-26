@@ -28,13 +28,16 @@ public class CourseController {
 
     // Get courses for a specific professor
     @GetMapping("/professor/{professorId}")
-    public ResponseEntity<?> getCoursesByProfessor(@PathVariable String professorId) {
-        // professorId here is memberId or memberNo?
-        // Frontend stores 'userId' (m_id) and 'memberNo' (m_no).
-        // The repository method findByProfessor_MemberNo expects m_no.
-        // Let's assume the frontend sends memberNo.
-        List<Course> courses = courseRepository.findByProfessor_MemberNo(professorId);
-        return ResponseEntity.ok(courses);
+    public ResponseEntity<?> getCoursesByProfessor(@PathVariable("professorId") String professorId) {
+        try {
+            System.out.println("Fetching courses for professorNo: " + professorId);
+            List<Course> courses = courseRepository.findByProfessor_MemberNo(professorId);
+            System.out.println("Found courses: " + courses.size());
+            return ResponseEntity.ok(courses);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Error fetching courses: " + e.getMessage());
+        }
     }
 
     // Register a new course
@@ -90,7 +93,7 @@ public class CourseController {
 
     // Update course (e.g. for Syllabus)
     @PutMapping("/{courseCode}")
-    public ResponseEntity<?> updateCourse(@PathVariable String courseCode, @RequestBody Map<String, Object> payload) {
+    public ResponseEntity<?> updateCourse(@PathVariable("courseCode") String courseCode, @RequestBody Map<String, Object> payload) {
         return courseRepository.findById(courseCode).map(course -> {
             if (payload.containsKey("courseObjectives")) course.setCourseObjectives((String) payload.get("courseObjectives"));
             if (payload.containsKey("courseContent")) course.setCourseContent((String) payload.get("courseContent"));
@@ -106,7 +109,7 @@ public class CourseController {
 
     // Delete course
     @DeleteMapping("/{courseCode}")
-    public ResponseEntity<?> deleteCourse(@PathVariable String courseCode) {
+    public ResponseEntity<?> deleteCourse(@PathVariable("courseCode") String courseCode) {
         if (courseRepository.existsById(courseCode)) {
             courseRepository.deleteById(courseCode);
             return ResponseEntity.ok("강의가 삭제되었습니다.");

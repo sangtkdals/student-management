@@ -110,7 +110,32 @@ const ProfessorVisualTimetable: React.FC<{ courses: Course[] }> = ({ courses }) 
 
 export const ProfessorHome: React.FC<ProfessorHomeProps> = ({ user }) => {
   const navigate = useNavigate();
-  const myCourses = MOCK_COURSES.filter((c) => c.professorName === user.name);
+  const [myCourses, setMyCourses] = useState<Course[]>([]);
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        // API Endpoint: /api/courses/professor/{memberNo}
+        const response = await fetch(`http://localhost:8080/api/courses/professor/${user.memberNo}`, {
+           headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (response.ok) {
+           const data = await response.json();
+           const mappedCourses = data.map((c: any) => ({
+             ...c,
+             subjectName: c.subject?.sName || c.courseCode // Ensure subjectName exists
+           }));
+           setMyCourses(mappedCourses);
+        }
+      } catch (error) {
+        console.error("Failed to fetch professor courses", error);
+      }
+    };
+    if (user.memberNo) {
+      fetchCourses();
+    }
+  }, [user.memberNo]);
 
   return (
     <div className="space-y-8">
@@ -127,26 +152,30 @@ export const ProfessorHome: React.FC<ProfessorHomeProps> = ({ user }) => {
             }
           >
             <div className="space-y-4">
-              {myCourses.map((course) => (
-                <div
-                  key={course.courseCode}
-                  className="p-4 bg-slate-50 rounded-lg flex justify-between items-center transition-shadow hover:shadow-md cursor-pointer"
-                  onClick={() => navigate("/professor/my-lectures")}
-                >
-                  <div>
-                    <p className="font-bold text-slate-800">
-                      {course.subjectName} <span className="text-sm font-normal text-slate-500">({course.courseCode})</span>
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      {course.courseTime} / {course.classroom}
-                    </p>
+              {myCourses.length > 0 ? (
+                myCourses.map((course) => (
+                  <div
+                    key={course.courseCode}
+                    className="p-4 bg-slate-50 rounded-lg flex justify-between items-center transition-shadow hover:shadow-md cursor-pointer"
+                    onClick={() => navigate("/professor/my-lectures")}
+                  >
+                    <div>
+                      <p className="font-bold text-slate-800">
+                        {course.subjectName} <span className="text-sm font-normal text-slate-500">({course.courseCode})</span>
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        {course.courseTime} / {course.classroom}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-brand-blue">{course.currentStudents}명</p>
+                      <p className="text-xs text-slate-400">수강중</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-brand-blue">{course.currentStudents}명</p>
-                    <p className="text-xs text-slate-400">수강중</p>
-                  </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-slate-500 text-center py-4">강의가 없습니다.</p>
+              )}
             </div>
           </Card>
         </div>
@@ -1139,7 +1168,32 @@ export const ProfessorAssignments: React.FC = () => {
 };
 
 export const ProfessorLectureTimetable: React.FC<{ user: User }> = ({ user }) => {
-  const myCourses = MOCK_COURSES.filter((c) => c.professorName === user.name);
+  const [myCourses, setMyCourses] = useState<Course[]>([]);
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(`http://localhost:8080/api/courses/professor/${user.memberNo}`, {
+           headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (response.ok) {
+           const data = await response.json();
+           const mappedCourses = data.map((c: any) => ({
+             ...c,
+             subjectName: c.subject?.sName || c.courseCode
+           }));
+           setMyCourses(mappedCourses);
+        }
+      } catch (error) {
+        console.error("Failed to fetch professor courses", error);
+      }
+    };
+    if (user.memberNo) {
+      fetchCourses();
+    }
+  }, [user.memberNo]);
+
   return (
     <Card title="전체 강의 시간표 (2024년 1학기)">
       <div className="pt-8 px-4">
