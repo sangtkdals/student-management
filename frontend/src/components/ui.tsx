@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 interface CardProps {
   children: React.ReactNode;
@@ -21,12 +22,14 @@ export const Card: React.FC<CardProps> = ({ children, className = '', title, tit
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
-  variant?: 'primary' | 'secondary' | 'danger';
+  variant?: 'primary' | 'secondary' | 'danger' | 'outline';
   size?: 'sm' | 'md';
+  className?: string;
 }
 
-export const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', size = 'md', ...props }) => {
-  const baseClasses = "rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
+export const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', size = 'md', className = '', ...props }) => {
+  const baseClasses = "font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
+  const roundedClass = className.includes('rounded-none') ? '' : 'rounded-md';
   
   const sizeClasses = {
       md: 'px-5 py-2.5 text-sm',
@@ -37,9 +40,10 @@ export const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', s
     primary: 'bg-brand-blue text-white hover:bg-brand-blue-dark focus:ring-brand-blue',
     secondary: 'bg-slate-200 text-slate-800 hover:bg-slate-300 focus:ring-slate-400',
     danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
+    outline: 'bg-white text-slate-800 border border-slate-300 hover:bg-slate-50 focus:ring-slate-400'
   };
   return (
-    <button className={`${baseClasses} ${sizeClasses[size]} ${variantClasses[variant]}`} {...props}>
+    <button className={`${baseClasses} ${roundedClass} ${sizeClasses[size]} ${variantClasses[variant]} ${className}`} {...props}>
       {children}
     </button>
   );
@@ -47,18 +51,22 @@ export const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', s
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
+  containerClassName?: string;
 }
 
-export const Input: React.FC<InputProps> = ({ label, ...props }) => (
-  <div>
-    <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
-    <input
-      className="block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400
-        focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue"
-      {...props}
-    />
-  </div>
-);
+export const Input: React.FC<InputProps> = ({ label, className = '', containerClassName = '', ...props }) => {
+  const roundedClass = className.includes('rounded-none') ? '' : 'rounded-md';
+  return (
+    <div className={containerClassName}>
+      <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
+      <input
+        className={`block w-full px-3 py-2 bg-white border border-slate-300 text-sm shadow-sm placeholder-slate-400
+          focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue ${roundedClass} ${className}`}
+        {...props}
+      />
+    </div>
+  );
+};
 
 interface TableProps {
   headers: string[];
@@ -89,21 +97,26 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  className?: string;
 }
 
-export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
+export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, className = '' }) => {
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md m-4">
-        <div className="flex justify-between items-center p-4 border-b">
+  const defaultClasses = "bg-white shadow-xl w-full max-w-md m-4";
+  const roundedClass = className.includes('rounded-none') ? '' : 'rounded-lg';
+
+  return createPortal(
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex justify-center items-center w-screen h-screen">
+      <div className={`${defaultClasses} ${roundedClass} ${className} max-h-[90vh] overflow-y-auto relative`}>
+        <div className="flex justify-between items-center p-4 border-b border-slate-200 sticky top-0 bg-white z-10">
           <h3 className="text-lg font-bold text-brand-blue">{title}</h3>
           <button onClick={onClose} className="text-slate-500 hover:text-slate-800">&times;</button>
         </div>
         <div className="p-4">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
