@@ -1,7 +1,7 @@
 package com.example.studentmanagement.service;
 
-import com.example.studentmanagement.Announcement;
-import com.example.studentmanagement.AnnouncementRepository;
+import com.example.studentmanagement.beans.Announcement;
+import com.example.studentmanagement.repository.AnnouncementRepository;
 import com.example.studentmanagement.dto.AnnouncementRequest;
 import com.example.studentmanagement.dto.AnnouncementResponse;
 import org.springframework.stereotype.Service;

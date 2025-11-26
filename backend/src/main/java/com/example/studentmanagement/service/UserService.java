@@ -1,7 +1,7 @@
 package com.example.studentmanagement.service;
 
-import com.example.studentmanagement.User;
-import com.example.studentmanagement.UserRepository;
+import com.example.studentmanagement.beans.User;
+import com.example.studentmanagement.repository.UserRepository;
 import com.example.studentmanagement.dto.UserRequest;
 import com.example.studentmanagement.dto.UserResponse;
 import org.springframework.stereotype.Service;

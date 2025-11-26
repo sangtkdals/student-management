@@ -1,7 +1,7 @@
 package com.example.studentmanagement.service;
 
-import com.example.studentmanagement.LeaveOfAbsence;
-import com.example.studentmanagement.LeaveOfAbsenceRepository;
+import com.example.studentmanagement.beans.LeaveOfAbsence;
+import com.example.studentmanagement.repository.LeaveOfAbsenceRepository;
 import com.example.studentmanagement.dto.LeaveOfAbsenceRequest;
 import com.example.studentmanagement.dto.LeaveOfAbsenceResponse;
 import org.springframework.stereotype.Service;

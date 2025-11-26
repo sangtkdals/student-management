@@ -1,6 +1,6 @@
 package com.example.studentmanagement.dto;
 
-import com.example.studentmanagement.Tuition;
+import com.example.studentmanagement.beans.Tuition;
 import lombok.Builder;
 import lombok.Getter;
 

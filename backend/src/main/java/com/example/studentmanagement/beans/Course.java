@@ -1,14 +1,17 @@
 package com.example.studentmanagement.beans;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "course")
-@Getter @Setter
+@Getter
+@Setter
 @NoArgsConstructor
-@AllArgsConstructor
 public class Course {
+
     @Id
     @Column(name = "course_code", length = 20)
     private String courseCode;
@@ -19,16 +22,14 @@ public class Course {
     @Column(name = "semester")
     private Integer semester;
 
-    @ManyToOne
-    @JoinColumn(name = "s_code")
-    private Subject subject;
+    @Column(name = "s_code", length = 20)
+    private String sCode;
 
     @Column(name = "course_class", length = 10)
     private String courseClass;
 
-    @ManyToOne
-    @JoinColumn(name = "professor_no", referencedColumnName = "m_no")
-    private Member professor;
+    @Column(name = "professor_no", length = 20)
+    private String professorNo;
 
     @Column(name = "max_stu")
     private Integer maxStu;
@@ -55,5 +56,11 @@ public class Course {
     private String textbookInfo;
 
     @Column(name = "course_status", length = 20)
-    private String courseStatus;
+    private String courseStatus; // OPEN, CLOSED, CANCELLED
+
+    @PrePersist
+    protected void onCreate() {
+        if (currentStudents == null) currentStudents = 0;
+        if (courseStatus == null) courseStatus = "OPEN";
+    }
 }

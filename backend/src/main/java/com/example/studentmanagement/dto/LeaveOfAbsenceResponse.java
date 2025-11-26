@@ -1,6 +1,6 @@
 package com.example.studentmanagement.dto;
 
-import com.example.studentmanagement.LeaveOfAbsence;
+import com.example.studentmanagement.beans.LeaveOfAbsence;
 import lombok.Builder;
 import lombok.Getter;
 

@@ -1,4 +1,4 @@
-package com.example.studentmanagement;
+package com.example.studentmanagement.beans;
 
 import jakarta.persistence.*;
 import lombok.Getter;

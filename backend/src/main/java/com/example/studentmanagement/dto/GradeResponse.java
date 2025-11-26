@@ -1,6 +1,6 @@
 package com.example.studentmanagement.dto;
 
-import com.example.studentmanagement.Grade;
+import com.example.studentmanagement.beans.Grade;
 import java.math.BigDecimal;
 
 public class GradeResponse {

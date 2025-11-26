@@ -1,6 +1,6 @@
 package com.example.studentmanagement.dto;
 
-import com.example.studentmanagement.Enrollment;
+import com.example.studentmanagement.beans.Enrollment;
 import java.time.LocalDateTime;
 
 public class EnrollmentResponse {

@@ -1,7 +1,7 @@
 package com.example.studentmanagement.service;
 
-import com.example.studentmanagement.CalendarEvent;
-import com.example.studentmanagement.CalendarEventRepository;
+import com.example.studentmanagement.beans.CalendarEvent;
+import com.example.studentmanagement.repository.CalendarEventRepository;
 import com.example.studentmanagement.dto.CalendarEventRequest;
 import com.example.studentmanagement.dto.CalendarEventResponse;
 import org.springframework.stereotype.Service;
