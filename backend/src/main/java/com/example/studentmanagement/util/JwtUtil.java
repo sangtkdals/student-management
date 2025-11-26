@@ -1,21 +1,19 @@
 package com.example.studentmanagement.util;
 
-import com.example.studentmanagement.beans.Member;
-import com.example.studentmanagement.beans.RefreshToken;
-import com.example.studentmanagement.repository.RefreshTokenRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
-import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 @Component
@@ -31,7 +29,7 @@ public class JwtUtil {
     private final long REFRESH_TOKEN_VALIDITY_MS = 1000 * 60 * 60 * 24 * 7;
 
     @Autowired
-    private RefreshTokenRepository refreshTokenRepository;
+    private RedisTemplate<String, Object> redisTemplate;
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -76,22 +74,18 @@ public class JwtUtil {
         return (extractedUsername.equals(username) && !isTokenExpired(token));
     }
 
-    public RefreshToken createRefreshToken(Member member) {
-        RefreshToken refreshToken = refreshTokenRepository.findByMember(member)
-                .orElse(new RefreshToken());
-
-        refreshToken.setMember(member);
-        refreshToken.setExpiryDate(Instant.now().plusMillis(REFRESH_TOKEN_VALIDITY_MS));
-        refreshToken.setToken(UUID.randomUUID().toString());
-
-        return refreshTokenRepository.save(refreshToken);
+    public String createRefreshToken(String memberId) {
+        String refreshToken = UUID.randomUUID().toString();
+        redisTemplate.opsForValue().set(
+                memberId,
+                refreshToken,
+                REFRESH_TOKEN_VALIDITY_MS,
+                TimeUnit.MILLISECONDS
+        );
+        return refreshToken;
     }
 
-    public RefreshToken verifyRefreshTokenExpiration(RefreshToken token) {
-        if (token.getExpiryDate().compareTo(Instant.now()) < 0) {
-            refreshTokenRepository.delete(token);
-            throw new RuntimeException(token.getToken() + " Refresh token was expired. Please make a new signin request");
-        }
-        return token;
+    public String getRefreshToken(String memberId) {
+        return (String) redisTemplate.opsForValue().get(memberId);
     }
 }
