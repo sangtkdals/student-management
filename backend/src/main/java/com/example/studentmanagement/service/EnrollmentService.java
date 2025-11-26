@@ -1,7 +1,7 @@
 package com.example.studentmanagement.service;
 
-import com.example.studentmanagement.Enrollment;
-import com.example.studentmanagement.EnrollmentRepository;
+import com.example.studentmanagement.beans.Enrollment;
+import com.example.studentmanagement.repository.EnrollmentRepository;
 import com.example.studentmanagement.dto.EnrollmentRequest;
 import com.example.studentmanagement.dto.EnrollmentResponse;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
+import type { User } from '../types';
 
+// ========== UI Components ==========
 interface CardProps {
   children: React.ReactNode;
   className?: string;
@@ -176,4 +178,78 @@ export const DropdownItem: React.FC<DropdownItemProps> = ({ children, onClick })
     >
         {children}
     </a>
+);
+
+// ========== Student Components ==========
+
+export const StudentHome: React.FC<{ user: User }> = ({ user }) => (
+  <Card title="학생 홈">
+    <p className="text-slate-600">학생 대시보드입니다.</p>
+  </Card>
+);
+
+export const StudentCourseRegistration: React.FC = () => (
+  <Card title="수강신청">
+    <p className="text-slate-600">수강신청 페이지입니다.</p>
+  </Card>
+);
+
+export const StudentGradeCenter: React.FC = () => (
+  <Card title="성적 조회">
+    <p className="text-slate-600">성적 조회 페이지입니다.</p>
+  </Card>
+);
+
+export const StudentTuitionHistory: React.FC = () => (
+  <Card title="등록금 내역">
+    <p className="text-slate-600">등록금 내역 페이지입니다.</p>
+  </Card>
+);
+
+export const StudentLeaveApplication: React.FC = () => (
+  <Card title="휴학 신청">
+    <p className="text-slate-600">휴학 신청 페이지입니다.</p>
+  </Card>
+);
+
+export const StudentGraduationCheck: React.FC = () => (
+  <Card title="졸업 요건">
+    <p className="text-slate-600">졸업 요건 페이지입니다.</p>
+  </Card>
+);
+
+export const StudentTuitionPayment: React.FC<{ setActiveView: () => void }> = () => (
+  <Card title="등록금 납부">
+    <p className="text-slate-600">등록금 납부 페이지입니다.</p>
+  </Card>
+);
+
+export const StudentLeaveHistory: React.FC = () => (
+  <Card title="휴학 내역">
+    <p className="text-slate-600">휴학 내역 페이지입니다.</p>
+  </Card>
+);
+
+export const StudentReturnApplication: React.FC = () => (
+  <Card title="복학 신청">
+    <p className="text-slate-600">복학 신청 페이지입니다.</p>
+  </Card>
+);
+
+export const StudentReturnHistory: React.FC = () => (
+  <Card title="복학 내역">
+    <p className="text-slate-600">복학 내역 페이지입니다.</p>
+  </Card>
+);
+
+export const StudentCertificateIssuance: React.FC = () => (
+  <Card title="증명서 발급">
+    <p className="text-slate-600">증명서 발급 페이지입니다.</p>
+  </Card>
+);
+
+export const StudentTimetable: React.FC = () => (
+  <Card title="시간표 조회">
+    <p className="text-slate-600">시간표 조회 페이지입니다.</p>
+  </Card>
 );

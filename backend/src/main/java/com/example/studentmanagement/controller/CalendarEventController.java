@@ -1,4 +1,4 @@
-package com.example.studentmanagement;
+package com.example.studentmanagement.controller;
 
 import com.example.studentmanagement.dto.CalendarEventRequest;
 import com.example.studentmanagement.dto.CalendarEventResponse;

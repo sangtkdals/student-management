@@ -1,7 +1,7 @@
 package com.example.studentmanagement.service;
 
-import com.example.studentmanagement.Grade;
-import com.example.studentmanagement.GradeRepository;
+import com.example.studentmanagement.beans.Grade;
+import com.example.studentmanagement.repository.GradeRepository;
 import com.example.studentmanagement.dto.GradeResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

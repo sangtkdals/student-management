@@ -1,6 +1,6 @@
 package com.example.studentmanagement.dto;
 
-import com.example.studentmanagement.CalendarEvent;
+import com.example.studentmanagement.beans.CalendarEvent;
 import lombok.Builder;
 import lombok.Getter;
 

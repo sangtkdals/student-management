@@ -1,4 +1,4 @@
-package com.example.studentmanagement;
+package com.example.studentmanagement.controller;
 
 import com.example.studentmanagement.dto.AnnouncementRequest;
 import com.example.studentmanagement.dto.AnnouncementResponse;

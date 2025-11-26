@@ -1,4 +1,4 @@
-package com.example.studentmanagement;
+package com.example.studentmanagement.controller;
 
 import com.example.studentmanagement.dto.LeaveOfAbsenceRequest;
 import com.example.studentmanagement.dto.LeaveOfAbsenceResponse;

@@ -1,7 +1,7 @@
 package com.example.studentmanagement.service;
 
-import com.example.studentmanagement.Tuition;
-import com.example.studentmanagement.TuitionRepository;
+import com.example.studentmanagement.beans.Tuition;
+import com.example.studentmanagement.repository.TuitionRepository;
 import com.example.studentmanagement.dto.TuitionRequest;
 import com.example.studentmanagement.dto.TuitionResponse;
 import org.springframework.stereotype.Service;

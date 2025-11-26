@@ -1,4 +1,4 @@
-package com.example.studentmanagement;
+package com.example.studentmanagement.controller;
 
 import com.example.studentmanagement.dto.GradeResponse;
 import com.example.studentmanagement.service.GradeService;
