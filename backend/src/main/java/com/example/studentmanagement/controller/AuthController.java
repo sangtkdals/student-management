@@ -2,8 +2,10 @@ package com.example.studentmanagement.controller;
 
 import com.example.studentmanagement.beans.Department;
 import com.example.studentmanagement.beans.Member;
+import com.example.studentmanagement.beans.RefreshToken;
 import com.example.studentmanagement.repository.DepartmentRepository;
 import com.example.studentmanagement.repository.MemberRepository;
+import com.example.studentmanagement.repository.RefreshTokenRepository;
 import com.example.studentmanagement.util.JwtUtil;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,11 +23,13 @@ public class AuthController {
 
     private final MemberRepository memberRepository;
     private final DepartmentRepository departmentRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final JwtUtil jwtUtil;
 
-    public AuthController(MemberRepository memberRepository, DepartmentRepository departmentRepository, JwtUtil jwtUtil) {
+    public AuthController(MemberRepository memberRepository, DepartmentRepository departmentRepository, RefreshTokenRepository refreshTokenRepository, JwtUtil jwtUtil) {
         this.memberRepository = memberRepository;
         this.departmentRepository = departmentRepository;
+        this.refreshTokenRepository = refreshTokenRepository;
         this.jwtUtil = jwtUtil;
     }
 
@@ -102,9 +106,11 @@ public class AuthController {
 
         if (member != null && member.getPassword().equals(password)) {
             String token = jwtUtil.generateToken(member.getMemberId(), member.getMemberType(), member.getMemberNo());
+            RefreshToken refreshToken = jwtUtil.createRefreshToken(member);
 
             Map<String, Object> response = new HashMap<>();
             response.put("token", token);
+            response.put("refreshToken", refreshToken.getToken());
             response.put("userId", member.getMemberId());
             response.put("memberNo", member.getMemberNo());
             response.put("name", member.getName());
@@ -125,5 +131,23 @@ public class AuthController {
         } else {
             return ResponseEntity.status(401).body("ID 또는 비밀번호가 잘못되었습니다.");
         }
+    }
+
+    @PostMapping("/refreshtoken")
+    public ResponseEntity<?> refreshToken(@RequestBody Map<String, String> request) {
+        String requestRefreshToken = request.get("refreshToken");
+
+        return refreshTokenRepository.findByToken(requestRefreshToken)
+                .map(jwtUtil::verifyRefreshTokenExpiration)
+                .map(RefreshToken::getMember)
+                .map(member -> {
+                    String newAccessToken = jwtUtil.generateToken(member.getMemberId(), member.getMemberType(), member.getMemberNo());
+                    RefreshToken newRefreshToken = jwtUtil.createRefreshToken(member);
+                    Map<String, String> response = new HashMap<>();
+                    response.put("accessToken", newAccessToken);
+                    response.put("refreshToken", newRefreshToken.getToken());
+                    return ResponseEntity.ok(response);
+                })
+                .orElseThrow(() -> new RuntimeException("Refresh token is not in database!"));
     }
 }

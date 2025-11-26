@@ -284,6 +284,22 @@ CREATE TABLE attachment (
 CREATE INDEX idx_attach_post ON attachment(post_id);
 
 -- =====================================================
+-- 15) refresh_tokens
+-- =====================================================
+DROP TABLE IF EXISTS refresh_tokens;
+CREATE TABLE refresh_tokens (
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    token       VARCHAR(255) NOT NULL UNIQUE,
+    expiry_date DATETIME(6) NOT NULL,
+    member_id   VARCHAR(50),  -- member.m_id (VARCHAR 50) 와 타입 일치 필수
+    CONSTRAINT fk_refresh_token_member
+        FOREIGN KEY (member_id) REFERENCES member(m_id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE INDEX idx_refresh_token_member ON refresh_tokens(member_id);
+
+-- =====================================================
 -- End of schema
 -- =====================================================
 
