@@ -33,10 +33,35 @@ public class SecurityConfig {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Allow preflight requests
-                .requestMatchers("/api/login", "/api/register", "/api/refreshtoken", "/api/hello", "/error", "/api/announcements").permitAll()
-                .anyRequest().authenticated()
-            )
+    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+        
+        // 인증 불필요
+        .requestMatchers("/api/login", "/api/register", "/api/refreshtoken", "/api/hello", "/error").permitAll()
+        
+        // 공지사항: GET은 모두 허용, POST/PUT/DELETE는 관리자만
+        .requestMatchers(HttpMethod.GET, "/api/announcements/**").permitAll()
+        .requestMatchers(HttpMethod.POST, "/api/announcements/**").hasRole("ADMIN")
+        .requestMatchers(HttpMethod.PUT, "/api/announcements/**").hasRole("ADMIN")
+        .requestMatchers(HttpMethod.DELETE, "/api/announcements/**").hasRole("ADMIN")
+        
+        // 학사일정: GET은 모두 허용, CUD는 관리자만
+        .requestMatchers(HttpMethod.GET, "/api/schedules/**").permitAll()
+        .requestMatchers(HttpMethod.POST, "/api/schedules/**").hasRole("ADMIN")
+        .requestMatchers(HttpMethod.PUT, "/api/schedules/**").hasRole("ADMIN")
+        .requestMatchers(HttpMethod.DELETE, "/api/schedules/**").hasRole("ADMIN")
+        
+        // 휴학 신청
+        .requestMatchers(HttpMethod.POST, "/api/leave-applications").hasRole("STUDENT")
+        .requestMatchers(HttpMethod.GET, "/api/leave-applications/my").hasRole("STUDENT")
+        .requestMatchers(HttpMethod.POST, "/api/leave-applications/return").hasRole("STUDENT")
+        .requestMatchers(HttpMethod.PUT, "/api/leave-applications/*/approve").hasRole("ADMIN")
+        .requestMatchers(HttpMethod.PUT, "/api/leave-applications/*/reject").hasRole("ADMIN")
+        .requestMatchers(HttpMethod.PUT, "/api/leave-applications/return/*").hasRole("ADMIN")
+        .requestMatchers(HttpMethod.GET, "/api/leave-applications/on-leave").hasRole("ADMIN")
+        .requestMatchers(HttpMethod.GET, "/api/leave-applications").hasRole("ADMIN")
+        
+        .anyRequest().authenticated()
+    )
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             );

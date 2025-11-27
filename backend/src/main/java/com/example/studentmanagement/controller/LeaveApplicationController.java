@@ -1,6 +1,7 @@
 package com.example.studentmanagement.controller;
 
 import com.example.studentmanagement.beans.LeaveApplication;
+import com.example.studentmanagement.beans.Member;
 import com.example.studentmanagement.dto.LeaveApplicationDTO;
 import com.example.studentmanagement.service.LeaveApplicationService;
 import com.example.studentmanagement.util.JwtUtil;
@@ -35,6 +36,25 @@ public class LeaveApplicationController {
         return ResponseEntity.ok(dtos);
     }
 
+    // GET /api/leave-applications/my - 학생 본인의 휴학 신청 내역 조회
+    @GetMapping("/my")
+    public ResponseEntity<List<LeaveApplicationDTO>> getMyApplications(
+            @RequestHeader("Authorization") String authHeader) {
+        
+        // JWT 토큰에서 학생 번호 추출
+        String token = authHeader.replace("Bearer ", "");
+        String studentNo = jwtUtil.extractMemberNo(token);
+        
+        List<LeaveApplication> applications = leaveApplicationService.getMyApplications(studentNo);
+        
+        // Entity를 DTO로 변환
+        List<LeaveApplicationDTO> dtos = applications.stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
+        
+        return ResponseEntity.ok(dtos);
+    }
+
     // POST /api/leave-applications - 학생이 휴학 신청 제출
     @PostMapping
     public ResponseEntity<LeaveApplicationDTO> createApplication(
@@ -43,7 +63,7 @@ public class LeaveApplicationController {
         
         // JWT 토큰에서 학생 ID 추출
         String token = authHeader.replace("Bearer ", "");
-        String studentNo = jwtUtil.extractUsername(token);
+        String studentNo = jwtUtil.extractMemberNo(token);
         
         // 휴학 신청 생성
         LeaveApplication created = leaveApplicationService.createApplication(
@@ -59,15 +79,73 @@ public class LeaveApplicationController {
         return ResponseEntity.ok(convertToDTO(created));
     }
 
+    // POST /api/leave-applications/return - 학생이 복학 신청 제출
+    @PostMapping("/return")
+    public ResponseEntity<LeaveApplicationDTO> createReturnApplication(
+            @RequestBody CreateReturnApplicationRequest request,
+            @RequestHeader("Authorization") String authHeader) {
+
+        // JWT 토큰에서 학생 번호 추출
+        String token = authHeader.replace("Bearer ", "");
+        String studentNo = jwtUtil.extractMemberNo(token);
+
+        // 복학 신청 생성
+        LeaveApplication created = leaveApplicationService.createReturnApplication(
+            studentNo,
+            request.getReturnYear(),
+            request.getReturnSemester(),
+            request.getReason()
+        );
+
+        return ResponseEntity.ok(convertToDTO(created));
+    }
+
+    // GET /api/leave-applications/on-leave - 현재 휴학중인 학생 목록
+    @GetMapping("/on-leave")
+    public ResponseEntity<List<StudentOnLeaveDTO>> getStudentsOnLeave() {
+        List<Member> students = leaveApplicationService.getStudentsOnLeave();
+        
+        List<StudentOnLeaveDTO> dtos = students.stream()
+            .map(this::convertToStudentOnLeaveDTO)
+            .collect(Collectors.toList());
+        
+        return ResponseEntity.ok(dtos);
+    }
+
+    // PUT /api/leave-applications/return/{studentNo} - 복학 처리
+    @PutMapping("/return/{studentNo}")
+    public ResponseEntity<StudentOnLeaveDTO> processReturnToSchool(
+            @PathVariable("studentNo") String studentNo,
+            @RequestHeader("Authorization") String authHeader) {
+        
+        String token = authHeader.replace("Bearer ", "");
+        String approverId = jwtUtil.extractMemberNo(token);
+        
+        Member student = leaveApplicationService.processReturnToSchool(studentNo, approverId);
+        
+        return ResponseEntity.ok(convertToStudentOnLeaveDTO(student));
+    }
+
+    // Member를 StudentOnLeaveDTO로 변환하는 헬퍼 메서드 (96번 라인 다음에 추가)
+    private StudentOnLeaveDTO convertToStudentOnLeaveDTO(Member member) {
+        StudentOnLeaveDTO dto = new StudentOnLeaveDTO();
+        dto.setStudentNo(member.getMemberNo());
+        dto.setStudentName(member.getName());
+        dto.setDepartment(member.getDepartment() != null ? member.getDepartment().getDeptName() : "");
+        dto.setGradeLevel(member.getStuGrade());
+        dto.setEnrollmentStatus(member.getEnrollmentStatus());
+        return dto;
+    }
+
     // PUT /api/leave-applications/{id}/approve - 승인 처리
     @PutMapping("/{id}/approve")
     public ResponseEntity<LeaveApplicationDTO> approveApplication(
-            @PathVariable Integer id,
+            @PathVariable("id") Integer id,
             @RequestHeader("Authorization") String authHeader) {
         
         // JWT 토큰에서 승인자 ID 추출
         String token = authHeader.replace("Bearer ", "");
-        String approverId = jwtUtil.extractUsername(token);
+        String approverId = jwtUtil.extractMemberNo(token);
         
         // 승인 처리
         LeaveApplication approved = leaveApplicationService.approveApplication(id, approverId);
@@ -78,7 +156,7 @@ public class LeaveApplicationController {
     // PUT /api/leave-applications/{id}/reject - 거절 처리
     @PutMapping("/{id}/reject")
     public ResponseEntity<LeaveApplicationDTO> rejectApplication(
-            @PathVariable Integer id,
+            @PathVariable("id") Integer id,
             @RequestBody RejectRequest request,
             @RequestHeader("Authorization") String authHeader) {
         
@@ -134,6 +212,24 @@ public class LeaveApplicationController {
         private Integer endYear;        // 종료 연도 (예: 2025)
         private Integer endSemester;    // 종료 학기 (1 또는 2)
         private String reason;          // 신청 사유
+    }
+
+    // 복학 신청 생성 요청 DTO
+    @Data
+    static class CreateReturnApplicationRequest {
+        private Integer returnYear;      // 복학 희망 연도 (예: 2025)
+        private Integer returnSemester;  // 복학 희망 학기 (1 또는 2)
+        private String reason;           // 복학 사유
+    }
+
+    // 휴학중인 학생 정보 DTO
+    @Data
+    static class StudentOnLeaveDTO {
+        private String studentNo;
+        private String studentName;
+        private String department;
+        private Integer gradeLevel;
+        private String enrollmentStatus;
     }
 }
 

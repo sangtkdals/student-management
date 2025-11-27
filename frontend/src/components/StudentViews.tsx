@@ -577,7 +577,8 @@ const [endSemester, setEndSemester] = useState(2);
       "창업휴학": "PREGNANCY"  // DB에 PREGNANCY 타입이 있으므로 매핑
     };
     
-    // 백엔드 API 호출
+    const token = localStorage.getItem('token');
+
     await axios.post("/api/leave-applications", {
       leaveType: leaveTypeMap[leaveType],
       startYear,
@@ -585,6 +586,10 @@ const [endSemester, setEndSemester] = useState(2);
       endYear,
       endSemester,
       reason
+    }, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
     });
     
     alert("휴학 신청이 완료되었습니다.");
@@ -1089,51 +1094,103 @@ export const StudentTuitionPayment: React.FC<StudentTuitionPaymentProps> = () =>
 };
 
 export const StudentLeaveHistory: React.FC = () => {
+  const [leaveHistory, setLeaveHistory] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchLeaveHistory();
+  }, []);
+
+  const fetchLeaveHistory = async () => {
+  try {
+    const token = localStorage.getItem('token');
+
+    const response = await axios.get("/api/leave-applications/my", {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    setLeaveHistory(response.data);
+    setLoading(false);
+  } catch (error) {
+    console.error("Error fetching leave history:", error);
+    setLoading(false);
+  }
+};
+
+  // 상태 표시 매핑
+  const getStatusLabel = (status: string) => {
+    const statusMap: Record<string, string> = {
+      "PENDING": "대기중",
+      "APPROVED": "승인완료",
+      "REJECTED": "반려"
+    };
+    return statusMap[status] || status;
+  };
+
+// 휴학 타입 한글 변환
+const getLeaveTypeLabel = (type: string) => {
+  const typeMap: Record<string, string> = {
+    "GENERAL": "일반휴학",
+    "MILITARY": "군휴학",
+    "ILLNESS": "질병휴학",
+    "PREGNANCY": "창업휴학"
+  };
+  return typeMap[type] || type;
+};
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <Card title="휴학 내역 조회">
-        <div className="mb-4 flex justify-between items-center">
-          <p className="text-sm text-slate-600">
-            총 <span className="font-bold text-brand-blue">{MOCK_LEAVE_HISTORY.length}</span>건의 휴학 내역이 있습니다.
-          </p>
-        </div>
-
-        {MOCK_LEAVE_HISTORY.length === 0 ? (
-          <div className="text-center py-12 text-slate-500 bg-slate-50 rounded-lg border border-dashed border-slate-300">
-            휴학 내역이 존재하지 않습니다.
-          </div>
+        {loading ? (
+          <div className="text-center py-12">로딩 중...</div>
         ) : (
-          <Table headers={["신청일자", "휴학구분", "휴학기간", "사유", "상태"]}>
-            {MOCK_LEAVE_HISTORY.map((item) => (
-              <tr key={item.id} className="hover:bg-slate-50">
-                <td className="px-6 py-4 text-sm text-center text-slate-600">
-                  {item.applyDate}
-                </td>
-                <td className="px-6 py-4 text-sm text-center font-medium text-slate-800">
-                  {item.type}
-                </td>
-                <td className="px-6 py-4 text-sm text-center text-slate-600">
-                  {item.startSemester} ~ {item.endSemester}
-                </td>
-                <td className="px-6 py-4 text-sm text-left text-slate-600 max-w-xs truncate">
-                  {item.reason}
-                </td>
-                <td className="px-6 py-4 text-sm text-center">
-                  <span
-                    className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                      item.status === "승인완료"
-                        ? "bg-green-100 text-green-700"
-                        : item.status === "반려"
-                        ? "bg-red-100 text-red-700"
-                        : "bg-yellow-100 text-yellow-700"
-                    }`}
-                  >
-                    {item.status}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </Table>
+          <>
+            <div className="mb-4 flex justify-between items-center">
+              <p className="text-sm text-slate-600">
+                총 <span className="font-bold text-brand-blue">{leaveHistory.length}</span>건의 휴학 내역이 있습니다.
+              </p>
+            </div>
+
+            {leaveHistory.length === 0 ? (
+              <div className="text-center py-12 text-slate-500 bg-slate-50 rounded-lg border border-dashed border-slate-300">
+                휴학 내역이 존재하지 않습니다.
+              </div>
+            ) : (
+              <Table headers={["신청일자", "휴학구분", "휴학기간", "사유", "상태"]}>
+                {leaveHistory.map((item) => (
+                  <tr key={item.applicationId} className="hover:bg-slate-50">
+                    <td className="px-6 py-4 text-sm text-center text-slate-600">
+                      {item.applicationDate}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-center font-medium text-slate-800">
+                      {getLeaveTypeLabel(item.leaveType)}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-center text-slate-600">
+                      {item.startYear}년 {item.startSemester}학기 ~ {item.endYear}년 {item.endSemester}학기
+                    </td>
+                    <td className="px-6 py-4 text-sm text-left text-slate-600 max-w-xs truncate">
+                      {item.reason}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-center">
+                      <span
+                        className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                          item.approvalStatus === "APPROVED"
+                            ? "bg-green-100 text-green-700"
+                            : item.approvalStatus === "REJECTED"
+                            ? "bg-red-100 text-red-700"
+                            : "bg-yellow-100 text-yellow-700"
+                        }`}
+                      >
+                        {getStatusLabel(item.approvalStatus)}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </Table>
+            )}
+          </>
         )}
       </Card>
     </div>
@@ -1148,16 +1205,43 @@ export const StudentReturnApplication: React.FC = () => {
   // 현재 휴학 상태인지 체크하는 로직 (Mock)
   const isEligibleToReturn = true; 
 
-  const handleReturnSubmit = () => {
-    if (!window.confirm("복학을 신청하시겠습니까?")) return;
+  const handleReturnSubmit = async () => {
+  if (!window.confirm("복학을 신청하시겠습니까?")) return;
+  
+  setIsSubmitting(true);
+  
+  try {
+    const token = localStorage.getItem('token');
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth() + 1;
+    // 현재 월을 기준으로 다음 학기 계산 (1-6월: 2학기, 7-12월: 다음해 1학기)
+    const nextSemester = currentMonth <= 6 ? 2 : 1;
+    const nextYear = currentMonth <= 6 ? currentYear : currentYear + 1;
+
+    await axios.post("/api/leave-applications/return", {
+      returnYear: nextYear,
+      returnSemester: nextSemester,
+      reason: "복학 신청"
+    }, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
     
-    setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      alert("복학 신청이 접수되었습니다.");
-      navigate("/student/return-history");
-    }, 1000);
-  };
+    setIsSubmitting(false);
+    alert("복학 신청이 제출되었습니다. 관리자의 승인을 기다려주세요.");
+    navigate("/student/return-history");
+  } catch (error: any) {
+    console.error("Error submitting return application:", error);
+    setIsSubmitting(false);
+    
+    if (error.response?.status === 500 && error.response?.data?.includes("휴학 중인 학생만")) {
+      alert("복학 신청은 휴학 중인 학생만 가능합니다.");
+    } else {
+      alert("복학 신청 중 오류가 발생했습니다.");
+    }
+  }
+};
 
   if (!isEligibleToReturn) {
     return (
@@ -1266,44 +1350,89 @@ export const StudentReturnApplication: React.FC = () => {
 };
 
 export const StudentReturnHistory: React.FC = () => {
+  const [returnHistory, setReturnHistory] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchReturnHistory();
+  }, []);
+
+  const fetchReturnHistory = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get("/api/leave-applications/my", {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      // leave_type이 "RETURN"인 것만 필터링
+      const returnApps = response.data.filter((item: any) => item.leaveType === "RETURN");
+      setReturnHistory(returnApps);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching return history:", error);
+      setLoading(false);
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    const statusMap: Record<string, string> = {
+      "PENDING": "대기중",
+      "APPROVED": "승인완료",
+      "REJECTED": "반려"
+    };
+    return statusMap[status] || status;
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <Card title="복학 내역 조회">
-        <p className="mb-4 text-sm text-slate-600">
-          과거의 복학 신청 내역 및 처리 현황입니다.
-        </p>
-
-        {MOCK_RETURN_HISTORY.length === 0 ? (
-          <div className="text-center py-12 text-slate-500 bg-slate-50 rounded-lg border border-dashed border-slate-300">
-            복학 신청 내역이 없습니다.
-          </div>
+        {loading ? (
+          <div className="text-center py-12 text-slate-500">로딩 중...</div>
         ) : (
-          <Table headers={["신청일자", "복학구분", "복학학기", "상태"]}>
-            {MOCK_RETURN_HISTORY.map((item) => (
-              <tr key={item.id} className="hover:bg-slate-50">
-                <td className="px-6 py-4 text-sm text-center text-slate-600">
-                  {item.applyDate}
-                </td>
-                <td className="px-6 py-4 text-sm text-center font-medium text-slate-800">
-                  {item.type}
-                </td>
-                <td className="px-6 py-4 text-sm text-center text-slate-600">
-                  {item.returnSemester}
-                </td>
-                <td className="px-6 py-4 text-sm text-center">
-                  <span
-                    className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                      item.status === "승인완료"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-slate-100 text-slate-600"
-                    }`}
-                  >
-                    {item.status}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </Table>
+          <>
+            <div className="mb-4 flex justify-between items-center">
+              <p className="text-sm text-slate-600">
+                총 <span className="font-bold text-brand-blue">{returnHistory.length}</span>건의 복학 내역이 있습니다.
+              </p>
+            </div>
+
+            {returnHistory.length === 0 ? (
+              <div className="text-center py-12 text-slate-500 bg-slate-50 rounded-lg border border-dashed border-slate-300">
+                복학 내역이 존재하지 않습니다.
+              </div>
+            ) : (
+              <Table headers={["신청일자", "복학 학기", "사유", "상태"]}>
+                {returnHistory.map((item) => (
+                  <tr key={item.applicationId} className="hover:bg-slate-50">
+                    <td className="px-6 py-4 text-sm text-center text-slate-600">
+                      {item.applicationDate}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-center font-medium text-slate-800">
+                      {item.startYear}년 {item.startSemester}학기
+                    </td>
+                    <td className="px-6 py-4 text-sm text-left text-slate-600 max-w-xs truncate">
+                      {item.reason}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-center">
+                      <span
+                        className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                          item.approvalStatus === "APPROVED"
+                            ? "bg-green-100 text-green-700"
+                            : item.approvalStatus === "REJECTED"
+                            ? "bg-red-100 text-red-700"
+                            : "bg-yellow-100 text-yellow-700"
+                        }`}
+                      >
+                        {getStatusLabel(item.approvalStatus)}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </Table>
+            )}
+          </>
         )}
       </Card>
     </div>
