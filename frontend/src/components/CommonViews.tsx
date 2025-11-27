@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import type { User, AcademicSchedule, CalendarEvent, Post } from "../types";
 import { Card, Button, Input } from "./ui";
 import { MOCK_CALENDAR_EVENTS } from "../constants";
@@ -12,7 +13,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     email: user.email,
-    phoneNumber: user.phoneNumber || "",
+    phone: user.phone || "",
     address: user.address || "",
     newPassword: "",
     confirmPassword: "",
@@ -41,7 +42,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
   const handleCancel = () => {
     setFormData({
       email: user.email,
-      phoneNumber: user.phoneNumber || "",
+      phone: user.phone || "",
       address: user.address || "",
       newPassword: "",
       confirmPassword: "",
@@ -85,7 +86,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
                   <h4 className="font-bold text-brand-blue text-sm uppercase tracking-wider">연락처 및 거주지</h4>
                 </div>
                 <Input label="이메일" name="email" value={formData.email} onChange={handleChange} placeholder="example@university.ac.kr" />
-                <Input label="전화번호" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} placeholder="010-0000-0000" />
+                <Input label="전화번호" name="phone" value={formData.phone} onChange={handleChange} placeholder="010-0000-0000" />
                 <div className="md:col-span-2">
                   <Input label="거주지 (주소)" name="address" value={formData.address} onChange={handleChange} placeholder="주소를 입력하세요" />
                 </div>
@@ -149,7 +150,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
                 </div>
                 <div className="col-span-1 md:col-span-2">
                   <span className="block text-xs font-medium text-slate-500 mb-1">전화번호</span>
-                  <span className="block text-base text-slate-800">{user.phoneNumber || "-"}</span>
+                  <span className="block text-base text-slate-800">{user.phone || "-"}</span>
                 </div>
                 <div className="col-span-1 md:col-span-2">
                   <span className="block text-xs font-medium text-slate-500 mb-1">거주지 (주소)</span>
@@ -187,13 +188,15 @@ export const NoticeBoard: React.FC = () => {
     <Card title="공지사항">
       <ul className="divide-y divide-slate-200">
         {announcements.map((ann) => (
-          <li key={ann.postId} className="py-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-slate-800">{ann.title}</h3>
-              <span className="text-sm text-slate-500">{new Date(ann.createdAt).toLocaleDateString()}</span>
-            </div>
-            <p className="mt-2 text-slate-600">{ann.content}</p>
-            <p className="mt-2 text-xs text-slate-400">게시자: {ann.writerName}</p>
+          <li key={ann.postId} className="py-4 hover:bg-slate-50 transition-colors duration-200">
+            <Link to={`/announcements/${ann.postId}`} className="block p-2">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-slate-800 group-hover:text-brand-blue">{ann.title}</h3>
+                <span className="text-sm text-slate-500">{new Date(ann.createdAt).toLocaleDateString()}</span>
+              </div>
+              <p className="mt-2 text-slate-600 truncate">{ann.content}</p>
+              <p className="mt-2 text-xs text-slate-400">게시자: {ann.writerName}</p>
+            </Link>
           </li>
         ))}
       </ul>

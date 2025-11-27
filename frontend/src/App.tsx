@@ -6,6 +6,7 @@ import type { User, UserRole } from "./types";
 import Auth from "./components/Auth";
 import LandingPage from "./components/LandingPage";
 import { UserProfile, NoticeBoard, AcademicCalendar } from "./components/CommonViews";
+import AnnouncementDetail from "./components/AnnouncementDetail";
 import { ICONS, MOCK_COURSES, MOCK_ANNOUNCEMENTS, MOCK_CALENDAR_EVENTS } from "./constants";
 
 // Student Views
@@ -41,9 +42,9 @@ import { AdminDashboard, AdminUserManagement, AdminSystemManagement } from "./co
 // --- Navigation Structures ---
 
 interface MenuNode {
-    label: string;
-    path: string;
-    children?: MenuNode[];
+  label: string;
+  path: string;
+  children?: MenuNode[];
 }
 
 const STUDENT_MENU: MenuNode[] = [
@@ -51,25 +52,25 @@ const STUDENT_MENU: MenuNode[] = [
     label: "수강",
     path: "",
     children: [
-        { label: "수강신청", path: "/student/course-registration" },
-        { label: "시간표 조회", path: "/student/timetable" },
+      { label: "수강신청", path: "/student/course-registration" },
+      { label: "시간표 조회", path: "/student/timetable" },
     ],
   },
   {
     label: "성적",
     path: "",
     children: [
-        { label: "금학기 성적", path: "/student/current-grades" },
-        { label: "전체 성적", path: "/student/all-grades" },
+      { label: "금학기 성적", path: "/student/current-grades" },
+      { label: "전체 성적", path: "/student/all-grades" },
     ],
   },
-  { 
-      label: "등록/장학", 
-      path: "", 
-      children: [
-          { label: "등록금 납부", path: "/student/tuition-payment" },
-          { label: "등록금 내역", path: "/student/tuition-history" },
-      ] 
+  {
+    label: "등록/장학",
+    path: "",
+    children: [
+      { label: "등록금 납부", path: "/student/tuition-payment" },
+      { label: "등록금 내역", path: "/student/tuition-history" },
+    ],
   },
   {
     label: "학적/졸업",
@@ -90,24 +91,24 @@ const PROFESSOR_MENU: MenuNode[] = [
     label: "강의 관리",
     path: "",
     children: [
-        { label: "강의 등록", path: "/professor/my-lectures" },
-        { label: "강의계획서", path: "/professor/syllabus" },
-        { label: "강의 자료", path: "/professor/course-materials" },
-        { label: "과제 관리", path: "/professor/assignments" },
+      { label: "강의 등록", path: "/professor/my-lectures" },
+      { label: "강의계획서", path: "/professor/syllabus" },
+      { label: "강의 자료", path: "/professor/course-materials" },
+      { label: "과제 관리", path: "/professor/assignments" },
     ],
   },
   {
     label: "학생 관리",
     path: "",
     children: [
-        { label: "수강생 출결", path: "/professor/student-attendance" },
-        { label: "성적 관리", path: "/professor/grade-management" },
+      { label: "수강생 출결", path: "/professor/student-attendance" },
+      { label: "성적 관리", path: "/professor/grade-management" },
     ],
   },
   {
-      label: "행정/연구",
-      path: "/professor/research",
-  }
+    label: "행정/연구",
+    path: "/professor/research",
+  },
 ];
 
 const ADMIN_MENU: MenuNode[] = [
@@ -183,49 +184,54 @@ const TopNavigation: React.FC<{
               학사일정
             </button>
             <div className="h-4 w-px bg-slate-300 my-auto"></div>
-            
+
             {menus.map((menu) => (
-              <div 
-                key={menu.label} 
+              <div
+                key={menu.label}
                 className="relative h-full flex items-center"
                 onMouseEnter={() => setHoveredMenu(menu.label)}
                 onMouseLeave={() => setHoveredMenu(null)}
               >
                 <button
                   onClick={() => {
-                      if (!menu.children && menu.path) navigate(menu.path);
+                    if (!menu.children && menu.path) navigate(menu.path);
                   }}
                   className={`text-sm font-medium transition-colors px-2 py-1 rounded-md flex items-center ${
                     isActiveMenu(menu) ? "text-brand-blue font-bold bg-blue-50" : "text-slate-600 hover:text-brand-blue hover:bg-slate-50"
-                  } ${!menu.children ? 'cursor-pointer' : 'cursor-default'}`}
+                  } ${!menu.children ? "cursor-pointer" : "cursor-default"}`}
                 >
                   {menu.label}
                   {menu.children && (
-                      <svg className={`ml-1 h-3 w-3 transition-transform ${hoveredMenu === menu.label ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
+                    <svg
+                      className={`ml-1 h-3 w-3 transition-transform ${hoveredMenu === menu.label ? "rotate-180" : ""}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
                   )}
                 </button>
 
                 {/* Dropdown */}
                 {menu.children && hoveredMenu === menu.label && (
-                    <div className="absolute top-full left-0 w-48 bg-white rounded-b-md shadow-lg py-2 border border-slate-100 animate-fade-in-down z-50">
-                        {menu.children.map((child) => (
-                            <button
-                                key={child.path}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigate(child.path);
-                                    setHoveredMenu(null);
-                                }}
-                                className={`block w-full text-left px-4 py-2 text-sm hover:bg-slate-50 ${
-                                    location.pathname === child.path ? "text-brand-blue font-bold bg-blue-50" : "text-slate-600"
-                                }`}
-                            >
-                                {child.label}
-                            </button>
-                        ))}
-                    </div>
+                  <div className="absolute top-full left-0 w-48 bg-white rounded-b-md shadow-lg py-2 border border-slate-100 animate-fade-in-down z-50">
+                    {menu.children.map((child) => (
+                      <button
+                        key={child.path}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(child.path);
+                          setHoveredMenu(null);
+                        }}
+                        className={`block w-full text-left px-4 py-2 text-sm hover:bg-slate-50 ${
+                          location.pathname === child.path ? "text-brand-blue font-bold bg-blue-50" : "text-slate-600"
+                        }`}
+                      >
+                        {child.label}
+                      </button>
+                    ))}
+                  </div>
                 )}
               </div>
             ))}
@@ -578,6 +584,14 @@ const App: React.FC = () => {
               }
             />
             <Route
+              path="/announcements/:id"
+              element={
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                  <AnnouncementDetail />
+                </div>
+              }
+            />
+            <Route
               path="/calendar"
               element={
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -601,7 +615,7 @@ const App: React.FC = () => {
                   path="/student/all-grades"
                   element={
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                      <StudentGradeCenter user={user} />  {/* ★ user 전달! */}
+                      <StudentGradeCenter user={user} /> {/* ★ user 전달! */}
                     </div>
                   }
                 />
@@ -633,7 +647,7 @@ const App: React.FC = () => {
                   path="/student/tuition-payment"
                   element={
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                      <StudentTuitionPayment setActiveView={() => { }} />
+                      <StudentTuitionPayment setActiveView={() => {}} />
                     </div>
                   }
                 />
@@ -681,7 +695,7 @@ const App: React.FC = () => {
                   path="/student/current-grades"
                   element={
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                      <StudentGradeCenter user={user} />  {/* ★ user 전달! */}
+                      <StudentGradeCenter user={user} /> {/* ★ user 전달! */}
                     </div>
                   }
                 />
@@ -692,7 +706,7 @@ const App: React.FC = () => {
             {user.role === "professor" && (
               <>
                 {/* Reusing the component with different viewType props as per feature/professor logic */}
-                
+
                 <Route
                   path="/professor/student-attendance"
                   element={
