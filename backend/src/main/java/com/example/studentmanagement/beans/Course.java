@@ -56,4 +56,16 @@ public class Course {
 
     @Column(name = "course_status", length = 20)
     private String courseStatus;
+
+    @Column(name = "ratio_mid")
+    private Integer ratioMid;
+
+    @Column(name = "ratio_final")
+    private Integer ratioFinal;
+
+    @Column(name = "ratio_assign")
+    private Integer ratioAssign;
+
+    @Column(name = "ratio_attend")
+    private Integer ratioAttend;
 }
