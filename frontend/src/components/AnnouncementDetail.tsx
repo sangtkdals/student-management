@@ -1,21 +1,32 @@
 import React, { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import type { Post } from "../types";
 import { Card } from "./ui";
 
-const AnnouncementDetail: React.FC = () => {
+interface AnnouncementDetailProps {
+  setIsLoading: (isLoading: boolean) => void;
+}
+
+const AnnouncementDetail: React.FC<AnnouncementDetailProps> = ({ setIsLoading }) => {
   const [announcement, setAnnouncement] = useState<Post | null>(null);
-  const [otherAnnouncements, setOtherAnnouncements] = useState<Post[]>([]);
+  const [announcements, setAnnouncements] = useState<Post[]>([]);
+  const [totalPages, setTotalPages] = useState(0);
+  const postsPerPage = 10;
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const query = new URLSearchParams(location.search);
+  const currentPage = parseInt(query.get("page") || "1", 10);
 
   useEffect(() => {
     if (id) {
-      // Fetch the specific announcement
-      axios
-        .get(`/api/announcements/${id}`)
-        .then((response) => {
-          const post = response.data;
+      const fetchPostDetail = async () => {
+        setIsLoading(true);
+        try {
+          const detailRes = await axios.get(`/api/announcements/${id}`);
+          const post = detailRes.data;
           const fetchedPost: Post = {
             postId: post.postId,
             title: post.postTitle,
@@ -27,35 +38,54 @@ const AnnouncementDetail: React.FC = () => {
             viewCount: post.viewCount,
           };
           setAnnouncement(fetchedPost);
-        })
-        .catch((error) => console.error("Error fetching announcement:", error));
-
-      // Fetch all announcements for the list
-      axios
-        .get("/api/announcements")
-        .then((response) => {
-          const allPosts = response.data.map(
-            (post: any): Post => ({
-              postId: post.postId,
-              title: post.postTitle,
-              content: post.postContent,
-              createdAt: post.createdAt,
-              writerName: post.writer.mName,
-              boardId: post.board.boardId,
-              writerId: post.writer.mNo,
-              viewCount: post.viewCount,
-            })
-          );
-          // Filter out the current announcement
-          setOtherAnnouncements(allPosts.filter((p: Post) => p.postId !== parseInt(id, 10)));
-        })
-        .catch((error) => console.error("Error fetching other announcements:", error));
+        } catch (error) {
+          console.error("Error fetching post detail:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchPostDetail();
     }
-  }, [id]);
+  }, [id, setIsLoading]);
+
+  useEffect(() => {
+    const fetchAnnouncements = async () => {
+      try {
+        const listRes = await axios.get(`/api/announcements?page=${currentPage - 1}&size=${postsPerPage}`);
+        const { content, totalPages: fetchedTotalPages } = listRes.data;
+
+        const fetchedPosts = content.map(
+          (post: any): Post => ({
+            postId: post.postId,
+            title: post.postTitle,
+            content: post.postContent,
+            createdAt: post.createdAt,
+            writerName: post.writer.mName,
+            boardId: post.board.boardId,
+            writerId: post.writer.mNo,
+            viewCount: post.viewCount,
+          })
+        );
+        setAnnouncements(fetchedPosts);
+        setTotalPages(fetchedTotalPages);
+      } catch (error) {
+        console.error("Error fetching announcements:", error);
+      }
+    };
+
+    fetchAnnouncements();
+  }, [currentPage]);
 
   if (!announcement) {
-    return <div>로딩 중...</div>;
+    return null;
   }
+
+  // Pagination logic
+  const paginate = (pageNumber: number) => {
+    if (pageNumber > 0 && pageNumber <= totalPages) {
+      navigate(`/announcements/${id}?page=${pageNumber}`);
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -71,17 +101,69 @@ const AnnouncementDetail: React.FC = () => {
         </div>
       </Card>
 
-      <Card title="다른 공지사항">
-        <ul className="divide-y">
-          {otherAnnouncements.map((ann) => (
-            <li key={ann.postId} className="hover:bg-slate-50 transition-colors">
-              <Link to={`/announcements/${ann.postId}`} className="flex justify-between items-center p-4">
-                <span className="text-slate-800">{ann.title}</span>
-                <span className="text-sm text-slate-500">{new Date(ann.createdAt).toLocaleDateString()}</span>
-              </Link>
-            </li>
+      <Card>
+        <div className="p-4">
+          <table className="w-full text-sm text-left text-slate-500">
+            <thead className="text-xs text-slate-700 uppercase bg-slate-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 w-20">
+                  번호
+                </th>
+                <th scope="col" className="px-6 py-3">
+                  제목
+                </th>
+                <th scope="col" className="px-6 py-3 w-32">
+                  작성자
+                </th>
+                <th scope="col" className="px-6 py-3 w-40">
+                  작성일
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {announcements.map((post) => (
+                <tr
+                  key={post.postId}
+                  className={`border-b ${post.postId === parseInt(id!, 10) ? "bg-blue-100 hover:bg-blue-200" : "bg-white hover:bg-slate-50"}`}
+                >
+                  <td className="px-6 py-4">{post.postId}</td>
+                  <th scope="row" className="px-6 py-4 font-medium text-slate-900 whitespace-nowrap">
+                    <Link to={`/announcements/${post.postId}?page=${currentPage}`} className="hover:underline">
+                      {post.title}
+                    </Link>
+                  </th>
+                  <td className="px-6 py-4">{post.writerName}</td>
+                  <td className="px-6 py-4">{new Date(post.createdAt).toLocaleDateString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="flex justify-center items-center p-4">
+          <button
+            onClick={() => paginate(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="px-4 py-2 mx-1 bg-white border rounded disabled:opacity-50"
+          >
+            이전
+          </button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
+            <button
+              key={number}
+              onClick={() => paginate(number)}
+              className={`px-4 py-2 mx-1 border rounded ${currentPage === number ? "bg-brand-blue text-white" : "bg-white"}`}
+            >
+              {number}
+            </button>
           ))}
-        </ul>
+          <button
+            onClick={() => paginate(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 mx-1 bg-white border rounded disabled:opacity-50"
+          >
+            다음
+          </button>
+        </div>
       </Card>
     </div>
   );

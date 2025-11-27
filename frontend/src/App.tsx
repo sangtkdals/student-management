@@ -534,16 +534,25 @@ const App: React.FC = () => {
     navigate("/");
   };
 
+  // Loading Bar Component
+  const LoadingBar = () => (
+    <div className="fixed top-0 left-0 w-full h-1 z-[9999] bg-brand-blue/20 overflow-hidden">
+      <div className="h-full bg-brand-blue animate-progress-bar"></div>
+    </div>
+  );
+
   // Authenticated Application Wrapper
   const AuthenticatedApp = ({ user, onLogout }: { user: User; onLogout: () => void }) => {
     const navigate = useNavigate();
     const location = useLocation();
+    const [isLoading, setIsLoading] = useState(false);
 
     // 학생(/student)과 교수(/professor) 경로에서도 파란색 배너(DashboardHero)가 나오도록 설정
     const isDashboard = ["/", "/student", "/professor", "/admin/dashboard"].includes(location.pathname);
 
     return (
       <div className="min-h-screen bg-brand-gray-light flex flex-col font-sans">
+        {isLoading && <LoadingBar />}
         <TopNavigation user={user} onLogout={onLogout} />
 
         {/* 파란색 배너 (프로필 + 오늘의 시간표) */}
@@ -587,7 +596,7 @@ const App: React.FC = () => {
               path="/announcements/:id"
               element={
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                  <AnnouncementDetail />
+                  <AnnouncementDetail setIsLoading={setIsLoading} />
                 </div>
               }
             />
