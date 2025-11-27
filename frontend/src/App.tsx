@@ -601,7 +601,7 @@ const App: React.FC = () => {
                   path="/student/all-grades"
                   element={
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                      <StudentGradeCenter />
+                      <StudentGradeCenter user={user} />  {/* ★ user 전달! */}
                     </div>
                   }
                 />
@@ -681,7 +681,7 @@ const App: React.FC = () => {
                   path="/student/current-grades"
                   element={
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                      <StudentGradeCenter />
+                      <StudentGradeCenter user={user} />  {/* ★ user 전달! */}
                     </div>
                   }
                 />
