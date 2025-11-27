@@ -564,3 +564,182 @@ export const AdminNoticeManagement: React.FC = () => {
     </Card>
   );
 };
+
+// AdminViews.tsx 파일 하단에 추가
+
+export const AdminTuitionManagement: React.FC = () => {
+  // 등록금 데이터 타입 정의 (실제로는 types.ts에 정의 권장)
+  interface TuitionData {
+    tuitionId: number;
+    studentNo: string;
+    studentName: string;
+    department: string;
+    academicYear: number;
+    semester: number;
+    amount: number;       // 등록금액
+    scholarship: number;  // 장학금액
+    paymentStatus: "PAID" | "UNPAID";
+    paymentDate?: string;
+  }
+
+  const [tuitionList, setTuitionList] = useState<TuitionData[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // 고지서 생성 폼 데이터
+  const [formData, setFormData] = useState({
+    studentNo: "",
+    year: new Date().getFullYear(),
+    semester: 1,
+    amount: 0,
+    scholarship: 0
+  });
+
+  useEffect(() => {
+    fetchTuitionList();
+  }, []);
+
+  const fetchTuitionList = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      // 실제 API 엔드포인트에 맞춰 수정 필요
+      const response = await axios.get("/api/tuition/admin/list", {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setTuitionList(response.data);
+    } catch (error) {
+      console.error("Error fetching tuition list:", error);
+      // MOCK 데이터 (API 연동 전 테스트용)
+      setTuitionList([
+        { tuitionId: 1, studentNo: "2024001", studentName: "김철수", department: "컴퓨터공학과", academicYear: 2024, semester: 1, amount: 4000000, scholarship: 1000000, paymentStatus: "UNPAID" },
+        { tuitionId: 2, studentNo: "2024002", studentName: "이영희", department: "경영학과", academicYear: 2024, semester: 1, amount: 3500000, scholarship: 0, paymentStatus: "PAID", paymentDate: "2024-02-20" },
+      ]);
+    }
+  };
+
+  // 납부 확인 처리
+  const handleConfirmPayment = async (id: number) => {
+    if (confirm("해당 학생의 등록금을 '납부 완료' 처리하시겠습니까?")) {
+      try {
+        const token = localStorage.getItem('token');
+        await axios.put(`/api/tuition/${id}/confirm`, {}, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        alert("납부 처리되었습니다.");
+        fetchTuitionList();
+      } catch (error) {
+        console.error("Error confirming payment:", error);
+        alert("처리 실패 (API 미연동 상태일 수 있습니다)");
+        // UI 테스트를 위해 강제 업데이트 로직 추가 가능
+      }
+    }
+  };
+
+  // 고지서 생성 (저장)
+  const handleCreateBill = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post("/api/tuition", formData, {
+          headers: { 'Authorization': `Bearer ${token}` }
+      });
+      alert("등록금 고지서가 생성되었습니다.");
+      setIsModalOpen(false);
+      fetchTuitionList();
+    } catch (error) {
+      console.error("Error creating bill:", error);
+      alert("생성 실패");
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    return status === "PAID" ? (
+      <span className="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">납부완료</span>
+    ) : (
+      <span className="px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">미납</span>
+    );
+  };
+
+  return (
+    <Card title="등록금 납부 관리">
+      <div className="mb-4 flex justify-between items-center">
+        <div className="text-sm text-slate-500">
+          총 대상자: {tuitionList.length}명 / 미납자: {tuitionList.filter(t => t.paymentStatus === "UNPAID").length}명
+        </div>
+        <Button onClick={() => setIsModalOpen(true)}>개별 고지서 생성</Button>
+      </div>
+
+      <Table headers={["학번", "이름", "학과", "학기", "실납부금액", "상태", "관리"]}>
+        {tuitionList.map((item) => (
+          <tr key={item.tuitionId}>
+            <td className="px-6 py-4 text-sm">{item.studentNo}</td>
+            <td className="px-6 py-4 text-sm font-medium">{item.studentName}</td>
+            <td className="px-6 py-4 text-sm">{item.department}</td>
+            <td className="px-6 py-4 text-sm">{item.academicYear}-{item.semester}</td>
+            <td className="px-6 py-4 text-sm font-bold text-slate-700">
+              {(item.amount - item.scholarship).toLocaleString()}원
+            </td>
+            <td className="px-6 py-4 text-sm">{getStatusBadge(item.paymentStatus)}</td>
+            <td className="px-6 py-4 text-sm">
+              {item.paymentStatus === "UNPAID" && (
+                <Button variant="secondary" onClick={() => handleConfirmPayment(item.tuitionId)}>
+                  납부 확인
+                </Button>
+              )}
+              {item.paymentStatus === "PAID" && (
+                <span className="text-xs text-slate-400">{item.paymentDate}</span>
+              )}
+            </td>
+          </tr>
+        ))}
+      </Table>
+
+      {/* 고지서 생성 모달 */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-96">
+            <h3 className="text-xl font-bold mb-4">등록금 고지서 생성</h3>
+            <Input 
+              label="학번" 
+              value={formData.studentNo}
+              onChange={(e) => setFormData({...formData, studentNo: e.target.value})}
+            />
+            <div className="flex space-x-2">
+                <div className="flex-1">
+                    <Input 
+                        label="년도" 
+                        type="number"
+                        value={formData.year}
+                        onChange={(e) => setFormData({...formData, year: Number(e.target.value)})}
+                    />
+                </div>
+                <div className="flex-1">
+                    <Input 
+                        label="학기" 
+                        type="number"
+                        value={formData.semester}
+                        onChange={(e) => setFormData({...formData, semester: Number(e.target.value)})}
+                    />
+                </div>
+            </div>
+            <Input 
+              label="등록금액 (원)" 
+              type="number"
+              value={formData.amount}
+              onChange={(e) => setFormData({...formData, amount: Number(e.target.value)})}
+            />
+            <Input 
+              label="장학금액 (원)" 
+              type="number"
+              value={formData.scholarship}
+              onChange={(e) => setFormData({...formData, scholarship: Number(e.target.value)})}
+            />
+            
+            <div className="flex justify-end space-x-2 mt-6">
+              <Button variant="secondary" onClick={() => setIsModalOpen(false)}>취소</Button>
+              <Button onClick={handleCreateBill}>생성</Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+};
