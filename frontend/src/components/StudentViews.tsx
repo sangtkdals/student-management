@@ -10,6 +10,7 @@ import {
   MOCK_ANNOUNCEMENTS,
   MOCK_CALENDAR_EVENTS,
 } from "../constants";
+import axios from "axios";
 
 // --- Mock Data & Types for Leave/Return (여기에 붙여넣기) ---
 
@@ -558,16 +559,44 @@ export const StudentLeaveApplication: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const handleSubmit = () => {
-    setIsSubmitting(true);
-    // API 호출 시뮬레이션
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setShowConfirm(false);
-      alert("휴학 신청이 완료되었습니다.");
-      navigate("/student/leave-history"); // 내역 페이지로 이동
-    }, 1500);
-  };
+  // 휴학 기간 상태 추가
+const [startYear, setStartYear] = useState(2025);
+const [startSemester, setStartSemester] = useState(1);
+const [endYear, setEndYear] = useState(2025);
+const [endSemester, setEndSemester] = useState(2);
+
+  const handleSubmit = async () => {
+  setIsSubmitting(true);
+  
+  try {
+    // 한글 휴학 타입을 영문 코드로 변환
+    const leaveTypeMap: Record<string, string> = {
+      "일반휴학": "GENERAL",
+      "군휴학": "MILITARY",
+      "질병휴학": "ILLNESS",
+      "창업휴학": "PREGNANCY"  // DB에 PREGNANCY 타입이 있으므로 매핑
+    };
+    
+    // 백엔드 API 호출
+    await axios.post("/api/leave-applications", {
+      leaveType: leaveTypeMap[leaveType],
+      startYear,
+      startSemester,
+      endYear,
+      endSemester,
+      reason
+    });
+    
+    alert("휴학 신청이 완료되었습니다.");
+    navigate("/student/leave-history");
+  } catch (error) {
+    console.error("Error submitting leave application:", error);
+    alert("휴학 신청 실패");
+  } finally {
+    setIsSubmitting(false);
+    setShowConfirm(false);
+  }
+};
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -618,13 +647,31 @@ export const StudentLeaveApplication: React.FC = () => {
               휴학 기간 (예정)
             </label>
             <div className="flex items-center space-x-2">
-              <select className="flex-1 border border-slate-300 rounded-md py-2 px-3">
-                <option>2025-1학기 부터</option>
+              <select 
+                value={`${startYear}-${startSemester}`}
+                onChange={(e) => {
+                  const [year, semester] = e.target.value.split('-');
+                  setStartYear(parseInt(year));
+                  setStartSemester(parseInt(semester));
+                }}
+                className="flex-1 border border-slate-300 rounded-md py-2 px-3"
+              >
+                <option value="2025-1">2025-1학기 부터</option>
+                <option value="2025-2">2025-2학기 부터</option>
               </select>
               <span className="text-slate-500">~</span>
-              <select className="flex-1 border border-slate-300 rounded-md py-2 px-3">
-                <option>2025-2학기 까지 (1년)</option>
-                <option>2025-1학기 까지 (6개월)</option>
+              <select 
+                value={`${endYear}-${endSemester}`}
+                onChange={(e) => {
+                  const [year, semester] = e.target.value.split('-');
+                  setEndYear(parseInt(year));
+                  setEndSemester(parseInt(semester));
+                }}
+                className="flex-1 border border-slate-300 rounded-md py-2 px-3"
+              >
+                <option value="2025-2">2025-2학기 까지 (1년)</option>
+                <option value="2025-1">2025-1학기 까지 (6개월)</option>
+                <option value="2026-1">2026-1학기 까지 (1.5년)</option>
               </select>
             </div>
           </div>

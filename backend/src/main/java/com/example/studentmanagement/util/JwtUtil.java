@@ -4,8 +4,6 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
@@ -13,23 +11,33 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 @Component
 public class JwtUtil {
 
     // In a real application, store this in application.properties or environment variables
-    private final String SECRET_KEY_STRING = "your-256-bit-secret-your-256-bit-secret"; 
+    private final String SECRET_KEY_STRING = "your-256-bit-secret-your-256-bit-secret";
     private final Key SECRET_KEY = Keys.hmacShaKeyFor(SECRET_KEY_STRING.getBytes());
-    
+
     // 15 minutes validity for access token
-    private final long ACCESS_TOKEN_VALIDITY_MS = 1000 * 60 * 15; 
+    private final long ACCESS_TOKEN_VALIDITY_MS = 1000 * 60 * 15;
     // 7 days validity for refresh token
     private final long REFRESH_TOKEN_VALIDITY_MS = 1000 * 60 * 60 * 24 * 7;
 
-    @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
+    // In-memory storage for refresh tokens (replace Redis)
+    private final Map<String, RefreshTokenData> refreshTokenStore = new ConcurrentHashMap<>();
+
+    private static class RefreshTokenData {
+        String token;
+        long expiryTime;
+
+        RefreshTokenData(String token, long expiryTime) {
+            this.token = token;
+            this.expiryTime = expiryTime;
+        }
+    }
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -76,16 +84,21 @@ public class JwtUtil {
 
     public String createRefreshToken(String memberId) {
         String refreshToken = UUID.randomUUID().toString();
-        redisTemplate.opsForValue().set(
-                memberId,
-                refreshToken,
-                REFRESH_TOKEN_VALIDITY_MS,
-                TimeUnit.MILLISECONDS
-        );
+        long expiryTime = System.currentTimeMillis() + REFRESH_TOKEN_VALIDITY_MS;
+        refreshTokenStore.put(memberId, new RefreshTokenData(refreshToken, expiryTime));
         return refreshToken;
     }
 
     public String getRefreshToken(String memberId) {
-        return (String) redisTemplate.opsForValue().get(memberId);
+        RefreshTokenData data = refreshTokenStore.get(memberId);
+        if (data == null) {
+            return null;
+        }
+        // Check if token is expired
+        if (System.currentTimeMillis() > data.expiryTime) {
+            refreshTokenStore.remove(memberId);
+            return null;
+        }
+        return data.token;
     }
 }

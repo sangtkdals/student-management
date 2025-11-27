@@ -159,6 +159,7 @@ export interface Tuition {
 export interface LeaveApplication {
   applicationId: number;
   studentNo: string;
+  studentName?: string;
   leaveType: "GENERAL" | "MILITARY" | "ILLNESS" | "PREGNANCY";
   startYear: number;
   startSemester: number;

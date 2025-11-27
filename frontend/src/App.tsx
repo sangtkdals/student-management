@@ -36,7 +36,7 @@ import {
 } from "./components/ProfessorViews";
 
 // Admin Views
-import { AdminDashboard, AdminUserManagement, AdminSystemManagement } from "./components/AdminViews";
+import { AdminDashboard, AdminUserManagement, AdminSystemManagement, AdminScheduleManagement, AdminLeaveManagement, AdminNoticeManagement } from "./components/AdminViews";
 
 // --- Navigation Structures ---
 
@@ -112,7 +112,10 @@ const PROFESSOR_MENU: MenuNode[] = [
 
 const ADMIN_MENU: MenuNode[] = [
   { label: "사용자 관리", path: "/admin/user-management" },
-  { label: "시스템 관리", path: "/admin/system-management" },
+  { label: "강의 관리", path: "/admin/system-management" },
+  { label: "휴학/복학 관리", path: "/admin/leave-management" },
+  { label: "학사일정 관리", path: "/admin/schedule-management" },
+  { label: "공지사항 관리", path: "/admin/notice-management" },
 ];
 
 // --- Components ---
@@ -772,6 +775,14 @@ const App: React.FC = () => {
                     </div>
                   }
                 />
+                <Route 
+                  path="/admin/notice-management" 
+                  element={
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                      <AdminNoticeManagement />
+                    </div>
+                  } 
+                />
                 <Route
                   path="/admin/system-management"
                   element={
@@ -780,6 +791,10 @@ const App: React.FC = () => {
                     </div>
                   }
                 />
+                <Route
+                   path="/admin/schedule-management" 
+                   element={<AdminScheduleManagement />} />
+                <Route path="/admin/leave-management" element={<AdminLeaveManagement />} />
               </>
             )}
 
