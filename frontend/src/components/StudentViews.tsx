@@ -16,8 +16,8 @@ export const StudentHome: React.FC<{ user: User }> = ({ user }) => {
   const navigate = useNavigate();
 
   return (
-    // -mt-6: 상단 파란색 배너(DashboardHero)와 살짝 겹치게 하여 일체감 있는 디자인 연출
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 -mt-6 relative z-10">
+    // -mt-6 제거: 상단/하단 마진 균형 맞춤
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* 1. 주요 서비스 바로가기 (Quick Links) */}
         <div className="md:col-span-3">
@@ -388,7 +388,7 @@ export const StudentGradeCenter: React.FC<{ user: User }> = ({ user }) => {
 
 // 라우터에서 기존에 StudentAllGrades를 사용하고 있을 수 있으니
 // StudentGradeCenter를 그대로 래핑해서 export
-export const StudentAllGrades: React.FC = () => <StudentGradeCenter />;
+export const StudentAllGrades: React.FC<{ user: User }> = ({ user }) => <StudentGradeCenter user={user} />;
 
 // Simple Placeholder Components for other views with standard padding
 const PlaceholderView: React.FC<{ title: string; desc: string }> = ({
