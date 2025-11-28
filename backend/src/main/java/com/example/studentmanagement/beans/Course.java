@@ -21,6 +21,9 @@ public class Course {
     @Column(name = "semester")
     private Integer semester;
 
+    @Column(name = "course_name", length = 100)
+    private String courseName;
+
     @ManyToOne
     @JoinColumn(name = "s_code")
     private Subject subject;

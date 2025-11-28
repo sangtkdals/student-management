@@ -97,6 +97,7 @@ export interface Course {
   status: CourseStatus;
 
   // UI 표시용 (Join된 데이터)
+  courseName?: string; // course_name column
   subjectName?: string;
   professorName?: string;
   credit?: number; // subject 테이블에서 가져옴
