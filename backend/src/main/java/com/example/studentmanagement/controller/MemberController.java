@@ -21,7 +21,7 @@ public class MemberController {
     // GET /api/members - 전체 사용자 목록 조회 (필터링 옵션)
     @GetMapping
     public ResponseEntity<List<MemberDTO>> getAllMembers(
-            @RequestParam(required = false) String memberType) {
+            @RequestParam(value = "memberType", required = false) String memberType) {
 
         List<Member> members;
         if (memberType != null && !memberType.isEmpty()) {

@@ -338,3 +338,20 @@ VALUES ('student', '1234', '김학생', 'STUDENT', '20210001', 'student@deu.ac.k
 -- 샘플 교수 계정 추가
 INSERT INTO member (m_id, m_pwd, m_name, m_type, m_no, m_email, dept_code, position)
 VALUES ('professor', '1234', '이교수', 'PROFESSOR', 'prof001', 'professor@deu.ac.kr', 'CS', '조교수');
+
+-- 추가 학생 계정들 (등록금 테스트용)
+INSERT INTO member (m_id, m_pwd, m_name, m_type, m_no, m_email, dept_code, stu_grade, enrollment_status)
+VALUES
+('student2', '1234', '박민수', 'STUDENT', '20210002', 'student2@deu.ac.kr', 'CS', 2, 'ENROLLED'),
+('student3', '1234', '최영희', 'STUDENT', '20210003', 'student3@deu.ac.kr', 'CS', 3, 'ENROLLED'),
+('student4', '1234', '정철수', 'STUDENT', '20210004', 'student4@deu.ac.kr', 'CS', 1, 'ENROLLED'),
+('student5', '1234', '강지은', 'STUDENT', '20210005', 'student5@deu.ac.kr', 'CS', 4, 'ENROLLED');
+
+-- 샘플 등록금 데이터 추가 (실제 납부금액 = 등록금 - 장학금)
+INSERT INTO tuition (stu_no, academic_year, semester, tuition_amount, scholarship_amount, paid_amount, bill_date, due_date, payment_status)
+VALUES
+('20210001', 2025, 1, 4000000, 1000000, 0, '2025-01-10', '2025-02-10', 'UNPAID'),
+('20210002', 2025, 1, 4000000, 2000000, 2000000, '2025-01-10', '2025-02-10', 'PAID'),
+('20210003', 2025, 1, 4000000, 500000, 0, '2025-01-10', '2025-02-10', 'UNPAID'),
+('20210004', 2025, 1, 4000000, 0, 4000000, '2025-01-10', '2025-02-10', 'PAID'),
+('20210005', 2025, 1, 4000000, 3000000, 0, '2025-01-10', '2025-02-10', 'UNPAID');

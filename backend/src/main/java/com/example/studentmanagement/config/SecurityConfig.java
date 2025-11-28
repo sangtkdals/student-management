@@ -60,6 +60,14 @@ public class SecurityConfig {
         .requestMatchers(HttpMethod.GET, "/api/leave-applications/on-leave").hasRole("ADMIN")
         .requestMatchers(HttpMethod.GET, "/api/leave-applications").hasRole("ADMIN")
         
+        // 등록금 관리
+        .requestMatchers(HttpMethod.GET, "/api/tuition/my").hasRole("STUDENT")
+        .requestMatchers(HttpMethod.GET, "/api/tuition/admin/list").hasRole("ADMIN")
+        .requestMatchers(HttpMethod.POST, "/api/tuition").hasRole("ADMIN")
+        .requestMatchers(HttpMethod.PUT, "/api/tuition/*/confirm").hasRole("ADMIN")
+        .requestMatchers(HttpMethod.DELETE, "/api/tuition/*").hasRole("ADMIN")
+        .requestMatchers(HttpMethod.GET, "/api/tuition/*").authenticated()
+
         .requestMatchers("/api/members/**").hasRole("ADMIN")
 
         .anyRequest().authenticated()
@@ -89,5 +97,10 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return new CorsFilter(source);
+    }
+
+    @Bean
+public org.springframework.security.crypto.password.PasswordEncoder passwordEncoder() {
+    return new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
     }
 }
