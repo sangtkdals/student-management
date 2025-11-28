@@ -22,7 +22,7 @@ import {
   StudentReturnApplication,
   StudentReturnHistory,
   StudentCertificateIssuance,
-  StudentTimetable,
+  StudentMyTimetable,
 } from "./components/StudentViews";
 
 // Professor Views
@@ -51,7 +51,6 @@ const AppRoutes = ({ user, onLogout }: { user: User; onLogout: () => void }) => 
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
 
-  // 학생(/student)과 교수(/professor) 경로에서도 파란색 배너(DashboardHero)가 나오도록 설정
   const isDashboard = ["/", "/student", "/professor", "/admin/dashboard"].includes(location.pathname);
 
   return (
@@ -59,7 +58,6 @@ const AppRoutes = ({ user, onLogout }: { user: User; onLogout: () => void }) => 
       {isLoading && <LoadingBar />}
       <TopNavigation user={user} onLogout={onLogout} />
 
-      {/* 파란색 배너 (프로필 + 오늘의 시간표) */}
       {isDashboard && <DashboardHero user={user} navigate={navigate} />}
       <main className="flex-1">
         <Routes>
@@ -128,7 +126,7 @@ const AppRoutes = ({ user, onLogout }: { user: User; onLogout: () => void }) => 
                 path="/student/all-grades"
                 element={
                   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <StudentGradeCenter user={user} /> {/* ★ user 전달! */}
+                    <StudentGradeCenter user={user} />
                   </div>
                 }
               />
@@ -196,19 +194,22 @@ const AppRoutes = ({ user, onLogout }: { user: User; onLogout: () => void }) => 
                   </div>
                 }
               />
+
+              {/* [수정] Navigation.ts의 경로(/student/Mytimetable)와 일치시킴 */}
               <Route
-                path="/student/timetable"
+                path="/student/Mytimetable"
                 element={
                   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <StudentTimetable />
+                    <StudentMyTimetable />
                   </div>
                 }
               />
+
               <Route
                 path="/student/current-grades"
                 element={
                   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <StudentGradeCenter user={user} /> {/* ★ user 전달! */}
+                    <StudentGradeCenter user={user} />
                   </div>
                 }
               />
@@ -218,8 +219,6 @@ const AppRoutes = ({ user, onLogout }: { user: User; onLogout: () => void }) => 
           {/* Professor Specific Routes */}
           {user.role === "professor" && (
             <>
-              {/* Reusing the component with different viewType props as per feature/professor logic */}
-
               <Route
                 path="/professor/student-attendance"
                 element={

@@ -1,3 +1,5 @@
+// src/navigation.ts
+
 export interface MenuNode {
   label: string;
   path: string;
@@ -10,7 +12,7 @@ export const STUDENT_MENU: MenuNode[] = [
     path: "",
     children: [
       { label: "수강신청", path: "/student/course-registration" },
-      { label: "시간표 조회", path: "/student/timetable" },
+      { label: "시간표 조회", path: "/student/Mytimetable" },
     ],
   },
   {
