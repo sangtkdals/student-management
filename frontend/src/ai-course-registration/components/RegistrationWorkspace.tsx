@@ -37,7 +37,7 @@ const RegistrationWorkspace: React.FC<RegistrationWorkspaceProps> = ({ courses, 
         <div className="flex gap-2">
           <TabButton view="list" label="신청 목록" icon={<ListBulletIcon className="h-5 w-5" />} />
           <TabButton view="wishlist" label="관심강의" icon={<BookmarkIcon className="h-5 w-5" />} />
-          <TabButton view="timetable" label="시간표" icon={<TableCellsIcon className="h-5 w-5" />} />
+          <TabButton view="MyTimetable" label="시간표" icon={<TableCellsIcon className="h-5 w-5" />} />
         </div>
       </div>
       
