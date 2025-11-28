@@ -1,0 +1,5 @@
+{
+  "name": "DEU Course Registration",
+  "description": "A web application simulating the Dong-eui University (DEU) course registration system, allowing students to search, select, and manage their courses for the upcoming semester.",
+  "requestFramePermissions": []
+}

@@ -502,7 +502,10 @@ const DashboardContent: React.FC<{ navigate: ReturnType<typeof useNavigate>; use
 };
 
 const App: React.FC = () => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    const savedUser = localStorage.getItem("user");
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
   const [authRole, setAuthRole] = useState<UserRole>("student");
   const navigate = useNavigate();
 
@@ -518,6 +521,8 @@ const App: React.FC = () => {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
     setUser(null);
     setAuthRole("student");
     navigate("/");

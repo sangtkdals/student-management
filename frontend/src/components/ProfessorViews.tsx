@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import type { User, Course } from "../types";
 import { Card, Table, Button, Modal, Input } from "./ui";
 import { MOCK_COURSES, MOCK_STUDENT_RECORDS, MOCK_ANNOUNCEMENTS, MOCK_CALENDAR_EVENTS } from "../constants";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 // --- Helper Components & Interfaces ---
 
@@ -110,7 +110,32 @@ const ProfessorVisualTimetable: React.FC<{ courses: Course[] }> = ({ courses }) 
 
 export const ProfessorHome: React.FC<ProfessorHomeProps> = ({ user }) => {
   const navigate = useNavigate();
-  const myCourses = MOCK_COURSES.filter((c) => c.professorName === user.name);
+  const [myCourses, setMyCourses] = useState<Course[]>([]);
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        // API Endpoint: /api/courses/professor/{memberNo}
+        const response = await fetch(`http://localhost:8080/api/courses/professor/${user.memberNo}`, {
+           headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (response.ok) {
+           const data = await response.json();
+           const mappedCourses = data.map((c: any) => ({
+             ...c,
+             subjectName: c.subject?.sName || c.courseCode // Ensure subjectName exists
+           }));
+           setMyCourses(mappedCourses);
+        }
+      } catch (error) {
+        console.error("Failed to fetch professor courses", error);
+      }
+    };
+    if (user.memberNo) {
+      fetchCourses();
+    }
+  }, [user.memberNo]);
 
   return (
     <div className="space-y-8">
@@ -127,26 +152,30 @@ export const ProfessorHome: React.FC<ProfessorHomeProps> = ({ user }) => {
             }
           >
             <div className="space-y-4">
-              {myCourses.map((course) => (
-                <div
-                  key={course.courseCode}
-                  className="p-4 bg-slate-50 rounded-lg flex justify-between items-center transition-shadow hover:shadow-md cursor-pointer"
-                  onClick={() => navigate("/professor/my-lectures")}
-                >
-                  <div>
-                    <p className="font-bold text-slate-800">
-                      {course.subjectName} <span className="text-sm font-normal text-slate-500">({course.courseCode})</span>
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      {course.courseTime} / {course.classroom}
-                    </p>
+              {myCourses.length > 0 ? (
+                myCourses.map((course) => (
+                  <div
+                    key={course.courseCode}
+                    className="p-4 bg-slate-50 rounded-lg flex justify-between items-center transition-shadow hover:shadow-md cursor-pointer"
+                    onClick={() => navigate("/professor/my-lectures")}
+                  >
+                    <div>
+                      <p className="font-bold text-slate-800">
+                        {course.subjectName} <span className="text-sm font-normal text-slate-500">({course.courseCode})</span>
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        {course.courseTime} / {course.classroom}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-brand-blue">{course.currentStudents}명</p>
+                      <p className="text-xs text-slate-400">수강중</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-brand-blue">{course.currentStudents}명</p>
-                    <p className="text-xs text-slate-400">수강중</p>
-                  </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-slate-500 text-center py-4">강의가 없습니다.</p>
+              )}
             </div>
           </Card>
         </div>
@@ -248,23 +277,81 @@ export const ProfessorHome: React.FC<ProfessorHomeProps> = ({ user }) => {
 
 export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
   const navigate = useNavigate();
-  const initialCourses = MOCK_COURSES.filter((c) => c.professorName === user.name);
-  const [localCourses, setLocalCourses] = useState<Course[]>(initialCourses);
+  const [localCourses, setLocalCourses] = useState<Course[]>([]);
   const [markedForDeletion, setMarkedForDeletion] = useState<Set<string>>(new Set());
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [newCourse, setNewCourse] = useState({
-    subjectName: "",
-    courseCode: "",
-    courseTime: "",
-    classroom: "",
-    subjectCode: "CS101" // Default
+    subjectName: "소프트웨어공학",
+    courseCode: "CS303",
+    courseTime: "월 10:00-12:00",
+    classroom: "공학관 305호",
+    subjectCode: "CS303",
+    courseClass: "01",
+    maxStudents: 50,
+    credit: 3,
+    academicYear: 2024,
+    semester: 1
   });
+  const [addedCourses, setAddedCourses] = useState<Set<string>>(new Set());
+  const [selectedCourseDetail, setSelectedCourseDetail] = useState<Course | null>(null);
 
-  const hasChanges = markedForDeletion.size > 0;
+  // Time Slot State
+  const [timeSlots, setTimeSlots] = useState<{ day: string; start: string; end: string }[]>([
+    { day: "월", start: "10:00", end: "12:00" }
+  ]);
+  const [currentSlot, setCurrentSlot] = useState({ day: "월", start: "09:00", end: "10:00" });
+
+  const fetchCourses = async () => {
+    try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(`http://localhost:8080/api/courses/professor/${user.memberNo}`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (response.ok) {
+            const data = await response.json();
+            // Map backend response to Course type if needed, or assuming it matches
+            // Need to ensure subjectName is present (join in backend or provided)
+            // The backend Course entity has 'subject' object. Frontend Course has 'subjectName'.
+            const mappedCourses = data.map((c: any) => ({
+                ...c,
+                subjectName: c.subject?.sName || c.courseCode, // Fallback
+                subjectCode: c.subject?.sCode
+            }));
+            setLocalCourses(mappedCourses);
+        } else {
+            console.error("Failed to fetch courses");
+        }
+    } catch (error) {
+        console.error("Error fetching courses:", error);
+    }
+  };
+
+  useEffect(() => {
+      fetchCourses();
+  }, [user.memberNo]);
+
+  const addTimeSlot = () => {
+    setTimeSlots([...timeSlots, currentSlot]);
+  };
+
+  const removeTimeSlot = (index: number) => {
+    setTimeSlots(timeSlots.filter((_, i) => i !== index));
+  };
+
+  useEffect(() => {
+    // Sync timeSlots to newCourse.courseTime string
+    // Format: "월 10:00-12:00, 수 10:00-11:00"
+    const timeString = timeSlots
+      .map((slot) => `${slot.day} ${slot.start}-${slot.end}`)
+      .join(", ");
+    setNewCourse((prev) => ({ ...prev, courseTime: timeString }));
+  }, [timeSlots]);
+
+  const hasChanges = markedForDeletion.size > 0; // Only delete is batched in this UI logic, or we can make delete immediate
 
   const getCourseType = (subjectCode: string) => {
-    if (subjectCode.startsWith("CS")) return { label: "전공필수", color: "bg-red-100 text-red-800" };
-    if (subjectCode.startsWith("MA")) return { label: "전공선택", color: "bg-blue-100 text-blue-800" };
+    if (subjectCode && subjectCode.startsWith("CS")) return { label: "전공필수", color: "bg-red-100 text-red-800" };
+    if (subjectCode && subjectCode.startsWith("MA")) return { label: "전공선택", color: "bg-blue-100 text-blue-800" };
     return { label: "교양", color: "bg-gray-100 text-gray-800" };
   };
 
@@ -278,34 +365,72 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
     setMarkedForDeletion(newMarked);
   };
 
-  const handleSave = () => {
-    setLocalCourses((prev) => prev.filter((c) => !markedForDeletion.has(c.courseCode)));
-    setMarkedForDeletion(new Set());
-    alert("변경사항이 저장되었습니다.");
+  const handleSave = async () => {
+    // Process deletions
+    if (markedForDeletion.size > 0) {
+        const token = localStorage.getItem("token");
+        for (const courseCode of markedForDeletion) {
+            try {
+                await fetch(`http://localhost:8080/api/courses/${courseCode}`, {
+                    method: "DELETE",
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+            } catch (e) {
+                console.error("Failed to delete course", courseCode, e);
+            }
+        }
+        setMarkedForDeletion(new Set());
+        await fetchCourses(); // Refresh list
+        alert("변경사항이 저장되었습니다.");
+    }
   };
 
-  const handleRegisterCourse = (e: React.FormEvent) => {
+  const handleRegisterCourse = async (e: React.FormEvent) => {
       e.preventDefault();
-      const courseToAdd: Course = {
+      const courseToAdd = {
           ...newCourse,
-          academicYear: 2024,
-          semester: 1,
           professorNo: user.memberNo,
-          courseClass: "01",
-          professorName: user.name,
-          // department: user.departmentName || "Computer Science", // Course 타입에 department 없음
-          credit: 3, 
-          currentStudents: 0,
-          maxStudents: 40,
-          status: "OPEN",
-          objectives: "",
-          content: "",
-          textbookInfo: "",
-          evaluationMethod: ""
       };
-      setLocalCourses([...localCourses, courseToAdd]);
-      setIsRegisterModalOpen(false);
-      setNewCourse({ subjectName: "", courseCode: "", courseTime: "", classroom: "", subjectCode: "CS101" });
+
+      try {
+          const token = localStorage.getItem("token");
+          const response = await fetch("http://localhost:8080/api/courses", {
+              method: "POST",
+              headers: { 
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${token}`
+              },
+              body: JSON.stringify(courseToAdd)
+          });
+
+          if (response.ok) {
+              setIsRegisterModalOpen(false);
+              // Reset to dummy data for next entry (debugging convenience)
+              setNewCourse({ 
+                subjectName: "데이터베이스", 
+                courseCode: "CS304", 
+                courseTime: "수 13:00-15:00", 
+                classroom: "정보관 202호", 
+                subjectCode: "CS304",
+                courseClass: "02",
+                maxStudents: 45,
+                credit: 3,
+                academicYear: 2024,
+                semester: 1
+              });
+              setTimeSlots([
+                { day: "수", start: "13:00", end: "15:00" }
+              ]);
+              await fetchCourses(); // Refresh list
+              alert("강의가 등록되었습니다.");
+          } else {
+              const msg = await response.text();
+              alert("등록 실패: " + msg);
+          }
+      } catch (error) {
+          console.error("Error registering course:", error);
+          alert("오류가 발생했습니다.");
+      }
   };
 
   const activeCourses = localCourses.filter((c) => !markedForDeletion.has(c.courseCode));
@@ -317,9 +442,6 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
           <div className="lg:col-span-3 p-6">
             <div className="flex justify-between items-center mb-8">
               <h3 className="text-lg font-bold text-slate-800">주간 시간표</h3>
-              <Button variant="secondary" size="sm" onClick={() => navigate("/professor/timetable")}>
-                크게 보기
-              </Button>
             </div>
             <ProfessorVisualTimetable courses={activeCourses} />
           </div>
@@ -356,10 +478,17 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
 
                       {!isMarked && (
                         <div className="mt-4 border-t pt-4 flex flex-wrap gap-2">
+                          <Button size="sm" variant="secondary" onClick={() => setSelectedCourseDetail(course)}>
+                            자세히 보기
+                          </Button>
                           <Button size="sm" variant="secondary" onClick={() => navigate("/professor/student-management")}>
                             학생 관리
                           </Button>
-                          <Button size="sm" variant="secondary" onClick={() => navigate("/professor/syllabus")}>
+                          <Button 
+                            size="sm" 
+                            variant="secondary" 
+                            onClick={() => navigate("/professor/syllabus", { state: { course } })}
+                          >
                             계획서 관리
                           </Button>
                         </div>
@@ -405,42 +534,233 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
         </div>
       </Card>
 
-      <Modal isOpen={isRegisterModalOpen} onClose={() => setIsRegisterModalOpen(false)} title="새 강의 등록">
+      <Modal 
+        isOpen={isRegisterModalOpen} 
+        onClose={() => setIsRegisterModalOpen(false)} 
+        title="새 강의 등록"
+        className="rounded-none border-2 border-slate-900 shadow-none"
+      >
           <form onSubmit={handleRegisterCourse} className="space-y-4">
               <Input 
                 label="과목명" 
                 value={newCourse.subjectName} 
                 onChange={e => setNewCourse({...newCourse, subjectName: e.target.value})} 
                 required 
+                className="rounded-none border-slate-400 focus:border-slate-900 focus:ring-slate-900"
               />
               <div className="grid grid-cols-2 gap-4">
                 <Input 
-                    label="과목코드" 
+                    label="강의 코드" 
                     value={newCourse.courseCode} 
                     onChange={e => setNewCourse({...newCourse, courseCode: e.target.value})} 
                     required 
-                    placeholder="예: CS101"
+                    className="rounded-none border-slate-400 focus:border-slate-900 focus:ring-slate-900"
                 />
                 <Input 
-                    label="강의실" 
-                    value={newCourse.classroom} 
-                    onChange={e => setNewCourse({...newCourse, classroom: e.target.value})} 
+                    label="과목 코드" 
+                    value={newCourse.subjectCode} 
+                    onChange={e => setNewCourse({...newCourse, subjectCode: e.target.value})} 
                     required 
+                    className="rounded-none border-slate-400 focus:border-slate-900 focus:ring-slate-900"
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <Input 
+                    label="학년도" 
+                    type="number"
+                    value={String(newCourse.academicYear)} 
+                    onChange={e => setNewCourse({...newCourse, academicYear: parseInt(e.target.value)})} 
+                    required 
+                    className="rounded-none border-slate-400 focus:border-slate-900 focus:ring-slate-900"
+                />
+                <Input 
+                    label="학기" 
+                    type="number"
+                    value={String(newCourse.semester)} 
+                    onChange={e => setNewCourse({...newCourse, semester: parseInt(e.target.value)})} 
+                    required 
+                    className="rounded-none border-slate-400 focus:border-slate-900 focus:ring-slate-900"
+                />
+                <Input 
+                    label="분반" 
+                    value={newCourse.courseClass} 
+                    onChange={e => setNewCourse({...newCourse, courseClass: e.target.value})} 
+                    required 
+                    className="rounded-none border-slate-400 focus:border-slate-900 focus:ring-slate-900"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Input 
+                    label="수강정원" 
+                    type="number"
+                    value={String(newCourse.maxStudents)} 
+                    onChange={e => setNewCourse({...newCourse, maxStudents: parseInt(e.target.value)})} 
+                    required 
+                    className="rounded-none border-slate-400 focus:border-slate-900 focus:ring-slate-900"
+                />
+                <Input 
+                    label="학점" 
+                    type="number"
+                    value={String(newCourse.credit)} 
+                    onChange={e => setNewCourse({...newCourse, credit: parseInt(e.target.value)})} 
+                    required 
+                    className="rounded-none border-slate-400 focus:border-slate-900 focus:ring-slate-900"
                 />
               </div>
               <Input 
-                label="강의 시간" 
-                value={newCourse.courseTime} 
-                onChange={e => setNewCourse({...newCourse, courseTime: e.target.value})} 
-                required 
-                placeholder="예: 월 10:00-12:00, 수 10:00-11:00"
+                  label="강의실" 
+                  value={newCourse.classroom} 
+                  onChange={e => setNewCourse({...newCourse, classroom: e.target.value})} 
+                  required 
+                  className="rounded-none border-slate-400 focus:border-slate-900 focus:ring-slate-900"
               />
               
+              {/* 강의 시간 선택 UI */}
+              <div className="space-y-2">
+                <label className="block text-sm font-bold text-slate-900">강의 시간</label>
+                <div className="flex space-x-2 items-end">
+                  <div className="flex-1">
+                    <label className="text-xs text-slate-500 block mb-1">요일</label>
+                    <select 
+                      className="w-full border border-slate-400 rounded-none p-2 text-sm focus:border-slate-900 focus:ring-slate-900"
+                      value={currentSlot.day}
+                      onChange={(e) => setCurrentSlot({ ...currentSlot, day: e.target.value })}
+                    >
+                      {["월", "화", "수", "목", "금"].map(d => <option key={d} value={d}>{d}요일</option>)}
+                    </select>
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-xs text-slate-500 block mb-1">시작 시간</label>
+                    <select 
+                      className="w-full border border-slate-400 rounded-none p-2 text-sm focus:border-slate-900 focus:ring-slate-900"
+                      value={currentSlot.start}
+                      onChange={(e) => setCurrentSlot({ ...currentSlot, start: e.target.value })}
+                    >
+                      {Array.from({ length: 9 }, (_, i) => i + 9).map(h => (
+                        <option key={h} value={`${h < 10 ? '0' + h : h}:00`}>{`${h < 10 ? '0' + h : h}:00`}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-xs text-slate-500 block mb-1">종료 시간</label>
+                    <select 
+                      className="w-full border border-slate-400 rounded-none p-2 text-sm focus:border-slate-900 focus:ring-slate-900"
+                      value={currentSlot.end}
+                      onChange={(e) => setCurrentSlot({ ...currentSlot, end: e.target.value })}
+                    >
+                      {Array.from({ length: 9 }, (_, i) => i + 10).map(h => (
+                        <option key={h} value={`${h < 10 ? '0' + h : h}:00`}>{`${h < 10 ? '0' + h : h}:00`}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <Button 
+                    type="button" 
+                    onClick={addTimeSlot} 
+                    size="sm" 
+                    variant="secondary"
+                    className="rounded-none border border-slate-400 hover:border-slate-900 hover:bg-slate-100"
+                  >
+                    추가
+                  </Button>
+                </div>
+
+                {/* 추가된 시간 슬롯 목록 */}
+                {timeSlots.length > 0 && (
+                  <div className="mt-2 bg-white p-2 border border-slate-300 rounded-none">
+                    <ul className="space-y-1">
+                      {timeSlots.map((slot, index) => (
+                        <li key={index} className="flex justify-between items-center text-sm">
+                          <span>
+                            <span className="font-bold text-slate-900">{slot.day}요일</span> {slot.start} - {slot.end}
+                          </span>
+                          <button 
+                            type="button" 
+                            onClick={() => removeTimeSlot(index)}
+                            className="text-slate-500 hover:text-red-700 text-xs font-bold"
+                          >
+                            삭제
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {/* 실제 저장되는 문자열 값 (Hidden or Readonly for check) */}
+                <input type="hidden" value={newCourse.courseTime} required />
+              </div>
+              
               <div className="flex justify-end space-x-2 mt-6">
-                  <Button variant="secondary" onClick={() => setIsRegisterModalOpen(false)} type="button">취소</Button>
-                  <Button type="submit">등록</Button>
+                  <Button 
+                    variant="secondary" 
+                    onClick={() => setIsRegisterModalOpen(false)} 
+                    type="button"
+                    className="rounded-none border border-slate-300 hover:bg-slate-100"
+                  >
+                    취소
+                  </Button>
+                  <Button 
+                    type="submit"
+                    className="rounded-none bg-slate-900 text-white hover:bg-slate-800 border border-slate-900"
+                  >
+                    등록
+                  </Button>
               </div>
           </form>
+      </Modal>
+
+      {/* 강의 상세 정보 모달 */}
+      <Modal isOpen={!!selectedCourseDetail} onClose={() => setSelectedCourseDetail(null)} title="강의 상세 정보">
+        {selectedCourseDetail && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <label className="block text-xs text-slate-500 font-bold uppercase">과목명</label>
+                <p className="text-sm font-medium text-slate-800">{selectedCourseDetail.subjectName}</p>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-500 font-bold uppercase">학년도/학기</label>
+                <p className="text-sm font-medium text-slate-800">{selectedCourseDetail.academicYear}년 {selectedCourseDetail.semester}학기</p>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-500 font-bold uppercase">분반</label>
+                <p className="text-sm font-medium text-slate-800">{selectedCourseDetail.courseClass}분반</p>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-500 font-bold uppercase">강의 코드</label>
+                <p className="text-sm font-medium text-slate-800">{selectedCourseDetail.courseCode}</p>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-500 font-bold uppercase">과목 코드</label>
+                <p className="text-sm font-medium text-slate-800">{selectedCourseDetail.subjectCode}</p>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-500 font-bold uppercase">학점</label>
+                <p className="text-sm font-medium text-slate-800">{selectedCourseDetail.credit}학점</p>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-500 font-bold uppercase">수강정원</label>
+                <p className="text-sm font-medium text-slate-800">{selectedCourseDetail.maxStudents}명 (현재 {selectedCourseDetail.currentStudents}명)</p>
+              </div>
+              <div className="col-span-2">
+                <label className="block text-xs text-slate-500 font-bold uppercase">강의실</label>
+                <p className="text-sm font-medium text-slate-800">{selectedCourseDetail.classroom}</p>
+              </div>
+              <div className="col-span-2">
+                <label className="block text-xs text-slate-500 font-bold uppercase">강의 시간</label>
+                <p className="text-sm font-medium text-slate-800">{selectedCourseDetail.courseTime}</p>
+              </div>
+              <div className="col-span-2">
+                <label className="block text-xs text-slate-500 font-bold uppercase">상태</label>
+                <span className={`inline-block px-2 py-1 text-xs rounded-full ${selectedCourseDetail.status === 'OPEN' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                  {selectedCourseDetail.status}
+                </span>
+              </div>
+            </div>
+            <div className="flex justify-end mt-6">
+              <Button variant="secondary" onClick={() => setSelectedCourseDetail(null)}>닫기</Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );
@@ -655,18 +975,86 @@ export const ProfessorStudentManagement: React.FC<{ user: User; viewType?: "atte
 // --- Other Views (Merged Logic) ---
 
 export const ProfessorSyllabus: React.FC = () => {
+    const location = useLocation();
     const [isEditing, setIsEditing] = useState(false);
+    const [course, setCourse] = useState<Course | null>(null);
+    
     const [syllabus, setSyllabus] = useState({ 
-        overview: '이 강의는 React와 TypeScript를 활용한 웹 개발 기초를 다룹니다.', 
-        objectives: '최신 웹 기술 습득', 
-        textbook: '모던 리액트 Deep Dive', 
-        evaluation: '중간 30%, 기말 30%, 과제 20%, 출석 20%',
-        credits: '3',
-        classTime: '월 10:00-12:00, 수 10:00-11:00'
+        overview: '', 
+        objectives: '', 
+        textbook: '', 
+        evaluation: '',
+        credits: '',
+        classTime: ''
     });
 
+    useEffect(() => {
+      if (location.state?.course) {
+        const c = location.state.course as Course;
+        setCourse(c);
+        setSyllabus({
+          classTime: c.courseTime || '',
+          credits: c.credit ? String(c.credit) : '',
+          overview: c.content || '',
+          objectives: c.objectives || '',
+          textbook: c.textbookInfo || '',
+          evaluation: c.evaluationMethod || ''
+        });
+      }
+    }, [location.state]);
+
+    const handleSave = async () => {
+        if (!course) return;
+        
+        const updatedData = {
+            courseObjectives: syllabus.objectives,
+            courseContent: syllabus.overview,
+            evaluationMethod: syllabus.evaluation,
+            textbookInfo: syllabus.textbook
+            // We don't update credits/time here usually as they are admin fields, but for this flow let's stick to content
+        };
+
+        try {
+            const token = localStorage.getItem("token");
+            const response = await fetch(`http://localhost:8080/api/courses/${course.courseCode}`, {
+                method: "PUT",
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(updatedData)
+            });
+
+            if (response.ok) {
+                alert("강의계획서가 저장되었습니다.");
+                setIsEditing(false);
+            } else {
+                alert("저장 실패");
+            }
+        } catch (e) {
+            console.error("Error saving syllabus", e);
+            alert("오류가 발생했습니다.");
+        }
+    };
+
+    if (!course && !location.state?.course) {
+        return <div className="p-8 text-center text-slate-500">강의 관리 페이지에서 강의를 선택해주세요.</div>;
+    }
+
+    const title = course ? `${course.subjectName} 강의계획서` : "강의계획서 관리";
+
     return (
-        <Card title="강의계획서 관리" titleAction={<Button size="sm" onClick={() => setIsEditing(!isEditing)}>{isEditing ? '저장' : '수정'}</Button>}>
+        <Card title={title} titleAction={
+            <Button size="sm" onClick={() => {
+                if (isEditing) {
+                    handleSave();
+                } else {
+                    setIsEditing(true);
+                }
+            }}>
+                {isEditing ? '저장' : '수정'}
+            </Button>
+        }>
              <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -776,7 +1164,32 @@ export const ProfessorAssignments: React.FC = () => {
 };
 
 export const ProfessorLectureTimetable: React.FC<{ user: User }> = ({ user }) => {
-  const myCourses = MOCK_COURSES.filter((c) => c.professorName === user.name);
+  const [myCourses, setMyCourses] = useState<Course[]>([]);
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(`http://localhost:8080/api/courses/professor/${user.memberNo}`, {
+           headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (response.ok) {
+           const data = await response.json();
+           const mappedCourses = data.map((c: any) => ({
+             ...c,
+             subjectName: c.subject?.sName || c.courseCode
+           }));
+           setMyCourses(mappedCourses);
+        }
+      } catch (error) {
+        console.error("Failed to fetch professor courses", error);
+      }
+    };
+    if (user.memberNo) {
+      fetchCourses();
+    }
+  }, [user.memberNo]);
+
   return (
     <Card title="전체 강의 시간표 (2024년 1학기)">
       <div className="pt-8 px-4">

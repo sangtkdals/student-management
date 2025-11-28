@@ -9,7 +9,6 @@ import java.util.List;
 
 public interface CourseRepository extends JpaRepository<Course, String> {
 
-    // 교수님 ID로 강의 목록 조회
     @Query(value = """
         SELECT 
             c.course_code AS courseCode,
@@ -25,4 +24,6 @@ public interface CourseRepository extends JpaRepository<Course, String> {
         ORDER BY c.course_code DESC
     """, nativeQuery = true)
     List<CourseDTO> findCoursesByProfessorId(@Param("professorId") String professorId);
+
+    List<Course> findByProfessor_MemberNo(String professorNo);
 }

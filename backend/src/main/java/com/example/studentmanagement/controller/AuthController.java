@@ -4,6 +4,7 @@ import com.example.studentmanagement.beans.Department;
 import com.example.studentmanagement.beans.Member;
 import com.example.studentmanagement.repository.DepartmentRepository;
 import com.example.studentmanagement.repository.MemberRepository;
+import com.example.studentmanagement.util.JwtUtil;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,10 +21,12 @@ public class AuthController {
 
     private final MemberRepository memberRepository;
     private final DepartmentRepository departmentRepository;
+    private final JwtUtil jwtUtil;
 
-    public AuthController(MemberRepository memberRepository, DepartmentRepository departmentRepository) {
+    public AuthController(MemberRepository memberRepository, DepartmentRepository departmentRepository, JwtUtil jwtUtil) {
         this.memberRepository = memberRepository;
         this.departmentRepository = departmentRepository;
+        this.jwtUtil = jwtUtil;
     }
 
     @PostMapping("/register")
@@ -98,7 +101,12 @@ public class AuthController {
         Member member = memberRepository.findByMemberId(userId).orElse(null);
 
         if (member != null && member.getPassword().equals(password)) {
+            String token = jwtUtil.generateToken(member.getMemberId(), member.getMemberType(), member.getMemberNo());
+            String refreshToken = jwtUtil.createRefreshToken(member.getMemberId());
+
             Map<String, Object> response = new HashMap<>();
+            response.put("token", token);
+            response.put("refreshToken", refreshToken);
             response.put("userId", member.getMemberId());
             response.put("memberNo", member.getMemberNo());
             response.put("name", member.getName());
@@ -118,6 +126,26 @@ public class AuthController {
             return ResponseEntity.ok(response);
         } else {
             return ResponseEntity.status(401).body("ID 또는 비밀번호가 잘못되었습니다.");
+        }
+    }
+
+    @PostMapping("/refreshtoken")
+    public ResponseEntity<?> refreshToken(@RequestBody Map<String, String> request) {
+        String memberId = request.get("memberId");
+        String requestRefreshToken = request.get("refreshToken");
+
+        String storedRefreshToken = jwtUtil.getRefreshToken(memberId);
+
+        if (storedRefreshToken != null && storedRefreshToken.equals(requestRefreshToken)) {
+            Member member = memberRepository.findByMemberId(memberId).orElseThrow(() -> new RuntimeException("Member not found"));
+            String newAccessToken = jwtUtil.generateToken(member.getMemberId(), member.getMemberType(), member.getMemberNo());
+            String newRefreshToken = jwtUtil.createRefreshToken(member.getMemberId());
+            Map<String, String> response = new HashMap<>();
+            response.put("accessToken", newAccessToken);
+            response.put("refreshToken", newRefreshToken);
+            return ResponseEntity.ok(response);
+        } else {
+            return ResponseEntity.status(401).body("Invalid refresh token");
         }
     }
 }
