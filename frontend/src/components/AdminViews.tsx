@@ -23,30 +23,343 @@ export const AdminDashboard: React.FC = () => (
 );
 
 export const AdminUserManagement: React.FC = () => {
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filterType, setFilterType] = useState<string>("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [formData, setFormData] = useState({
+    memberId: "",
+    password: "",
+    name: "",
+    memberType: "STUDENT",
+    memberNo: "",
+    email: "",
+    phone: "",
+    residentNumber: "",
+    address: "",
+    deptCode: "",
+    stuGrade: 1,
+    enrollmentStatus: "ENROLLED",
+    position: "",
+    officeRoom: "",
+    majorField: ""
+  });
   const roleMap: { [key: string]: string } = {
     STUDENT: "학생", student: "학생",
     PROFESSOR: "교수", professor: "교수",
     ADMIN: "관리자", admin: "관리자",
   };
 
-  // MOCK_USERS를 User[]로 캐스팅하여 안전하게 순회
-  const users = Object.values(MOCK_USERS) as unknown as User[];
+  useEffect(() => {
+    fetchUsers();
+  }, [filterType]);
+
+  const fetchUsers = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const url = filterType
+        ? `/api/members?memberType=${filterType}`
+        : '/api/members';
+
+      const response = await axios.get(url, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setUsers(response.data);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      setLoading(false);
+    }
+  };
+
+  const handleCreateUser = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post('/api/members', formData, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      alert('사용자가 추가되었습니다.');
+      setIsModalOpen(false);
+      resetForm();
+      fetchUsers();
+    } catch (error: any) {
+      alert('사용자 추가 실패: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const handleUpdateUser = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const updateData = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        deptCode: formData.deptCode,
+        stuGrade: formData.stuGrade,
+        enrollmentStatus: formData.enrollmentStatus,
+        position: formData.position,
+        officeRoom: formData.officeRoom,
+        majorField: formData.majorField
+      };
+
+      await axios.put(`/api/members/${editingUser.memberNo}`, updateData, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      alert('사용자 정보가 수정되었습니다.');
+      setIsModalOpen(false);
+      setEditingUser(null);
+      resetForm();
+      fetchUsers();
+    } catch (error: any) {
+      alert('사용자 수정 실패: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const handleDeleteUser = async (memberNo: string) => {
+    if (!window.confirm('정말 삭제하시겠습니까?')) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`/api/members/${memberNo}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      alert('사용자가 삭제되었습니다.');
+      fetchUsers();
+    } catch (error: any) {
+      alert('사용자 삭제 실패: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const openCreateModal = () => {
+    resetForm();
+    setEditingUser(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (user: any) => {
+    setEditingUser(user);
+    setFormData({
+      memberId: user.memberId,
+      password: "",
+      name: user.name,
+      memberType: user.memberType,
+      memberNo: user.memberNo,
+      email: user.email,
+      phone: user.phone || "",
+      residentNumber: "",
+      address: user.address || "",
+      deptCode: user.deptCode || "",
+      stuGrade: user.stuGrade || 1,
+      enrollmentStatus: user.enrollmentStatus || "ENROLLED",
+      position: user.position || "",
+      officeRoom: user.officeRoom || "",
+      majorField: user.majorField || ""
+    });
+    setIsModalOpen(true);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      memberId: "",
+      password: "",
+      name: "",
+      memberType: "STUDENT",
+      memberNo: "",
+      email: "",
+      phone: "",
+      residentNumber: "",
+      address: "",
+      deptCode: "",
+      stuGrade: 1,
+      enrollmentStatus: "ENROLLED",
+      position: "",
+      officeRoom: "",
+      majorField: ""
+    });
+  };
 
   return (
     <Card title="사용자 관리">
-      <Table headers={["학번/교번", "이름", "역할", "소속", "이메일"]}>
-        {users.map((user) => (
-          <tr key={user.memberNo || user.id}>
-            {/* types.ts: memberNo 사용 */}
-            <td className="px-6 py-4 text-sm">{user.memberNo || user.id}</td>
-            <td className="px-6 py-4 text-sm font-medium">{user.name}</td>
-            <td className="px-6 py-4 text-sm capitalize">{roleMap[user.role] || user.role}</td>
-            {/* types.ts: departmentName 또는 deptCode */}
-            <td className="px-6 py-4 text-sm">{user.departmentName || user.department || user.deptCode}</td>
-            <td className="px-6 py-4 text-sm">{user.email}</td>
-          </tr>
-        ))}
-      </Table>
+       <div className="mb-4 flex justify-between items-center">
+        <div className="flex gap-2">
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+            className="px-3 py-2 border border-slate-300 rounded-lg text-sm"
+          >
+            <option value="">전체</option>
+            <option value="STUDENT">학생</option>
+            <option value="PROFESSOR">교수</option>
+            <option value="ADMIN">관리자</option>
+          </select>
+        </div>
+        <Button onClick={openCreateModal}>사용자 추가</Button>
+      </div>
+
+      {loading ? (
+        <div className="text-center py-12 text-slate-500">로딩 중...</div>
+      ) : (
+        <Table headers={["학번/교번", "이름", "역할", "소속", "이메일", "관리"]}>
+          {users.map((user) => (
+            <tr key={user.memberNo}>
+              <td className="px-6 py-4 text-sm">{user.memberNo}</td>
+              <td className="px-6 py-4 text-sm font-medium">{user.name}</td>
+              <td className="px-6 py-4 text-sm">{roleMap[user.memberType] || user.memberType}</td>
+              <td className="px-6 py-4 text-sm">{user.deptName || user.deptCode || "-"}</td>
+              <td className="px-6 py-4 text-sm">{user.email}</td>
+              <td className="px-6 py-4 text-sm">
+                <button
+                  onClick={() => openEditModal(user)}
+                  className="text-blue-600 hover:text-blue-800 mr-3"
+                >
+                  수정
+                </button>
+                <button
+                  onClick={() => handleDeleteUser(user.memberNo)}
+                  className="text-red-600 hover:text-red-800"
+                >
+                  삭제
+                </button>
+              </td>
+            </tr>
+          ))}
+        </Table>
+      )}
+
+      {/* 모달 */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4">
+              {editingUser ? "사용자 수정" : "사용자 추가"}
+            </h2>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="아이디"
+                value={formData.memberId}
+                onChange={(e) => setFormData({...formData, memberId: e.target.value})}
+                disabled={!!editingUser}
+              />
+              {!editingUser && (
+                <Input
+                  label="비밀번호"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({...formData, password: e.target.value})}
+                />
+              )}
+              <Input
+                label="이름"
+                value={formData.name}
+                onChange={(e) => setFormData({...formData, name: e.target.value})}
+              />
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">역할</label>
+                <select
+                  value={formData.memberType}
+                  onChange={(e) => setFormData({...formData, memberType: e.target.value})}
+                  disabled={!!editingUser}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                >
+                  <option value="STUDENT">학생</option>
+                  <option value="PROFESSOR">교수</option>
+                  <option value="ADMIN">관리자</option>
+                </select>
+              </div>
+              <Input
+                label="학번/교번"
+                value={formData.memberNo}
+                onChange={(e) => setFormData({...formData, memberNo: e.target.value})}
+                disabled={!!editingUser}
+              />
+              <Input
+                label="이메일"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+              />
+              <Input
+                label="전화번호"
+                value={formData.phone}
+                onChange={(e) => setFormData({...formData, phone: e.target.value})}
+              />
+              <Input
+                label="학과코드"
+                value={formData.deptCode}
+                onChange={(e) => setFormData({...formData, deptCode: e.target.value})}
+              />
+              {formData.memberType === "STUDENT" && (
+                <>
+                  <Input
+                    label="학년"
+                    type="number"
+                    value={formData.stuGrade}
+                    onChange={(e) => setFormData({...formData, stuGrade: parseInt(e.target.value)})}
+                  />
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">학적상태</label>
+                    <select
+                      value={formData.enrollmentStatus}
+                      onChange={(e) => setFormData({...formData, enrollmentStatus: e.target.value})}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                    >
+                      <option value="ENROLLED">재학</option>
+                      <option value="LEAVE">휴학</option>
+                      <option value="GRADUATED">졸업</option>
+                    </select>
+                  </div>
+                </>
+              )}
+              {formData.memberType === "PROFESSOR" && (
+                <>
+                  <Input
+                    label="직급"
+                    value={formData.position}
+                    onChange={(e) => setFormData({...formData, position: e.target.value})}
+                  />
+                  <Input
+                    label="연구실"
+                    value={formData.officeRoom}
+                    onChange={(e) => setFormData({...formData, officeRoom: e.target.value})}
+                  />
+                  <Input
+                    label="전공분야"
+                    value={formData.majorField}
+                    onChange={(e) => setFormData({...formData, majorField: e.target.value})}
+                  />
+                </>
+              )}
+            </div>
+
+            <div className="mt-4">
+              <Input
+                label="주소"
+                value={formData.address}
+                onChange={(e) => setFormData({...formData, address: e.target.value})}
+              />
+            </div>
+
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setEditingUser(null);
+                  resetForm();
+                }}
+                className="px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50"
+              >
+                취소
+              </button>
+              <Button onClick={editingUser ? handleUpdateUser : handleCreateUser}>
+                {editingUser ? "수정" : "추가"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
   );
 };

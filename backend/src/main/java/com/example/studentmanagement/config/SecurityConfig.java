@@ -60,6 +60,8 @@ public class SecurityConfig {
         .requestMatchers(HttpMethod.GET, "/api/leave-applications/on-leave").hasRole("ADMIN")
         .requestMatchers(HttpMethod.GET, "/api/leave-applications").hasRole("ADMIN")
         
+        .requestMatchers("/api/members/**").hasRole("ADMIN")
+
         .anyRequest().authenticated()
     )
             .sessionManagement(session -> session
