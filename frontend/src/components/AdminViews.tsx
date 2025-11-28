@@ -437,9 +437,12 @@ export const AdminScheduleManagement: React.FC = () => {
   // 저장
   const handleSave = async () => {
     try {
-      await axios.post("/api/schedules", formData);
-      fetchSchedules();
-      setIsModalOpen(false);
+    const token = localStorage.getItem('token');
+    await axios.post("/api/schedules", formData, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    fetchSchedules();
+    setIsModalOpen(false);
     } catch (error) {
       console.error("Error saving schedule:", error);
       alert("저장 실패");
@@ -450,6 +453,7 @@ export const AdminScheduleManagement: React.FC = () => {
   const handleDelete = async (id: number) => {
     if (confirm("삭제하시겠습니까?")) {
       try {
+        const token = localStorage.getItem('token');
         await axios.delete(`/api/schedules/${id}`);
         fetchSchedules();
       } catch (error) {
