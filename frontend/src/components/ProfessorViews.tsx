@@ -124,7 +124,7 @@ export const ProfessorHome: React.FC<ProfessorHomeProps> = ({ user }) => {
            const data = await response.json();
            const mappedCourses = data.map((c: any) => ({
              ...c,
-             subjectName: c.subject?.sName || c.courseCode // Ensure subjectName exists
+             subjectName: c.courseName || c.subject?.sName || c.courseCode // Prioritize courseName
            }));
            setMyCourses(mappedCourses);
         }
@@ -281,7 +281,8 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
   const [markedForDeletion, setMarkedForDeletion] = useState<Set<string>>(new Set());
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [newCourse, setNewCourse] = useState({
-    subjectName: "소프트웨어공학",
+    courseName: "소프트웨어공학",
+    subjectName: "소프트웨어공학", // Keep for compatibility or remove if not needed
     courseCode: "CS303",
     courseTime: "월 10:00-12:00",
     classroom: "공학관 305호",
@@ -314,7 +315,7 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
             // The backend Course entity has 'subject' object. Frontend Course has 'subjectName'.
             const mappedCourses = data.map((c: any) => ({
                 ...c,
-                subjectName: c.subject?.sName || c.courseCode, // Fallback
+                subjectName: c.courseName || c.subject?.sName || c.courseCode, // Prioritize courseName
                 subjectCode: c.subject?.sCode
             }));
             setLocalCourses(mappedCourses);
@@ -407,6 +408,7 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
               setIsRegisterModalOpen(false);
               // Reset to dummy data for next entry (debugging convenience)
               setNewCourse({ 
+                courseName: "데이터베이스",
                 subjectName: "데이터베이스", 
                 courseCode: "CS304", 
                 courseTime: "수 13:00-15:00", 
@@ -542,9 +544,9 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
       >
           <form onSubmit={handleRegisterCourse} className="space-y-4">
               <Input 
-                label="과목명" 
-                value={newCourse.subjectName} 
-                onChange={e => setNewCourse({...newCourse, subjectName: e.target.value})} 
+                label="강의명" 
+                value={newCourse.courseName} 
+                onChange={e => setNewCourse({...newCourse, courseName: e.target.value, subjectName: e.target.value})} 
                 required 
                 className="rounded-none border-slate-400 focus:border-slate-900 focus:ring-slate-900"
               />
@@ -1181,7 +1183,7 @@ export const ProfessorLectureTimetable: React.FC<{ user: User }> = ({ user }) =>
            const data = await response.json();
            const mappedCourses = data.map((c: any) => ({
              ...c,
-             subjectName: c.subject?.sName || c.courseCode
+             subjectName: c.courseName || c.subject?.sName || c.courseCode
            }));
            setMyCourses(mappedCourses);
         }

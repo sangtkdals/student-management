@@ -20,7 +20,7 @@ const RegistrationResult: React.FC<RegistrationResultProps> = ({ courses, user, 
           <CheckCircleIcon className="h-16 w-16 text-green-500 mx-auto mb-4" />
           <h2 className="text-3xl font-extrabold text-gray-800">수강신청 결과</h2>
           <p className="mt-2 text-md text-gray-600">
-            {user.name} ({user.studentId})님의 수강신청이 완료되었습니다.
+            {user.name} ({user.memberNo})님의 수강신청이 완료되었습니다.
           </p>
         </div>
 

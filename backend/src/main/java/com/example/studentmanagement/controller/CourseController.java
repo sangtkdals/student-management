@@ -53,6 +53,14 @@ public class CourseController {
             course.setCourseCode(courseCode);
             course.setAcademicYear(getInteger(payload, "academicYear"));
             course.setSemester(getInteger(payload, "semester"));
+            
+            // Prioritize courseName, fallback to subjectName
+            String name = (String) payload.get("courseName");
+            if (name == null || name.isEmpty()) {
+                name = (String) payload.get("subjectName");
+            }
+            course.setCourseName(name);
+            
             course.setCourseClass((String) payload.get("courseClass"));
             course.setMaxStu(getInteger(payload, "maxStudents"));
             course.setCurrentStudents(0);
@@ -63,11 +71,17 @@ public class CourseController {
             // Set Subject
             String subjectCode = (String) payload.get("subjectCode");
             Subject subject = subjectRepository.findById(subjectCode).orElse(null);
+            
             if (subject == null) {
-                // For now, maybe create a dummy subject or return error?
-                // To keep it simple, if subject doesn't exist, we might need to handle it.
-                // Ideally subject should exist.
-                // Let's assume it exists or set null.
+                // Create new subject if it doesn't exist
+                subject = new Subject();
+                subject.setSCode(subjectCode);
+                subject.setSName((String) payload.get("subjectName"));
+                subject.setCredit(getInteger(payload, "credit"));
+                // Set default department or type if available, otherwise null
+                // We might need to get dept_code from professor or payload if provided
+                // For now, we proceed with minimal info
+                subjectRepository.save(subject);
             }
             course.setSubject(subject);
 

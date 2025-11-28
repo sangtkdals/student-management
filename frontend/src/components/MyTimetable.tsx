@@ -18,7 +18,8 @@ const timeSlots = Array.from({ length: 19 }, (_, i) => {
 const days = ['월', '화', '수', '목', '금'];
 const dayToGridCol: { [key: string]: number } = { '월': 2, '화': 3, '수': 4, '목': 5, '금': 6 };
 
-const parseCourseTime = (time: string) => {
+const parseCourseTime = (time: string | undefined) => {
+  if (!time) return null;
   const parts = time.split(' ');
   if (parts.length < 2) return null;
   const day = parts[0];
@@ -75,7 +76,7 @@ const MyTimetable: React.FC<MyTimetableProps> = ({ courses, onRemoveCourse, show
         
         {/* Placed Courses */}
         {courses.map((course, index) => {
-          const timeInfo = parseCourseTime(course.time);
+          const timeInfo = parseCourseTime(course.courseTime);
           if (!timeInfo) return null;
 
           const startRow = timeToGridRow(timeInfo.start, 'start');
@@ -88,7 +89,7 @@ const MyTimetable: React.FC<MyTimetableProps> = ({ courses, onRemoveCourse, show
 
           return (
             <div
-              key={course.id}
+              key={course.courseCode}
               className={`relative rounded-lg p-2 text-xs flex flex-col justify-center items-center shadow-lg border ${colorClass} overflow-hidden m-px z-10`}
               style={{
                 gridColumn: col,
@@ -99,15 +100,15 @@ const MyTimetable: React.FC<MyTimetableProps> = ({ courses, onRemoveCourse, show
               {showRemoveButton && onRemoveCourse && (
                 <button
                   onClick={() => onRemoveCourse(course)}
-                  aria-label={`Remove ${course.name}`}
+                  aria-label={`Remove ${course.courseName || course.subjectName}`}
                   className="absolute top-0.5 right-0.5 p-0.5 rounded-full text-red-500 bg-white/50 hover:bg-white/90 hover:text-red-700 transition-colors"
                 >
                     <MinusCircleIcon className="h-4 w-4" />
                 </button>
               )}
-              <p className="font-bold text-gray-800 text-center text-[11px] leading-tight pt-2">{course.name}</p>
-              <p className="text-gray-600 text-[10px] mt-1">{course.location}</p>
-              <p className="text-gray-600 text-[10px]">{course.professor}</p>
+              <p className="font-bold text-gray-800 text-center text-[11px] leading-tight pt-2">{course.courseName || course.subjectName}</p>
+              <p className="text-gray-600 text-[10px] mt-1">{course.classroom}</p>
+              <p className="text-gray-600 text-[10px]">{course.professorName}</p>
             </div>
           );
         })}
