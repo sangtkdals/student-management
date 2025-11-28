@@ -92,6 +92,33 @@ services:
       - prometheus
     volumes:
       - grafana-storage:/var/lib/grafana
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+
+  mysql-exporter:
+    image: prom/mysqld-exporter
+    container_name: mysql-exporter
+    restart: always
+    volumes:
+      # 호스트의 설정 파일을 컨테이너 내부로 마운트
+      - ./mysql_exporter/my.cnf:/etc/.my.cnf
+    command:
+      # exporter에게 설정 파일 위치를 명시적으로 지정
+      - "--config.my-cnf=/etc/.my.cnf"
+    depends_on:
+      - db
+    ports:
+      - "9104:9104"
+
+  redis-exporter:
+    image: oliver006/redis_exporter
+    container_name: redis-exporter
+    restart: always
+    command:
+      - "--redis.addr=redis:6379"
+    ports:
+      - "9121:9121"
+    depends_on:
+      - redis
 
 # 이름 있는 볼륨 정의
 volumes:
