@@ -1,18 +1,22 @@
-// src/components/MyTimetable.tsx
+// src/ai-course-registration/components/MyTimetable.tsx
 import React, { useEffect, useMemo, useState } from "react";
-import type { Course } from "../types";
+import type { Course } from "../types"; // 실제 types 경로에 맞게 조정
 
 interface MyTimetableProps {
-  // 수강신청 완료 화면에서는 props로 넘겨주고,
-  // "시간표 조회" 페이지에서는 props 없이 호출하면 localStorage에서 자동으로 읽게 할 것
   courses?: Course[];
 }
+
+// "HH:MM" → 분 단위 숫자
+const timeToMinutes = (time: string): number => {
+  const [h, m] = time.split(":").map(Number);
+  return h * 60 + m;
+};
 
 const MyTimetable: React.FC<MyTimetableProps> = ({ courses: propCourses }) => {
   const [courses, setCourses] = useState<Course[]>([]);
 
-  // 1) props.courses가 있으면 그걸 우선 사용
-  // 2) 없으면 localStorage("registeredCourses")에서 읽어서 셋팅
+  // 1) props.courses 우선 사용
+  // 2) 없으면 localStorage에서 registeredCourses 읽기
   useEffect(() => {
     if (propCourses && propCourses.length > 0) {
       setCourses(propCourses);
@@ -24,14 +28,15 @@ const MyTimetable: React.FC<MyTimetableProps> = ({ courses: propCourses }) => {
       if (raw) {
         const parsed = JSON.parse(raw) as Course[];
         setCourses(parsed);
-        console.log("📥 loaded registeredCourses from localStorage:", parsed);
       }
     } catch (e) {
-      console.error("❌ failed to load registeredCourses from localStorage:", e);
+      console.error("failed to load registeredCourses:", e);
     }
   }, [propCourses]);
 
   const days = ["월", "화", "수", "목", "금"];
+
+  // 기준 시간 슬롯 (1시간 단위)
   const timeSlots = useMemo(
     () => [
       "09:00",
@@ -47,15 +52,16 @@ const MyTimetable: React.FC<MyTimetableProps> = ({ courses: propCourses }) => {
     []
   );
 
-  // [day_startTime] → 그 칸에 들어갈 과목들
+  // [day_timeSlot] → 그 칸에 들어갈 과목들
+  // ※ 이제는 "범위 전체" 칸에 넣도록 수정
   const timetableMap = useMemo(() => {
     const map: Record<string, Course[]> = {};
 
     courses.forEach((course) => {
-      const timeText = (course as any).timeText ?? course.time; // 둘 중 있는 거 사용
+      const timeText = (course as any).timeText ?? course.time;
       if (!timeText) return;
 
-      // 예: "월 10:00-11:50, 수 09:00-10:50"
+      // 예: "월 10:00-11:50, 수 13:00-14:50"
       const parts = timeText.split(",");
       parts.forEach((p) => {
         const token = p.trim();
@@ -64,15 +70,29 @@ const MyTimetable: React.FC<MyTimetableProps> = ({ courses: propCourses }) => {
         const [day, range] = token.split(" ");
         if (!day || !range) return;
 
-        const [start] = range.split("-");
-        const key = `${day}_${start}`;
-        if (!map[key]) map[key] = [];
-        map[key].push(course);
+        const [startStr, endStr] = range.split("-");
+        if (!startStr || !endStr) return;
+
+        const startMin = timeToMinutes(startStr);
+        const endMin = timeToMinutes(endStr);
+
+        // 이 강의가 걸치는 모든 hour slot에 추가
+        timeSlots.forEach((slot) => {
+          const slotMin = timeToMinutes(slot);
+
+          // slot 시작 시간이 강의 시간 범위 안에 있으면 포함
+          // 예) 13:00~14:50 이면 13:00, 14:00 두 칸에 들어감
+          if (slotMin >= startMin && slotMin < endMin) {
+            const key = `${day}_${slot}`;
+            if (!map[key]) map[key] = [];
+            map[key].push(course);
+          }
+        });
       });
     });
 
     return map;
-  }, [courses]);
+  }, [courses, timeSlots]);
 
   return (
     <div className="w-full overflow-x-auto">
