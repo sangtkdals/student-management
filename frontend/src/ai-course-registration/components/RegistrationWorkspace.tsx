@@ -13,7 +13,7 @@ interface RegistrationWorkspaceProps {
   onRegisterFromWishlist: (course: Course) => void;
 }
 
-type View = 'list' | 'timetable' | 'wishlist';
+type View = 'list' | 'MyTimetable' | 'wishlist';
 
 const RegistrationWorkspace: React.FC<RegistrationWorkspaceProps> = ({ courses, wishlist, onRemoveCourse, onRemoveFromWishlist, onRegisterFromWishlist }) => {
   const [activeView, setActiveView] = useState<View>('list');
@@ -52,7 +52,7 @@ const RegistrationWorkspace: React.FC<RegistrationWorkspaceProps> = ({ courses, 
             onRegisterFromWishlist={onRegisterFromWishlist}
           />
         )}
-        {activeView === 'timetable' && (
+        {activeView === 'MyTimetable' && (
           <MyTimetable courses={courses} onRemoveCourse={onRemoveCourse} />
         )}
       </div>

@@ -1167,7 +1167,7 @@ export const ProfessorAssignments: React.FC = () => {
     );
 };
 
-export const ProfessorLectureTimetable: React.FC<{ user: User }> = ({ user }) => {
+export const ProfessorLectureMyTimetable: React.FC<{ user: User }> = ({ user }) => {
   const [myCourses, setMyCourses] = useState<Course[]>([]);
 
   useEffect(() => {

@@ -61,7 +61,7 @@ const MyTimetable: React.FC<MyTimetableProps> = ({ courses: propCourses }) => {
     storedCourses.forEach((course) => {
       // 프로젝트에서 쓰는 timeText 형식에 맞게 파싱 필요
       // 예: "월 09:00-10:50, 수 11:00-12:50"
-      const times = course.timeText?.split(",") || [];
+      const times = course.time?.split(",") || [];
       times.forEach((part) => {
         const trimmed = part.trim(); // "월 09:00-10:50"
         if (!trimmed) return;
@@ -124,7 +124,7 @@ const MyTimetable: React.FC<MyTimetableProps> = ({ courses: propCourses }) => {
                               {c.name}
                             </p>
                             <p className="text-[10px] text-blue-700">
-                              {c.classroom}
+                              {c.location}
                             </p>
                           </div>
                         ))}
