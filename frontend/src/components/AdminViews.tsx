@@ -771,24 +771,30 @@ export const AdminNoticeManagement: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!formData.title || !formData.content) {
-      alert("제목과 내용을 입력하세요.");
-      return;
-    }
+  if (!formData.title || !formData.content) {
+    alert("제목과 내용을 입력하세요.");
+    return;
+  }
 
-    try {
+  try {
+    const token = localStorage.getItem('token');
+    
     if (editingId) {
       // 수정 모드 (editingId가 있으면)
       await axios.put(`/api/announcements/${editingId}`, {
-        postTitle: formData.title,
-        postContent: formData.content
+        title: formData.title,
+        content: formData.content
+      }, {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       alert("공지사항이 수정되었습니다.");
     } else {
       // 신규 등록 모드 (editingId가 null이면)
       await axios.post("/api/announcements", {
-        postTitle: formData.title,
-        postContent: formData.content
+        title: formData.title,
+        content: formData.content
+      }, {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       alert("공지사항이 등록되었습니다.");
     }
@@ -802,17 +808,20 @@ export const AdminNoticeManagement: React.FC = () => {
 };
 
   const handleDelete = async (id: number) => {
-    if (confirm("삭제하시겠습니까?")) {
-      try {
-        await axios.delete(`/api/announcements/${id}`);
-        fetchPosts();
-        alert("삭제되었습니다.");
-      } catch (error) {
-        console.error("Error deleting post:", error);
-        alert("삭제 실패");
-      }
+  if (confirm("삭제하시겠습니까?")) {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`/api/announcements/${id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      fetchPosts();
+      alert("삭제되었습니다.");
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      alert("삭제 실패");
     }
-  };
+  }
+};
 
   return (
     <Card title="공지사항 관리">
