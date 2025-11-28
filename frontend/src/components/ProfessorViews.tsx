@@ -770,40 +770,77 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
 
 // --- Student Management Logic (Imported from feature/professor, adapted for main-ui types) ---
 
-interface WeeklyRecord { attendance: string; score: number; note: string; }
+interface AttendanceRecord {
+    studentId: string;
+    studentName: string;
+    enrollmentId: number;
+    attendanceId: number | null;
+    status: string;
+    remark: string;
+}
 
 const AttendanceAndGradesView: React.FC<{ selectedCourse: Course, mode: 'attendance' | 'grades', setMode: (m: 'attendance' | 'grades') => void }> = ({ selectedCourse, mode, setMode }) => {
-    // Mock Logic for Attendance
+    // Attendance Logic
     const [selectedWeek, setSelectedWeek] = useState(1);
-    const [weeklyData, setWeeklyData] = useState<{ [studentId: string]: { [week: number]: WeeklyRecord } }>({});
+    const [attendanceList, setAttendanceList] = useState<AttendanceRecord[]>([]);
     const totalWeeks = 15;
 
-    // Mock Logic for Grades
+    // Mock Logic for Grades (unchanged for now)
     const [studentGrades, setStudentGrades] = useState<{ [studentId: string]: { mid: number, final: number, assign: number, attend: number } }>({});
 
     useEffect(() => {
-        // Initialize Attendance Data
-        const initialAttendance: { [studentId: string]: { [week: number]: WeeklyRecord } } = {};
-        MOCK_STUDENT_RECORDS.forEach(student => {
-            initialAttendance[student.id] = {};
-            for (let i = 1; i <= totalWeeks; i++) {
-                initialAttendance[student.id][i] = { attendance: Math.random() > 0.9 ? '결석' : '출석', score: 10, note: '' };
+        const fetchAttendance = async () => {
+            if (mode === 'attendance' && selectedCourse) {
+                try {
+                    const token = localStorage.getItem("token");
+                    const response = await fetch(`http://localhost:8080/api/attendance?courseCode=${selectedCourse.courseCode}&week=${selectedWeek}`, {
+                        headers: { "Authorization": `Bearer ${token}` }
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        setAttendanceList(data);
+                    }
+                } catch (error) {
+                    console.error("Failed to fetch attendance", error);
+                }
             }
-        });
-        setWeeklyData(initialAttendance);
+        };
+        fetchAttendance();
+    }, [selectedCourse, selectedWeek, mode]);
 
-        // Initialize Grades Data
+    useEffect(() => {
+        // Initialize Grades Data (Mock)
         const initialGrades: any = {};
         MOCK_STUDENT_RECORDS.forEach(s => { initialGrades[s.id] = { mid: 0, final: 0, assign: 0, attend: 0 }; });
         setStudentGrades(initialGrades);
     }, []);
 
-    // Handlers
-    const handleAttendanceChange = (studentId: string, field: keyof WeeklyRecord, val: string | number) => {
-        setWeeklyData(prev => ({
-            ...prev,
-            [studentId]: { ...prev[studentId], [selectedWeek]: { ...prev[studentId][selectedWeek], [field]: val } }
-        }));
+    const handleAttendanceChange = (enrollmentId: number, field: 'status' | 'remark', val: string) => {
+        setAttendanceList(prev => prev.map(item => 
+            item.enrollmentId === enrollmentId ? { ...item, [field]: val } : item
+        ));
+    };
+
+    const handleSaveAttendance = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            const response = await fetch(`http://localhost:8080/api/attendance?week=${selectedWeek}`, {
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}` 
+                },
+                body: JSON.stringify(attendanceList)
+            });
+            if (response.ok) {
+                alert("출결이 저장되었습니다.");
+            } else {
+                alert("저장 실패");
+            }
+        } catch (error) {
+            console.error("Save error", error);
+            alert("오류가 발생했습니다.");
+        }
     };
 
     const handleGradeChange = (sid: string, field: string, val: number) => {
@@ -826,27 +863,28 @@ const AttendanceAndGradesView: React.FC<{ selectedCourse: Course, mode: 'attenda
                         </select>
                     </div>
                     <Table headers={["학번", "이름", "출결 상태", "비고"]}>
-                        {MOCK_STUDENT_RECORDS.map(student => {
-                            const record = weeklyData[student.id]?.[selectedWeek] || { attendance: '출석', score: 0, note: '' };
-                            return (
-                                <tr key={student.id}>
-                                    <td className="px-6 py-4 text-sm text-slate-500">{student.id}</td>
-                                    <td className="px-6 py-4 text-sm font-medium">{student.name}</td>
-                                    <td className="px-6 py-4 text-sm">
-                                        <select value={record.attendance} onChange={(e) => handleAttendanceChange(student.id, 'attendance', e.target.value)} className="px-2 py-1 rounded text-xs font-bold border border-slate-300">
-                                            <option value="출석">출석</option>
-                                            <option value="지각">지각</option>
-                                            <option value="결석">결석</option>
-                                        </select>
-                                    </td>
-                                    <td className="px-6 py-4 text-sm">
-                                        <input type="text" value={record.note} onChange={(e) => handleAttendanceChange(student.id, 'note', e.target.value)} className="w-full border border-slate-300 rounded-md text-sm px-2 py-1" placeholder="비고 입력" />
-                                    </td>
-                                </tr>
-                            );
-                        })}
+                        {attendanceList.length > 0 ? attendanceList.map(student => (
+                            <tr key={student.enrollmentId}>
+                                <td className="px-6 py-4 text-sm text-slate-500">{student.studentId}</td>
+                                <td className="px-6 py-4 text-sm font-medium">{student.studentName}</td>
+                                <td className="px-6 py-4 text-sm">
+                                    <select value={student.status || ""} onChange={(e) => handleAttendanceChange(student.enrollmentId, 'status', e.target.value)} className="px-2 py-1 rounded text-xs font-bold border border-slate-300">
+                                        <option value="">선택</option>
+                                        <option value="출석">출석</option>
+                                        <option value="지각">지각</option>
+                                        <option value="결석">결석</option>
+                                        <option value="공결">공결</option>
+                                    </select>
+                                </td>
+                                <td className="px-6 py-4 text-sm">
+                                    <input type="text" value={student.remark || ""} onChange={(e) => handleAttendanceChange(student.enrollmentId, 'remark', e.target.value)} className="w-full border border-slate-300 rounded-md text-sm px-2 py-1" placeholder="비고 입력" />
+                                </td>
+                            </tr>
+                        )) : (
+                             <tr><td colSpan={4} className="text-center py-4 text-slate-500">수강생이 없습니다.</td></tr>
+                        )}
                     </Table>
-                    <div className="mt-6 flex justify-end"><Button onClick={() => alert('출결이 저장되었습니다.')}>출결 저장</Button></div>
+                    <div className="mt-6 flex justify-end"><Button onClick={handleSaveAttendance}>출결 저장</Button></div>
                 </>
             ) : (
                 <>
@@ -890,10 +928,34 @@ const AttendanceAndGradesView: React.FC<{ selectedCourse: Course, mode: 'attenda
 }
 
 export const ProfessorStudentManagement: React.FC<{ user: User; viewType?: "attendance" | "grades" }> = ({ user, viewType }) => {
-  const myCourses = MOCK_COURSES.filter((c) => c.professorName === user.name);
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(myCourses.length > 0 ? myCourses[0] : null);
+  const [myCourses, setMyCourses] = useState<Course[]>([]);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [activeTab, setActiveTab] = useState<"management" | "list">("management");
   const [managementMode, setManagementMode] = useState<'attendance'|'grades'>(viewType || 'attendance');
+
+  useEffect(() => {
+      const fetchCourses = async () => {
+          if (!user?.memberNo) return;
+          try {
+              const token = localStorage.getItem("token");
+              const response = await fetch(`http://localhost:8080/api/courses/professor/${user.memberNo}`, {
+                  headers: { "Authorization": `Bearer ${token}` }
+              });
+              if (response.ok) {
+                  const data = await response.json();
+                  const mappedCourses = data.map((c: any) => ({
+                      ...c,
+                      subjectName: c.courseName || c.subject?.sName || c.courseCode
+                  }));
+                  setMyCourses(mappedCourses);
+                  if (mappedCourses.length > 0) setSelectedCourse(mappedCourses[0]);
+              }
+          } catch (error) {
+              console.error("Failed to fetch courses", error);
+          }
+      };
+      fetchCourses();
+  }, [user.memberNo]);
 
   useEffect(() => {
       if(viewType) setManagementMode(viewType);
