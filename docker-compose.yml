@@ -15,8 +15,6 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
@@ -53,8 +51,8 @@ services:
     environment:
       # 수정: 중첩된 environment 키 문법 오류 수정
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/${MYSQL_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true
-      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       SPRING_JPA_HIBERNATE_DDL_AUTO: validate
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
@@ -71,6 +69,58 @@ services:
     depends_on:
       - backend
 
-# 이름 있는 볼륨 정의 (db-data)
+  # Prometheus 서비스
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+
+  # Grafana 서비스
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: always
+    ports:
+      - "4000:3000"
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+
+  mysql-exporter:
+    image: prom/mysqld-exporter
+    container_name: mysql-exporter
+    restart: always
+    volumes:
+      # 호스트의 설정 파일을 컨테이너 내부로 마운트
+      - ./mysql_exporter/my.cnf:/etc/.my.cnf
+    command:
+      # exporter에게 설정 파일 위치를 명시적으로 지정
+      - "--config.my-cnf=/etc/.my.cnf"
+    depends_on:
+      - db
+    ports:
+      - "9104:9104"
+
+  redis-exporter:
+    image: oliver006/redis_exporter
+    container_name: redis-exporter
+    restart: always
+    command:
+      - "--redis.addr=redis:6379"
+    ports:
+      - "9121:9121"
+    depends_on:
+      - redis
+
+# 이름 있는 볼륨 정의
 volumes:
   db-data:
+  grafana-storage:
