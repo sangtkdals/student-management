@@ -21,13 +21,13 @@ import {
   StudentReturnApplication,
   StudentReturnHistory,
   StudentCertificateIssuance,
-  StudentTimetable,
+  StudentMyTimetable,
 } from "./components/StudentViews";
 
 // Professor Views
 import {
   ProfessorHome,
-  ProfessorLectureTimetable,
+  ProfessorLectureMyTimetable,
   ProfessorSyllabus,
   ProfessorCourseMaterials,
   ProfessorAssignments,
@@ -52,7 +52,7 @@ const STUDENT_MENU: MenuNode[] = [
     path: "",
     children: [
         { label: "수강신청", path: "/student/course-registration" },
-        { label: "시간표 조회", path: "/student/timetable" },
+        { label: "시간표 조회", path: "/student/Mytimetable" },
     ],
   },
   {
@@ -670,10 +670,10 @@ const App: React.FC = () => {
                   }
                 />
                 <Route
-                  path="/student/timetable"
+                  path="/student/MyTimetable"
                   element={
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                      <StudentTimetable />
+                      <StudentMyTimetable />
                     </div>
                   }
                 />

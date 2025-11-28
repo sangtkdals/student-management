@@ -10,6 +10,8 @@ export interface Course {
   type: 'Major Requirement' | 'Major Elective' | 'General Elective';
   capacity: number;
   enrolled: number;
+  timeText: string;
+  classroom: string;
 }
 
 export interface User {

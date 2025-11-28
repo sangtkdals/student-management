@@ -1,117 +1,144 @@
-
-import React from 'react';
-import { Course } from '../types';
-import { MinusCircleIcon } from './icons/Icons';
+// src/components/Timetable.tsx
+import React, { useEffect, useState, useMemo } from "react";
+import type { Course } from "../types";
 
 interface MyTimetableProps {
-  courses: Course[];
-  onRemoveCourse?: (course: Course) => void;
-  showRemoveButton?: boolean;
+  // props로도 받을 수 있게 해둠 (선택사항)
+  courses?: Course[];
 }
 
-const timeSlots = Array.from({ length: 19 }, (_, i) => {
-  const hour = Math.floor(i / 2) + 9;
-  const minute = i % 2 === 0 ? '00' : '30';
-  return `${hour.toString().padStart(2, '0')}:${minute}`; // 09:00 to 18:00
-});
+/**
+ * 요일/시간별 격자 시간표 형태로 렌더링하는 컴포넌트
+ * - 우선 props.courses를 사용
+ * - 없으면 localStorage("registeredCourses")에서 읽어옴
+ */
+const MyTimetable: React.FC<MyTimetableProps> = ({ courses: propCourses }) => {
+  const [storedCourses, setStoredCourses] = useState<Course[]>([]);
 
-const days = ['월', '화', '수', '목', '금'];
-const dayToGridCol: { [key: string]: number } = { '월': 2, '화': 3, '수': 4, '목': 5, '금': 6 };
+  // 🔁 localStorage에서 과목 목록 로드
+  useEffect(() => {
+    if (propCourses && propCourses.length > 0) {
+      // props로 받은 게 있으면 우선 사용
+      setStoredCourses(propCourses);
+      return;
+    }
 
-const parseCourseTime = (time: string) => {
-  const parts = time.split(' ');
-  if (parts.length < 2) return null;
-  const day = parts[0];
-  const [start, end] = parts[1].split('-');
-  return { day, start, end };
-};
+    try {
+      const raw = localStorage.getItem("registeredCourses");
+      if (raw) {
+        const parsed = JSON.parse(raw) as Course[];
+        setStoredCourses(parsed);
+        console.log("📥 localStorage에서 registeredCourses 로드:", parsed);
+      } else {
+        console.log("ℹ️ registeredCourses가 localStorage에 없음");
+      }
+    } catch (e) {
+      console.error("❌ registeredCourses 로드 중 오류:", e);
+    }
+  }, [propCourses]);
 
-const timeToGridRow = (time: string, type: 'start' | 'end') => {
-  const [hour, minute] = time.split(':').map(Number);
-  const totalMinutesFrom9 = (hour - 9) * 60 + minute;
-  const rawRow = totalMinutesFrom9 / 30;
-  
-  if (type === 'start') {
-    return Math.floor(rawRow) + 2;
-  }
-  return Math.ceil(rawRow) + 2;
-};
+  // 요일, 시간슬롯 등은 프로젝트에서 쓰던 규칙에 맞게 조절
+  const days = ["월", "화", "수", "목", "금"];
+  const timeSlots = useMemo(
+    () => [
+      "09:00",
+      "10:00",
+      "11:00",
+      "12:00",
+      "13:00",
+      "14:00",
+      "15:00",
+      "16:00",
+      "17:00",
+    ],
+    []
+  );
 
-const courseColors = [
-  'bg-red-200/80 border-red-400',
-  'bg-blue-200/80 border-blue-400',
-  'bg-green-200/80 border-green-400',
-  'bg-yellow-200/80 border-yellow-400',
-  'bg-purple-200/80 border-purple-400',
-  'bg-indigo-200/80 border-indigo-400',
-  'bg-pink-200/80 border-pink-400',
-  'bg-teal-200/80 border-teal-400',
-];
+  // [day][time] → 과목
+  const MyTimetableMap = useMemo(() => {
+    const map: Record<string, Course[]> = {};
 
-const MyTimetable: React.FC<MyTimetableProps> = ({ courses, onRemoveCourse, showRemoveButton = true }) => {
+    storedCourses.forEach((course) => {
+      // 프로젝트에서 쓰는 timeText 형식에 맞게 파싱 필요
+      // 예: "월 09:00-10:50, 수 11:00-12:50"
+      const times = course.timeText?.split(",") || [];
+      times.forEach((part) => {
+        const trimmed = part.trim(); // "월 09:00-10:50"
+        if (!trimmed) return;
+
+        const [day, timeRange] = trimmed.split(" ");
+        if (!day || !timeRange) return;
+
+        const [start] = timeRange.split("-");
+        const key = `${day}_${start}`;
+        if (!map[key]) map[key] = [];
+        map[key].push(course);
+      });
+    });
+
+    return map;
+  }, [storedCourses]);
+
   return (
-    <div className="h-full p-4 overflow-auto bg-white">
-      <div className="relative grid grid-cols-[50px_repeat(5,1fr)] grid-rows-[40px_repeat(18,50px)] min-w-[700px]">
-        {/* Header Days */}
-        {['', ...days].map((day, i) => (
-          <div key={i} className="sticky top-0 z-20 flex items-center justify-center font-bold text-gray-700 text-sm bg-gray-100 border-b border-r border-gray-300">
-            {day}
-          </div>
-        ))}
+    <div className="w-full overflow-x-auto">
+      {storedCourses.length === 0 ? (
+        <p className="text-sm text-gray-500">
+          저장된 시간표가 없습니다. 먼저 수강신청을 완료해 주세요.
+        </p>
+      ) : null}
 
-        {/* Time Labels (Sticky) */}
-        {timeSlots.slice(0, -1).map((time, i) => (
-            <div key={time} className="row-start-2 row-span-1 sticky left-0 bg-gray-100 z-10" style={{ gridRow: i + 2 }}>
-                <div className="h-full flex items-start justify-center text-xs text-gray-500 pt-1 pr-2 border-r border-b border-gray-300">
-                    {time.endsWith('00') ? time : ''}
-                </div>
-            </div>
-        ))}
+      <table className="min-w-full border border-gray-200 text-sm text-center">
+        <thead className="bg-gray-100">
+          <tr>
+            <th className="border border-gray-200 px-2 py-2 w-20">시간</th>
+            {days.map((day) => (
+              <th key={day} className="border border-gray-200 px-2 py-2">
+                {day}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {timeSlots.map((slot) => (
+            <tr key={slot}>
+              <td className="border border-gray-200 px-2 py-2 bg-gray-50 font-semibold">
+                {slot}
+              </td>
+              {days.map((day) => {
+                const key = `${day}_${slot}`;
+                const cellCourses = MyTimetableMap[key] || [];
 
-        {/* Grid Lines */}
-        {Array.from({ length: 18 * 5 }).map((_, i) => (
-          <div key={i} className={`border-b border-r border-gray-200 ${i % 5 === 4 ? 'border-r-gray-300' : ''}`}></div>
-        ))}
-        
-        {/* Placed Courses */}
-        {courses.map((course, index) => {
-          const timeInfo = parseCourseTime(course.time);
-          if (!timeInfo) return null;
-
-          const startRow = timeToGridRow(timeInfo.start, 'start');
-          const endRow = timeToGridRow(timeInfo.end, 'end');
-          const col = dayToGridCol[timeInfo.day];
-          
-          if (!col || startRow < 2 || endRow < startRow) return null;
-
-          const colorClass = courseColors[index % courseColors.length];
-
-          return (
-            <div
-              key={course.id}
-              className={`relative rounded-lg p-2 text-xs flex flex-col justify-center items-center shadow-lg border ${colorClass} overflow-hidden m-px z-10`}
-              style={{
-                gridColumn: col,
-                gridRowStart: startRow,
-                gridRowEnd: endRow,
-              }}
-            >
-              {showRemoveButton && onRemoveCourse && (
-                <button
-                  onClick={() => onRemoveCourse(course)}
-                  aria-label={`Remove ${course.name}`}
-                  className="absolute top-0.5 right-0.5 p-0.5 rounded-full text-red-500 bg-white/50 hover:bg-white/90 hover:text-red-700 transition-colors"
-                >
-                    <MinusCircleIcon className="h-4 w-4" />
-                </button>
-              )}
-              <p className="font-bold text-gray-800 text-center text-[11px] leading-tight pt-2">{course.name}</p>
-              <p className="text-gray-600 text-[10px] mt-1">{course.location}</p>
-              <p className="text-gray-600 text-[10px]">{course.professor}</p>
-            </div>
-          );
-        })}
-      </div>
+                return (
+                  <td
+                    key={key}
+                    className="border border-gray-200 px-1 py-2 align-top"
+                  >
+                    {cellCourses.length > 0 ? (
+                      <div className="space-y-1">
+                        {cellCourses.map((c) => (
+                          <div
+                            key={c.id}
+                            className="rounded-md bg-blue-50 border border-blue-200 px-1 py-1"
+                          >
+                            <p className="text-xs font-semibold text-blue-800">
+                              {c.name}
+                            </p>
+                            <p className="text-[10px] text-blue-700">
+                              {c.classroom}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-gray-300">-</span>
+                    )}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 };
