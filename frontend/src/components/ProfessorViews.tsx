@@ -786,7 +786,15 @@ const AttendanceAndGradesView: React.FC<{ selectedCourse: Course, mode: 'attenda
 
     useEffect(() => {
         if (selectedCourse) {
-            fetch(`http://localhost:8080/api/professor/grades?courseCode=${selectedCourse.courseCode}`)
+            const token = localStorage.getItem("token");
+
+            fetch(`http://localhost:8080/api/professor/grades?courseCode=${selectedCourse.courseCode}`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`,
+                },
+            })
                 .then(res => res.json())
                 .then(data => setStudents(data))
                 .catch(err => console.error("성적 로딩 실패:", err));
@@ -802,11 +810,17 @@ const AttendanceAndGradesView: React.FC<{ selectedCourse: Course, mode: 'attenda
 
     const handleSave = async () => {
         try {
+            const token = localStorage.getItem("token");
+
             for (const student of students) {
                 await fetch("http://localhost:8080/api/professor/grades", {
                     method: "PUT",
-                    headers: { "Content-Type": "application/json" },
+                    headers: { 
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
                     body: JSON.stringify({
+                        // ... (body 내용은 그대로)
                         enrollmentId: student.enrollmentId,
                         midtermScore: student.midtermScore,
                         finalScore: student.finalScore,
@@ -816,7 +830,13 @@ const AttendanceAndGradesView: React.FC<{ selectedCourse: Course, mode: 'attenda
                 });
             }
             alert("성적이 성공적으로 저장되었습니다!");
-            const res = await fetch(`http://localhost:8080/api/professor/grades?courseCode=${selectedCourse.courseCode}`);
+            
+            const res = await fetch(`http://localhost:8080/api/professor/grades?courseCode=${selectedCourse.courseCode}`, {
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}` 
+                }
+            });
             const data = await res.json();
             setStudents(data);
         } catch (error) {
@@ -877,10 +897,6 @@ const AttendanceAndGradesView: React.FC<{ selectedCourse: Course, mode: 'attenda
 
 export const ProfessorStudentManagement: React.FC<{ user: User; viewType?: "attendance" | "grades" }> = ({ user, viewType }) => {
   
-  // -------------------------------------------------------------------------
-  // 1. [원상복구] 수강생 출결 관리 (원래 코드 방식 - Placeholder)
-  // -------------------------------------------------------------------------
-  // 동료분이 작업하실 영역이므로, 원래 있던 디자인(안내 문구)만 남겨둡니다.
   if (viewType === 'attendance') {
     return (
       <Card title="수강생 출결 관리">
@@ -898,20 +914,23 @@ export const ProfessorStudentManagement: React.FC<{ user: User; viewType?: "atte
     );
   }
 
-  // -------------------------------------------------------------------------
-  // 2. [사용자님 작업] 성적 관리 (DB 연동 버전)
-  // -------------------------------------------------------------------------
-  // 강의 목록 상태
   const [myCourses, setMyCourses] = useState<Course[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   
-  // 모드 설정 (성적 관리로 고정)
   const [managementMode, setManagementMode] = useState<'attendance'|'grades'>('grades');
 
   // 화면이 켜지면 백엔드에서 강의 목록 가져오기
   useEffect(() => {
     if (user.id) {
-      fetch(`http://localhost:8080/api/professor/courses?professorId=${user.id}`)
+      const token = localStorage.getItem("token"); // 토큰
+
+      fetch(`http://localhost:8080/api/professor/courses?professorId=${user.id}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      })
         .then((res) => res.json())
         .then((data) => {
           const courses = data.map((d: any) => ({

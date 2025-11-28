@@ -176,8 +176,8 @@ export const StudentCourseRegistration: React.FC = () => {
 
 interface GradeData {
   gradeId: number;
-  year: number;     // 백엔드 DTO의 getYear() -> year
-  semester: number; // 백엔드 DTO의 getSemester() -> semester
+  year: number;
+  semester: number; 
   courseCode: string;
   courseName: string;
   credit: number;
@@ -186,9 +186,23 @@ interface GradeData {
 }
 
 const CurrentSemesterGrades: React.FC<{ grades: GradeData[] }> = ({ grades }) => {
-  const currentYear = 2025;
-  const currentSemester = 2;
+  const today = new Date();
+  const month = today.getMonth() + 1;
   
+  let currentYear = today.getFullYear();
+  let currentSemester = 1;
+
+  // 1학기: 3월 ~ 8월 / 2학기: 9월 ~ 다음 해 2월
+  if (month >= 3 && month <= 8) {
+    currentSemester = 1;
+  } else {
+    currentSemester = 2;
+    // 1, 2월은 직전 연도 2학기로 처리
+    if (month <= 2) {
+      currentYear -= 1;
+    }
+  }
+
   const currentGrades = grades.filter(
     (g) => g.year === currentYear && g.semester === currentSemester
   );
@@ -197,20 +211,27 @@ const CurrentSemesterGrades: React.FC<{ grades: GradeData[] }> = ({ grades }) =>
     <Card title={`금학기(${currentYear}-${currentSemester}) 성적 상세 조회`}>
       {currentGrades.length === 0 ? (
         <p className="text-center py-8 text-slate-500">
-          등록된 성적이 없습니다.
+          이번 학기 수강중인 강의가 없습니다.
         </p>
       ) : (
-        // 테이블 헤더도 정렬에 맞게 조정될 것입니다.
         <Table headers={["과목코드", "과목명", "학점", "성적", "평점"]}>
           {currentGrades.map((grade) => (
             <tr key={grade.gradeId}>
               <td className="px-6 py-4 text-sm text-slate-500 w-24 text-center whitespace-nowrap">{grade.courseCode}</td>
-              {/* 과목명은 넓게 쓰도록 너비 제한 없음 */}
               <td className="px-6 py-4 text-sm font-medium text-slate-800">{grade.courseName}</td>
-              {/* 아래 3개는 너비 고정 (w-24) */}
               <td className="px-6 py-4 text-sm text-center w-24 whitespace-nowrap">{grade.credit}</td>
-              <td className="px-6 py-4 text-sm font-bold text-brand-blue text-center w-24 whitespace-nowrap">{grade.gradeLetter}</td>
-              <td className="px-6 py-4 text-sm text-center w-24 whitespace-nowrap">{grade.gradePoint}</td>
+              
+              <td className="px-6 py-4 text-sm font-bold text-center w-24 whitespace-nowrap">
+                {grade.gradeLetter ? (
+                  <span className="text-brand-blue">{grade.gradeLetter}</span>
+                ) : (
+                  <span className="text-slate-400 text-xs bg-slate-100 px-2 py-1 rounded-full">수강중</span>
+                )}
+              </td>
+
+              <td className="px-6 py-4 text-sm text-center w-24 whitespace-nowrap">
+                {grade.gradePoint !== null ? grade.gradePoint : "-"}
+              </td>
             </tr>
           ))}
         </Table>
@@ -336,7 +357,14 @@ export const StudentGradeCenter: React.FC<{ user: User }> = ({ user }) => {
     const studentId = user?.id; 
 
     if (studentId) {
-      fetch(`http://localhost:8080/api/grades?studentId=${studentId}`)
+      const token = localStorage.getItem("token");
+      fetch(`http://localhost:8080/api/grades?studentId=${studentId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      })
         .then((res) => {
           if (!res.ok) throw new Error("성적 조회 실패");
           return res.json();
@@ -385,10 +413,6 @@ export const StudentGradeCenter: React.FC<{ user: User }> = ({ user }) => {
     </div>
   );
 };
-
-// 라우터에서 기존에 StudentAllGrades를 사용하고 있을 수 있으니
-// StudentGradeCenter를 그대로 래핑해서 export
-export const StudentAllGrades: React.FC = () => <StudentGradeCenter />;
 
 // Simple Placeholder Components for other views with standard padding
 const PlaceholderView: React.FC<{ title: string; desc: string }> = ({
