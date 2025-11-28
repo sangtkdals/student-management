@@ -24,19 +24,19 @@ public class GradeService {
     public void updateStudentGrade(GradeUpdateRequest request) {
         Grade grade = gradeRepository.findByEnrollmentId(request.getEnrollmentId());
         
+        Integer enrollId = request.getEnrollmentId().intValue();
+        Enrollment enrollment = enrollmentRepository.findById(enrollId)
+                .orElseThrow(() -> new RuntimeException("수강신청 정보를 찾을 수 없습니다. ID: " + enrollId));
+
         if (grade == null) {
             grade = new Grade();
-            
-            Enrollment enrollment = enrollmentRepository.findById(request.getEnrollmentId().intValue())
-                    .orElseThrow(() -> new RuntimeException("해당 수강신청 정보를 찾을 수 없습니다."));
-            
             grade.setEnrollment(enrollment);
         }
 
-
-        Course course = gradeRepository.findCourseByEnrollmentId(request.getEnrollmentId());
+        Course course = enrollment.getCourse(); 
+        
         if (course == null) {
-             throw new RuntimeException("강의 정보를 찾을 수 없습니다.");
+             throw new RuntimeException("수강신청 정보에 연결된 강의가 없습니다.");
         }
 
         BigDecimal mid = request.getMidtermScore() != null ? BigDecimal.valueOf(request.getMidtermScore()) : BigDecimal.ZERO;
@@ -49,10 +49,10 @@ public class GradeService {
         grade.setAssignmentScore(assign);
         grade.setAttendanceScore(attend);
 
-        double rMid = course.getRatioMid() != null ? course.getRatioMid() / 100.0 : 0.0;
-        double rFin = course.getRatioFinal() != null ? course.getRatioFinal() / 100.0 : 0.0;
-        double rAssign = course.getRatioAssign() != null ? course.getRatioAssign() / 100.0 : 0.0;
-        double rAttend = course.getRatioAttend() != null ? course.getRatioAttend() / 100.0 : 0.0;
+        double rMid = (course.getRatioMid() != null ? course.getRatioMid() : 0) / 100.0;
+        double rFin = (course.getRatioFinal() != null ? course.getRatioFinal() : 0) / 100.0;
+        double rAssign = (course.getRatioAssign() != null ? course.getRatioAssign() : 0) / 100.0;
+        double rAttend = (course.getRatioAttend() != null ? course.getRatioAttend() : 0) / 100.0;
 
         double totalVal = (mid.doubleValue() * rMid) + (fin.doubleValue() * rFin) + 
                           (assign.doubleValue() * rAssign) + (attend.doubleValue() * rAttend);
@@ -69,7 +69,7 @@ public class GradeService {
         else if (totalVal >= 70) { grade.setGradeLetter("C0"); grade.setGradePoint(BigDecimal.valueOf(2.0)); }
         else if (totalVal >= 60) { grade.setGradeLetter("D"); grade.setGradePoint(BigDecimal.valueOf(1.0)); }
         else { grade.setGradeLetter("F"); grade.setGradePoint(BigDecimal.ZERO); }
-        
+
         gradeRepository.save(grade);
     }
 }
