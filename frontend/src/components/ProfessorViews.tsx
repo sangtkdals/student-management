@@ -1265,39 +1265,173 @@ export const ProfessorSyllabus: React.FC<{ user: User }> = ({ user }) => {
     );
 };
 
-export const ProfessorCourseMaterials: React.FC = () => {
-    const [materials, setMaterials] = useState([
-        { id: 1, title: '1주차 강의자료.pdf', date: '2024-03-04', size: '2.4MB' },
-        { id: 2, title: '2주차 강의자료.pdf', date: '2024-03-11', size: '3.1MB' }
-    ]);
+export const ProfessorCourseMaterials: React.FC<{ user: User }> = ({ user }) => {
+    const [course, setCourse] = useState<Course | null>(null);
+    const [myCourses, setMyCourses] = useState<Course[]>([]);
+    const [materials, setMaterials] = useState<any[]>([]);
+    const [uploading, setUploading] = useState(false);
 
-    const handleUpload = () => {
-        const title = prompt('자료 제목을 입력하세요:');
-        if (title) {
-            setMaterials([...materials, { id: Date.now(), title: `${title}.pdf`, date: new Date().toISOString().split('T')[0], size: '1.5MB' }]);
+    // Fetch courses
+    useEffect(() => {
+        const fetchCourses = async () => {
+            if (!user?.memberNo) return;
+            try {
+                const token = localStorage.getItem("token");
+                const response = await fetch(`http://localhost:8080/api/courses/professor/${user.memberNo}`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    const mappedCourses = data.map((c: any) => ({
+                        ...c,
+                        subjectName: c.courseName || c.subject?.sName || c.courseCode
+                    }));
+                    setMyCourses(mappedCourses);
+                    if (mappedCourses.length > 0) setCourse(mappedCourses[0]);
+                }
+            } catch (error) {
+                console.error("Failed to fetch courses", error);
+            }
+        };
+        fetchCourses();
+    }, [user.memberNo]);
+
+    // Fetch materials
+    useEffect(() => {
+        const fetchMaterials = async () => {
+            if (!course) return;
+            try {
+                const token = localStorage.getItem("token");
+                const response = await fetch(`http://localhost:8080/api/materials/course/${course.courseCode}`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    setMaterials(data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch materials", error);
+            }
+        };
+        fetchMaterials();
+    }, [course]);
+
+    const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0 || !course) return;
+        
+        const file = e.target.files[0];
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("courseCode", course.courseCode);
+
+        setUploading(true);
+        try {
+            const token = localStorage.getItem("token");
+            const response = await fetch(`http://localhost:8080/api/materials/upload`, {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${token}` },
+                body: formData
+            });
+
+            if (response.ok) {
+                alert("업로드 완료");
+                // Refresh list
+                const res = await fetch(`http://localhost:8080/api/materials/course/${course.courseCode}`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                if (res.ok) setMaterials(await res.json());
+            } else {
+                alert("업로드 실패");
+            }
+        } catch (error) {
+            console.error("Upload error", error);
+            alert("오류가 발생했습니다.");
+        } finally {
+            setUploading(false);
+            // Reset input
+            e.target.value = '';
+        }
+    };
+
+    const handleDelete = async (id: number) => {
+        if (!confirm("정말 삭제하시겠습니까?")) return;
+        try {
+            const token = localStorage.getItem("token");
+            const response = await fetch(`http://localhost:8080/api/materials/${id}`, {
+                method: "DELETE",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            if (response.ok) {
+                setMaterials(materials.filter(m => m.materialId !== id));
+            } else {
+                alert("삭제 실패");
+            }
+        } catch (error) {
+            console.error("Delete error", error);
         }
     };
 
     return (
-        <Card title="강의 자료 관리" titleAction={<Button size="sm" onClick={handleUpload}>+ 자료 업로드</Button>}>
-            {materials.length > 0 ? (
-                <Table headers={['제목', '등록일', '크기', '관리']}>
-                    {materials.map(m => (
-                        <tr key={m.id}>
-                            <td className="px-6 py-4 text-sm font-medium text-slate-800">{m.title}</td>
-                            <td className="px-6 py-4 text-sm text-slate-500">{m.date}</td>
-                            <td className="px-6 py-4 text-sm text-slate-500">{m.size}</td>
-                            <td className="px-6 py-4 text-sm">
-                                <button className="text-red-600 hover:text-red-800" onClick={() => setMaterials(materials.filter(item => item.id !== m.id))}>삭제</button>
-                            </td>
-                        </tr>
-                    ))}
-                </Table>
-            ) : (
-                <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-lg bg-slate-50">
-                    <p className="text-slate-500 mb-4">등록된 강의 자료가 없습니다.</p>
+        <Card title="강의 자료 관리">
+             <div className="space-y-6">
+                {/* Course Selector */}
+                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
+                    <div className="flex items-center space-x-4">
+                        <label className="font-bold text-slate-700">강의 선택:</label>
+                        <select 
+                            className="p-2 border border-slate-300 rounded-md text-sm"
+                            value={course?.courseCode || ''}
+                            onChange={(e) => {
+                                const selected = myCourses.find(c => c.courseCode === e.target.value);
+                                if (selected) setCourse(selected);
+                            }}
+                        >
+                            {myCourses.map(c => (
+                                <option key={c.courseCode} value={c.courseCode}>
+                                    {c.subjectName} ({c.courseCode})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <input 
+                            type="file" 
+                            id="file-upload" 
+                            className="hidden" 
+                            onChange={handleUpload}
+                            disabled={!course || uploading}
+                        />
+                        <label 
+                            htmlFor="file-upload" 
+                            className={`cursor-pointer inline-flex items-center px-4 py-2 bg-brand-blue text-white text-sm font-medium rounded-md hover:bg-brand-blue-dark transition-colors ${(!course || uploading) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                            {uploading ? '업로드 중...' : '+ 자료 업로드'}
+                        </label>
+                    </div>
                 </div>
-            )}
+
+                {materials.length > 0 ? (
+                    <Table headers={['파일명', '업로드 일시', '관리']}>
+                        {materials.map(m => (
+                            <tr key={m.materialId}>
+                                <td className="px-6 py-4 text-sm font-medium text-slate-800">
+                                    <a href={`http://localhost:8080/api/materials/download/${m.filepath}`} target="_blank" rel="noreferrer" className="hover:text-brand-blue hover:underline">
+                                        {m.filename}
+                                    </a>
+                                </td>
+                                <td className="px-6 py-4 text-sm text-slate-500">{m.uploadDate ? new Date(m.uploadDate).toLocaleDateString() : '-'}</td>
+                                <td className="px-6 py-4 text-sm">
+                                    <button className="text-red-600 hover:text-red-800 font-bold" onClick={() => handleDelete(m.materialId)}>삭제</button>
+                                </td>
+                            </tr>
+                        ))}
+                    </Table>
+                ) : (
+                    <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-lg bg-slate-50">
+                        <p className="text-slate-500 mb-4">등록된 강의 자료가 없습니다.</p>
+                    </div>
+                )}
+            </div>
         </Card>
     );
 };

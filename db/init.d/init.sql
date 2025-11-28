@@ -339,6 +339,27 @@ CREATE TABLE refresh_tokens (
         ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+
+-- =====================================================
+-- 16) materials
+-- =====================================================
+DROP TABLE IF EXISTS materials;
+CREATE TABLE `materials` (
+	`material_id` INT NOT NULL AUTO_INCREMENT COMMENT '자료 고유 ID',
+	`course_code` VARCHAR(20) NOT NULL COMMENT '강의 코드',
+	`filename` VARCHAR(500) NULL DEFAULT NULL COMMENT '자료 파일명' COLLATE 'utf8mb4_0900_ai_ci',
+	`filepath` VARCHAR(1000) NULL DEFAULT NULL COMMENT '자료 저장 경로' COLLATE 'utf8mb4_0900_ai_ci',
+	`upload_date` DATETIME NULL DEFAULT CURRENT_TIMESTAMP COMMENT '업로드 일시',
+	PRIMARY KEY (`material_id`) USING BTREE,
+	INDEX `fk_material_course` (`course_code`) USING BTREE,
+	-- course 테이블의 course_code를 참조하는 외래 키 설정
+	CONSTRAINT `fk_material_course` FOREIGN KEY (`course_code`) REFERENCES `course` (`course_code`) ON UPDATE CASCADE ON DELETE RESTRICT
+)
+COLLATE='utf8mb4_0900_ai_ci'
+ENGINE=InnoDB
+COMMENT='강의 자료 테이블'
+;
+
 -- =====================================================
 -- Sample Data Insertion
 -- =====================================================
