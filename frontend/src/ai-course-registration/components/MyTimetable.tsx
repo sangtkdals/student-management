@@ -1,117 +1,158 @@
-
-import React from 'react';
-import { Course } from '../types';
-import { MinusCircleIcon } from './icons/Icons';
+// src/ai-course-registration/components/MyTimetable.tsx
+import React, { useEffect, useMemo, useState } from "react";
+import type { Course } from "../types"; // 실제 types 경로에 맞게 조정
 
 interface MyTimetableProps {
-  courses: Course[];
-  onRemoveCourse?: (course: Course) => void;
-  showRemoveButton?: boolean;
+  courses?: Course[];
 }
 
-const timeSlots = Array.from({ length: 19 }, (_, i) => {
-  const hour = Math.floor(i / 2) + 9;
-  const minute = i % 2 === 0 ? '00' : '30';
-  return `${hour.toString().padStart(2, '0')}:${minute}`; // 09:00 to 18:00
-});
-
-const days = ['월', '화', '수', '목', '금'];
-const dayToGridCol: { [key: string]: number } = { '월': 2, '화': 3, '수': 4, '목': 5, '금': 6 };
-
-const parseCourseTime = (time: string) => {
-  const parts = time.split(' ');
-  if (parts.length < 2) return null;
-  const day = parts[0];
-  const [start, end] = parts[1].split('-');
-  return { day, start, end };
+// "HH:MM" → 분 단위 숫자
+const timeToMinutes = (time: string): number => {
+  const [h, m] = time.split(":").map(Number);
+  return h * 60 + m;
 };
 
-const timeToGridRow = (time: string, type: 'start' | 'end') => {
-  const [hour, minute] = time.split(':').map(Number);
-  const totalMinutesFrom9 = (hour - 9) * 60 + minute;
-  const rawRow = totalMinutesFrom9 / 30;
-  
-  if (type === 'start') {
-    return Math.floor(rawRow) + 2;
-  }
-  return Math.ceil(rawRow) + 2;
-};
+const MyTimetable: React.FC<MyTimetableProps> = ({ courses: propCourses }) => {
+  const [courses, setCourses] = useState<Course[]>([]);
 
-const courseColors = [
-  'bg-red-200/80 border-red-400',
-  'bg-blue-200/80 border-blue-400',
-  'bg-green-200/80 border-green-400',
-  'bg-yellow-200/80 border-yellow-400',
-  'bg-purple-200/80 border-purple-400',
-  'bg-indigo-200/80 border-indigo-400',
-  'bg-pink-200/80 border-pink-400',
-  'bg-teal-200/80 border-teal-400',
-];
+  // 1) props.courses 우선 사용
+  // 2) 없으면 localStorage에서 registeredCourses 읽기
+  useEffect(() => {
+    if (propCourses && propCourses.length > 0) {
+      setCourses(propCourses);
+      return;
+    }
 
-const MyTimetable: React.FC<MyTimetableProps> = ({ courses, onRemoveCourse, showRemoveButton = true }) => {
+    try {
+      const raw = localStorage.getItem("registeredCourses");
+      if (raw) {
+        const parsed = JSON.parse(raw) as Course[];
+        setCourses(parsed);
+      }
+    } catch (e) {
+      console.error("failed to load registeredCourses:", e);
+    }
+  }, [propCourses]);
+
+  const days = ["월", "화", "수", "목", "금"];
+
+  // 기준 시간 슬롯 (1시간 단위)
+  const timeSlots = useMemo(
+    () => [
+      "09:00",
+      "10:00",
+      "11:00",
+      "12:00",
+      "13:00",
+      "14:00",
+      "15:00",
+      "16:00",
+      "17:00",
+    ],
+    []
+  );
+
+  // [day_timeSlot] → 그 칸에 들어갈 과목들
+  // ※ 이제는 "범위 전체" 칸에 넣도록 수정
+  const timetableMap = useMemo(() => {
+    const map: Record<string, Course[]> = {};
+
+    courses.forEach((course) => {
+      const timeText = (course as any).timeText ?? course.time;
+      if (!timeText) return;
+
+      // 예: "월 10:00-11:50, 수 13:00-14:50"
+      const parts = timeText.split(",");
+      parts.forEach((p) => {
+        const token = p.trim();
+        if (!token) return;
+
+        const [day, range] = token.split(" ");
+        if (!day || !range) return;
+
+        const [startStr, endStr] = range.split("-");
+        if (!startStr || !endStr) return;
+
+        const startMin = timeToMinutes(startStr);
+        const endMin = timeToMinutes(endStr);
+
+        // 이 강의가 걸치는 모든 hour slot에 추가
+        timeSlots.forEach((slot) => {
+          const slotMin = timeToMinutes(slot);
+
+          // slot 시작 시간이 강의 시간 범위 안에 있으면 포함
+          // 예) 13:00~14:50 이면 13:00, 14:00 두 칸에 들어감
+          if (slotMin >= startMin && slotMin < endMin) {
+            const key = `${day}_${slot}`;
+            if (!map[key]) map[key] = [];
+            map[key].push(course);
+          }
+        });
+      });
+    });
+
+    return map;
+  }, [courses, timeSlots]);
+
   return (
-    <div className="h-full p-4 overflow-auto bg-white">
-      <div className="relative grid grid-cols-[50px_repeat(5,1fr)] grid-rows-[40px_repeat(18,50px)] min-w-[700px]">
-        {/* Header Days */}
-        {['', ...days].map((day, i) => (
-          <div key={i} className="sticky top-0 z-20 flex items-center justify-center font-bold text-gray-700 text-sm bg-gray-100 border-b border-r border-gray-300">
-            {day}
-          </div>
-        ))}
+    <div className="w-full overflow-x-auto">
+      {courses.length === 0 && (
+        <p className="text-sm text-gray-500 mb-4">
+          이번 학기에 신청한 과목이 없습니다. 먼저 수강신청을 완료해 주세요.
+        </p>
+      )}
 
-        {/* Time Labels (Sticky) */}
-        {timeSlots.slice(0, -1).map((time, i) => (
-            <div key={time} className="row-start-2 row-span-1 sticky left-0 bg-gray-100 z-10" style={{ gridRow: i + 2 }}>
-                <div className="h-full flex items-start justify-center text-xs text-gray-500 pt-1 pr-2 border-r border-b border-gray-300">
-                    {time.endsWith('00') ? time : ''}
-                </div>
-            </div>
-        ))}
-
-        {/* Grid Lines */}
-        {Array.from({ length: 18 * 5 }).map((_, i) => (
-          <div key={i} className={`border-b border-r border-gray-200 ${i % 5 === 4 ? 'border-r-gray-300' : ''}`}></div>
-        ))}
-        
-        {/* Placed Courses */}
-        {courses.map((course, index) => {
-          const timeInfo = parseCourseTime(course.time);
-          if (!timeInfo) return null;
-
-          const startRow = timeToGridRow(timeInfo.start, 'start');
-          const endRow = timeToGridRow(timeInfo.end, 'end');
-          const col = dayToGridCol[timeInfo.day];
-          
-          if (!col || startRow < 2 || endRow < startRow) return null;
-
-          const colorClass = courseColors[index % courseColors.length];
-
-          return (
-            <div
-              key={course.id}
-              className={`relative rounded-lg p-2 text-xs flex flex-col justify-center items-center shadow-lg border ${colorClass} overflow-hidden m-px z-10`}
-              style={{
-                gridColumn: col,
-                gridRowStart: startRow,
-                gridRowEnd: endRow,
-              }}
-            >
-              {showRemoveButton && onRemoveCourse && (
-                <button
-                  onClick={() => onRemoveCourse(course)}
-                  aria-label={`Remove ${course.name}`}
-                  className="absolute top-0.5 right-0.5 p-0.5 rounded-full text-red-500 bg-white/50 hover:bg-white/90 hover:text-red-700 transition-colors"
-                >
-                    <MinusCircleIcon className="h-4 w-4" />
-                </button>
-              )}
-              <p className="font-bold text-gray-800 text-center text-[11px] leading-tight pt-2">{course.name}</p>
-              <p className="text-gray-600 text-[10px] mt-1">{course.location}</p>
-              <p className="text-gray-600 text-[10px]">{course.professor}</p>
-            </div>
-          );
-        })}
-      </div>
+      <table className="min-w-full border border-gray-200 text-sm text-center bg-white">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="border border-gray-200 px-2 py-2 w-20">시간</th>
+            {days.map((d) => (
+              <th key={d} className="border border-gray-200 px-2 py-2 w-32">
+                {d}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {timeSlots.map((slot) => (
+            <tr key={slot}>
+              <td className="border border-gray-200 px-2 py-2 bg-gray-50 font-semibold">
+                {slot}
+              </td>
+              {days.map((day) => {
+                const key = `${day}_${slot}`;
+                const cellCourses = timetableMap[key] || [];
+                return (
+                  <td
+                    key={key}
+                    className="border border-gray-200 px-1 py-2 align-top"
+                  >
+                    {cellCourses.length > 0 ? (
+                      <div className="space-y-1">
+                        {cellCourses.map((c) => (
+                          <div
+                            key={c.id}
+                            className="rounded-md bg-blue-50 border border-blue-200 px-2 py-1"
+                          >
+                            <div className="text-xs font-semibold text-blue-900">
+                              {c.name}
+                            </div>
+                            <div className="text-[10px] text-blue-800">
+                              {(c as any).classroom ?? c.location}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-gray-300">-</span>
+                    )}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 };

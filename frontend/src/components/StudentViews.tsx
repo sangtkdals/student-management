@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import DEUCourseRegistrationApp from "../DEUCourseRegistrationApp";
 import type { User } from "../types";
+import MyTimetable from "../ai-course-registration/components/MyTimetable";
 import { Card, Button, Table, Modal } from "./ui";
 import {
   MOCK_COURSES,
@@ -39,7 +40,7 @@ export const StudentHome: React.FC<{ user: User }> = ({ user }) => {
                 </span>
               </button>
               <button
-                onClick={() => navigate("/student/timetable")}
+                onClick={() => navigate("/student/MyTimetable")}
                 className="flex flex-col items-center justify-center p-4 bg-slate-50 rounded-lg hover:bg-blue-50 hover:text-brand-blue transition-all group border border-slate-100 hover:border-blue-200 hover:shadow-sm"
               >
                 <div className="bg-white p-3 rounded-full shadow-sm mb-3 group-hover:scale-110 transition-transform ring-1 ring-slate-100">
@@ -394,7 +395,7 @@ export const StudentAllGrades: React.FC = () => <StudentGradeCenter />;
 const PlaceholderView: React.FC<{ title: string; desc: string }> = ({
   title,
   desc,
-}) => (
+}) => ( 
   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <Card title={title}>
       <div className="text-center py-16">
@@ -901,9 +902,16 @@ export const StudentCertificateIssuance: React.FC = () => (
   />
 );
 
-export const StudentTimetable: React.FC = () => (
-  <PlaceholderView
-    title="시간표 조회"
-    desc="이번 학기 수강 신청한 과목의 시간표를 확인합니다."
-  />
+export const StudentMyTimetable: React.FC = () => (
+  <main className="flex-grow container mx-auto p-4 lg:p-6">
+    <div className="bg-white rounded-2xl shadow-xl overflow-hidden p-6 md:p-8 lg:p-10">
+      <h2 className="text-2xl font-bold text-gray-800 mb-2">시간표 조회</h2>
+      <p className="text-sm text-gray-500 mb-6">
+        이번 학기 수강 신청한 과목의 시간표를 확인합니다.
+      </p>
+
+      {/* 🔥 실제 시간표 */}
+      <MyTimetable />
+    </div>
+  </main>
 );
