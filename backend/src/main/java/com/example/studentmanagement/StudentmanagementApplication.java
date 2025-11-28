@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class StudentmanagementApplication {
 
+	// Main entry point
 	public static void main(String[] args) {
 		SpringApplication.run(StudentmanagementApplication.class, args);
 	}
