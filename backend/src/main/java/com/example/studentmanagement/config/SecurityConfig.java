@@ -34,7 +34,7 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Allow preflight requests
-                .requestMatchers("/api/login", "/api/register", "/api/refreshtoken", "/api/hello", "/error", "/api/announcements/**", "/actuator/**", "/api/courses/**", "/api/materials/**", "/api/attendance/**").permitAll()
+                .requestMatchers("/api/login", "/api/register", "/api/refreshtoken", "/api/hello", "/error", "/api/announcements/**", "/actuator/**", "/api/courses/**", "/api/materials/**", "/api/attendance/**", "/api/student/**").permitAll()
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session

@@ -429,9 +429,11 @@ export const StudentTuitionHistory: React.FC<{ user: User }> = ({ user }) => {
                 setTuitionHistory(sortedHistory);
             } catch (err: any) {
                 console.error("Failed to fetch tuition history:", err);
-                // 404 에러 등 HTTP 오류에 대한 사용자 친화적 메시지 출력
+                // HTTP 오류에 대한 사용자 친화적 메시지 출력
                 if (err.response?.status === 404) {
                     setError("등록금 내역 조회 API 경로를 찾을 수 없습니다 (404). 서버 구성을 확인해주세요.");
+                } else if (err.response?.status === 403) {
+                    setError("권한이 없습니다 (403). 로그인이 만료되었거나 이 서비스에 접근할 권한이 부족합니다. 로그인을 다시 시도해주세요.");
                 } else {
                     setError("등록금 내역을 불러오는 중 오류가 발생했습니다. 서버 연결을 확인해주세요.");
                 }
