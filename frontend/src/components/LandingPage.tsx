@@ -68,6 +68,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
                             >
                                 교수 로그인
                             </button>
+                            <button
+                                onClick={() => onNavigateToAuth('admin')}
+                                className="inline-flex items-center justify-center px-8 py-3.5 border border-blue-200 text-base font-bold rounded-md text-white hover:bg-white hover:text-brand-blue transition-colors"
+                            >
+                                관리자 로그인
+                            </button>
                         </div>
                     </div>
                 </section>
