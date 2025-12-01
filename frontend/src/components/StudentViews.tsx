@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import DEUCourseRegistrationApp from "../DEUCourseRegistrationApp";
-import type { User } from "../types";
+import type { User, Tuition } from "../types";
 import MyTimetable from "../ai-course-registration/components/MyTimetable";
 import { Card, Button, Table, Modal } from "./ui";
 import { MOCK_COURSES, MOCK_GRADES, ICONS, MOCK_ANNOUNCEMENTS, MOCK_CALENDAR_EVENTS } from "../constants";
+import axios from 'axios';
 
 // --- StudentHome Component (Modified) ---
 export const StudentHome: React.FC<{ user: User }> = ({ user }) => {
@@ -363,75 +364,179 @@ const PlaceholderView: React.FC<{ title: string; desc: string }> = ({ title, des
   </div>
 );
 
-export const StudentTuitionHistory: React.FC = () => {
-  const navigate = useNavigate();
+const formatCurrency = (amount: number): string => {
+    return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(amount);
+};
 
-  const tuitionData = [
-    {
-      year: 2024,
-      semester: "1학기",
-      amount: "3,500,000원",
-      status: "납부 완료",
-      date: "2024-02-28",
-    },
-    {
-      year: 2023,
-      semester: "2학기",
-      amount: "3,300,000원",
-      status: "납부 완료",
-      date: "2023-08-25",
-    },
-  ];
+// 납부 상태에 따른 스타일
+const getStatusClasses = (status: Tuition['paymentStatus']) => {
+    switch (status) {
+        case 'PAID':
+            return 'bg-green-100 text-green-800';
+        case 'UNPAID':
+            return 'bg-red-100 text-red-800';
+        case 'OVERDUE':
+            return 'bg-yellow-100 text-yellow-800';
+        default:
+            return 'bg-slate-100 text-slate-800';
+    }
+};
 
-  const hasUnpaidTuition = false;
+export const StudentTuitionHistory: React.FC<{ user: User }> = ({ user }) => {
+    const [tuitionHistory, setTuitionHistory] = useState<Tuition[]>([]);
+    // user.memberNo가 유효하면 로딩 상태로 시작, 아니면 로딩을 시작하지 않음 (false)
+    const [isLoading, setIsLoading] = useState(!!user?.memberNo);
+    // 초기 에러는 null로 설정
+    const [error, setError] = useState<string | null>(null);
 
-  return (
-    <Card title="등록금 납부 내역 조회">
-      <p className="mb-6 text-slate-600">등록금 납부 내역 및 상세 영수증을 확인합니다.</p>
+    // 컴포넌트 마운트 시 등록금 내역을 불러오는 useEffect
+    useEffect(() => {
+        const fetchTuitionHistory = async () => {
+            // 1. user.memberNo가 유효하지 않으면 로딩 상태를 false로 설정하고 함수 종료.
+            if (!user?.memberNo) {
+                // 에러 상태가 아직 설정되지 않았다면 에러 메시지 설정
+                if (!error) {
+                    setError("오류: 사용자 정보(memberNo/학번)가 불완전합니다. 로그인을 확인해주세요.");
+                }
+                setIsLoading(false);
+                return;
+            }
 
-      <div className="space-y-6">
-        {tuitionData.map((item, index) => (
-          <div key={index} className="border p-4 rounded-lg shadow-sm flex justify-between items-center bg-white">
-            <div>
-              <p className="text-lg font-semibold text-slate-800">
-                {item.year}년 {item.semester}
-              </p>
-              <p className="text-sm text-slate-600">
-                금액: <span className="font-semibold">{item.amount}</span>
-              </p>
-              <p className={`text-sm font-medium ${item.status === "납부 완료" ? "text-green-600" : "text-red-600"}`}>상태: {item.status}</p>
+            try {
+                // 2. user.memberNo가 유효하게 들어왔을 때만 로딩 시작
+                setIsLoading(true);
+                setError(null);
+
+                // API 호출: `/student/tuition-history` 경로 유지
+                const response = await axios.get<Tuition[]>(`/api/student/tuition-history`, {
+                    params: { studentNo: user.memberNo }
+                });
+
+                // ✅ 1. 응답 데이터가 있는지 확인 (null/undefined/빈 문자열 방지)
+                const rawData = response.data;
+
+                // ✅ 2. 데이터가 배열인지 확인하고, 배열이 아니면 빈 배열로 처리하여 TypeError와 "내역 없음" 오류 방지
+                const tuitionArray: Tuition[] = Array.isArray(rawData) ? rawData : [];
+
+                // 데이터가 유효한 배열일 때만 정렬을 시도
+                const sortedHistory = tuitionArray.sort((a, b) => {
+                    if (a.academicYear !== b.academicYear) {
+                        return b.academicYear - a.academicYear;
+                    }
+                    return b.semester - a.semester;
+                });
+
+                setTuitionHistory(sortedHistory);
+            } catch (err: any) {
+                console.error("Failed to fetch tuition history:", err);
+                // 404 에러 등 HTTP 오류에 대한 사용자 친화적 메시지 출력
+                if (err.response?.status === 404) {
+                    setError("등록금 내역 조회 API 경로를 찾을 수 없습니다 (404). 서버 구성을 확인해주세요.");
+                } else {
+                    setError("등록금 내역을 불러오는 중 오류가 발생했습니다. 서버 연결을 확인해주세요.");
+                }
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchTuitionHistory();
+        // user?.memberNo가 null/undefined에서 유효한 학번으로 바뀔 때만 다시 호출됨
+    }, [user?.memberNo]);
+
+    // --- 로딩 및 에러 상태 처리 ---
+    if (error) {
+        return (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <Card title="등록금 납부 내역 조회">
+                    <div className="text-center py-16 text-red-500">
+                        <p className="font-bold mb-2">데이터 로딩 오류</p>
+                        <p className="text-sm">{error}</p>
+                    </div>
+                </Card>
             </div>
-            <Button variant="secondary" onClick={() => navigate("/student/tuition-payment")}>
-              자세히 보기
-            </Button>
-          </div>
-        ))}
-      </div>
+        );
+    }
 
-      <div className="mt-8 pt-4 border-t">
-        <h3 className="text-lg font-bold text-slate-800 mb-4">미납 내역 (예시)</h3>
+    if (isLoading) {
+        return (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <Card title="등록금 납부 내역 조회">
+                    <div className="text-center py-16 text-slate-500">
+                        <svg className="animate-spin mx-auto h-8 w-8 text-brand-blue" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <p className="mt-4">등록금 납부 내역을 불러오는 중입니다...</p>
+                    </div>
+                </Card>
+            </div>
+        );
+    }
+    // ------------------------------
 
-        {hasUnpaidTuition ? (
-          <div className="text-red-600 p-4 border border-red-300 bg-red-50 rounded-lg">
-            <p>2025년 1학기 등록금 미납 상태입니다.</p>
-            <Button className="mt-3" onClick={() => navigate("/student/tuition-payment")}>
-              등록금 납부하기
-            </Button>
-          </div>
-        ) : (
-          <div className="flex justify-between items-center p-4 border border-blue-300 bg-blue-50 rounded-lg">
-            <p className="text-slate-700">
-              현재 <span className="font-semibold">미납된 등록금 내역은 없습니다.</span> 다음 학기 등록금 납부를 미리 확인하시려면 버튼을
-              클릭해주세요.
-            </p>
-            <Button variant="primary" className="ml-4 flex-shrink-0" onClick={() => navigate("/student/tuition-payment")}>
-              등록금 납부 페이지로 이동
-            </Button>
-          </div>
-        )}
-      </div>
-    </Card>
-  );
+    // 정상 데이터 표시
+    return (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+            <Card title="등록금 납부 내역 조회">
+                {tuitionHistory.length === 0 ? (
+                    <p className="text-center py-8 text-slate-500">조회된 등록금 납부 내역이 없습니다.</p>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <Table
+                            headers={[
+                                "학년도/학기",
+                                "고지금액",
+                                "장학금",
+                                "실 납부액",
+                                "납부기한",
+                                "납부일",
+                                "상태",
+                                "영수증 번호"
+                            ]}
+                        >
+                            {tuitionHistory.map((item) => {
+                                // 실 납부액 계산 (고지금액 - 장학금)
+                                const netTuition = item.tuitionAmount - item.scholarshipAmount;
+
+                                return (
+                                    <tr key={item.tuitionId}>
+                                        <td className="px-4 py-3 text-sm font-medium text-slate-800">
+                                            {item.academicYear}년 {item.semester}학기
+                                        </td>
+                                        <td className="px-4 py-3 text-sm text-right">{formatCurrency(item.tuitionAmount)}</td>
+                                        <td className="px-4 py-3 text-sm text-right text-red-600 font-medium">
+                                            - {formatCurrency(item.scholarshipAmount)}
+                                        </td>
+                                        <td className="px-4 py-3 text-base font-bold text-right text-brand-blue">
+                                            {formatCurrency(netTuition)}
+                                        </td>
+                                        <td className="px-4 py-3 text-sm text-slate-600 text-center">{item.dueDate || '미정'}</td>
+                                        <td className="px-4 py-3 text-sm text-slate-500 text-center">{item.paidDate || '-'}</td>
+                                        <td className="px-4 py-3 text-center">
+                                            <span className={`inline-flex items-center px-3 py-0.5 rounded-full text-xs font-bold ${getStatusClasses(item.paymentStatus)}`}>
+                                                {item.paymentStatus === 'PAID' ? '납부 완료' : item.paymentStatus === 'UNPAID' ? '미납' : '기한 초과'}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3 text-xs text-slate-400 font-mono">{item.receiptNo || '-'}</td>
+                                    </tr>
+                                );
+                            })}
+                        </Table>
+                    </div>
+                )}
+            </Card>
+
+            {/* 추가 설명 섹션 */}
+            <Card title="참고 사항" className="bg-slate-50 border-slate-200">
+                <ul className="list-disc list-inside text-sm text-slate-700 space-y-1">
+                    <li>'실 납부액'은 등록금(수업료)에서 장학금 감면액을 제외한, 학생이 최종적으로 납부해야 할 금액입니다.</li>
+                    <li>미납(UNPAID) 또는 기한 초과(OVERDUE) 상태의 등록금은 '등록금 납부' 메뉴에서 고지서를 확인하고 납부할 수 있습니다.</li>
+                    <li>기타 등록금 관련 문의는 학사지원팀으로 연락해 주시기 바랍니다.</li>
+                </ul>
+            </Card>
+        </div>
+    );
 };
 
 export const StudentLeaveApplication: React.FC = () => <PlaceholderView title="휴학 신청" desc="일반 휴학 및 군 휴학을 신청할 수 있습니다." />;
