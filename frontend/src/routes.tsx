@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
-import type { User } from "./types";
+import type { User, Course } from "./types";
+import DEUCourseRegistrationApp from "./DEUCourseRegistrationApp";
 
 // Components
 import TopNavigation from "./components/TopNavigation";
@@ -45,7 +46,7 @@ const LoadingBar = () => (
 );
 
 // Authenticated Application Wrapper
-const AppRoutes = ({ user, onLogout }: { user: User; onLogout: () => void }) => {
+const AppRoutes = ({ user, onLogout, enrolledCourses }: { user: User; onLogout: () => void; enrolledCourses: Course[] }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
@@ -117,7 +118,7 @@ const AppRoutes = ({ user, onLogout }: { user: User; onLogout: () => void }) => 
                 path="/student/course-registration"
                 element={
                   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <StudentCourseRegistration />
+                    <DEUCourseRegistrationApp user={user} initialEnrolledCourses={enrolledCourses as any[]} />
                   </div>
                 }
               />
@@ -199,7 +200,7 @@ const AppRoutes = ({ user, onLogout }: { user: User; onLogout: () => void }) => 
                 path="/student/Mytimetable"
                 element={
                   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <StudentMyTimetable />
+                    <StudentMyTimetable enrolledCourses={enrolledCourses} />
                   </div>
                 }
               />

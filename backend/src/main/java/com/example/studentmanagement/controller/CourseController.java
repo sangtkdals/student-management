@@ -2,15 +2,23 @@ package com.example.studentmanagement.controller;
 
 import com.example.studentmanagement.beans.Course;
 import com.example.studentmanagement.beans.Member;
+import com.example.studentmanagement.beans.Course;
+import com.example.studentmanagement.beans.CourseSchedule;
+import com.example.studentmanagement.beans.Member;
 import com.example.studentmanagement.beans.Subject;
+import com.example.studentmanagement.dto.CourseDTO;
 import com.example.studentmanagement.repository.CourseRepository;
+import com.example.studentmanagement.repository.CourseScheduleRepository;
+import com.example.studentmanagement.repository.EnrollmentRepository;
 import com.example.studentmanagement.repository.MemberRepository;
-import com.example.studentmanagement.repository.SubjectRepository; // Assuming this exists
+import com.example.studentmanagement.repository.SubjectRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/courses")
@@ -18,12 +26,34 @@ public class CourseController {
 
     private final CourseRepository courseRepository;
     private final MemberRepository memberRepository;
-    private final SubjectRepository subjectRepository; // Need to verify if this exists
+    private final SubjectRepository subjectRepository;
+    private final CourseScheduleRepository courseScheduleRepository;
+    private final EnrollmentRepository enrollmentRepository;
 
-    public CourseController(CourseRepository courseRepository, MemberRepository memberRepository, SubjectRepository subjectRepository) {
+    public CourseController(CourseRepository courseRepository, MemberRepository memberRepository,
+            SubjectRepository subjectRepository, CourseScheduleRepository courseScheduleRepository,
+            EnrollmentRepository enrollmentRepository) {
         this.courseRepository = courseRepository;
         this.memberRepository = memberRepository;
         this.subjectRepository = subjectRepository;
+        this.courseScheduleRepository = courseScheduleRepository;
+        this.enrollmentRepository = enrollmentRepository;
+    }
+
+    // Get all courses for student registration
+    @GetMapping
+    public ResponseEntity<List<CourseDTO>> getAllCourses() {
+        List<Course> courses = courseRepository.findAll();
+        List<CourseDTO> courseDTOs = courses.stream()
+                .map(course -> {
+                    int currentStudents = (int) enrollmentRepository.countByCourse_CourseCode(course.getCourseCode());
+                    String professorName = course.getProfessor() != null ? course.getProfessor().getName() : "N/A";
+                    List<CourseSchedule> schedules = course.getCourseSchedules();
+                    int credit = course.getSubject() != null ? course.getSubject().getCredit() : 0;
+                    return new CourseDTO(course, currentStudents, professorName, schedules, credit);
+                })
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(courseDTOs);
     }
 
     // Get courses for a specific professor
@@ -54,18 +84,9 @@ public class CourseController {
             course.setAcademicYear(getInteger(payload, "academicYear"));
             course.setSemester(getInteger(payload, "semester"));
             
-            // Prioritize courseName, fallback to subjectName
-            String name = (String) payload.get("courseName");
-            if (name == null || name.isEmpty()) {
-                name = (String) payload.get("subjectName");
-            }
-            course.setCourseName(name);
-            
             course.setCourseClass((String) payload.get("courseClass"));
             course.setMaxStu(getInteger(payload, "maxStudents"));
-            course.setCurrentStudents(0);
             course.setClassroom((String) payload.get("classroom"));
-            course.setCourseTime((String) payload.get("courseTime"));
             course.setCourseStatus("OPEN");
             
             // Set Subject
@@ -90,13 +111,22 @@ public class CourseController {
             Member professor = memberRepository.findByMemberNo(professorNo).orElse(null);
             course.setProfessor(professor);
 
-            // Credit is usually in Subject, but we might store it in Course if needed, 
-            // but the Course bean doesn't have a 'credit' field? 
-            // Wait, the schema doesn't have 'credit' in course table. It's in 'subject'.
-            // But the prompt CREATE TABLE for course didn't include 'credit'.
-            // The frontend sends it. We can ignore it or rely on Subject's credit.
-            
             courseRepository.save(course);
+
+            // Save course schedules
+            if (payload.containsKey("courseSchedules")) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> schedules = (List<Map<String, Object>>) payload.get("courseSchedules");
+                for (Map<String, Object> scheduleMap : schedules) {
+                    CourseSchedule schedule = new CourseSchedule();
+                    schedule.setCourse(course);
+                    schedule.setDayOfWeek(getInteger(scheduleMap, "dayOfWeek"));
+                    schedule.setStartTime(LocalTime.parse((String) scheduleMap.get("startTime")));
+                    schedule.setEndTime(LocalTime.parse((String) scheduleMap.get("endTime")));
+                    courseScheduleRepository.save(schedule);
+                }
+            }
+            
             return ResponseEntity.ok("강의가 등록되었습니다.");
 
         } catch (Exception e) {

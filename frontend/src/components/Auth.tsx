@@ -78,7 +78,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = "student" })
           departmentName: data.departmentName,
           avatarUrl: `https://picsum.photos/seed/${data.userId}/100/100`, // 임시 아바타 URL
         };
-        
+
         // 사용자 정보 저장 (새로고침 시 유지용)
         localStorage.setItem("user", JSON.stringify(loggedInUser));
 
@@ -308,6 +308,15 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = "student" })
       </div>
     </div>
   );
+};
+
+// Helper: Get user from localStorage
+export const getUser = (): User | null => {
+  const user = localStorage.getItem("user");
+  if (user) {
+    return JSON.parse(user);
+  }
+  return null;
 };
 
 export default Auth;
