@@ -6,34 +6,33 @@ import type { User } from "./types";
 import TopNavigation from "./components/TopNavigation";
 import Footer from "./components/Footer";
 import { DashboardHero, DashboardContent } from "./components/Dashboard";
-import { UserProfile, NoticeBoard, AcademicCalendar } from "./components/CommonViews";
 import AnnouncementDetail from "./components/AnnouncementDetail";
 
+// Common Views
+import { UserProfile } from "./components/common/UserProfile";
+import { NoticeBoard } from "./components/common/NoticeBoard";
+import { AcademicCalendar } from "./components/common/AcademicCalendar";
+
 // Student Views
+import { StudentHome } from "./components/student/StudentHome";
+import { StudentCourseRegistration } from "./components/student/StudentCourseRegistration";
+import { StudentGradeCenter } from "./components/student/StudentGradeCenter";
+import { StudentMyTimetable } from "./components/student/StudentMyTimetable";
+import { StudentTuitionHistory, StudentTuitionPayment } from "./components/student/StudentTuitionViews";
 import {
-  StudentHome,
-  StudentCourseRegistration,
-  StudentGradeCenter,
-  StudentTuitionHistory,
   StudentLeaveApplication,
-  StudentGraduationCheck,
-  StudentTuitionPayment,
   StudentLeaveHistory,
   StudentReturnApplication,
   StudentReturnHistory,
-  StudentCertificateIssuance,
-  StudentMyTimetable,
-} from "./components/StudentViews";
+} from "./components/student/StudentAcademicStatusViews";
+import { StudentGraduationCheck, StudentCertificateIssuance } from "./components/student/StudentMiscViews";
 
 // Professor Views
-import {
-  ProfessorHome,
-  ProfessorStudentManagement,
-  ProfessorMyLectures,
-  ProfessorSyllabus,
-  ProfessorCourseMaterials,
-  ProfessorAssignments,
-} from "./components/ProfessorViews";
+import { ProfessorHome } from "./components/professor/ProfessorHome";
+import { ProfessorMyLectures } from "./components/professor/ProfessorMyLectures";
+import { ProfessorStudentManagement } from "./components/professor/ProfessorStudentManagement";
+import { ProfessorSyllabus } from "./components/professor/ProfessorSyllabus";
+import { ProfessorCourseMaterials, ProfessorAssignments } from "./components/professor/ProfessorMiscViews";
 
 // Admin Views
 import { AdminDashboard, AdminUserManagement, AdminSystemManagement } from "./components/AdminViews";
