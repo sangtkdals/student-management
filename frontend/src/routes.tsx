@@ -36,7 +36,7 @@ import {
 } from "./components/ProfessorViews";
 
 // Admin Views
-import { AdminDashboard, AdminUserManagement, AdminSystemManagement, AdminLeaveManagement } from "./components/AdminViews";
+import { AdminDashboard, AdminUserManagement, AdminSystemManagement, AdminLeaveManagement, AdminNoticeManagement } from "./components/AdminViews";
 
 // Loading Bar Component
 const LoadingBar = () => (
@@ -311,6 +311,14 @@ const AppRoutes = ({ user, onLogout }: { user: User; onLogout: () => void }) => 
                 element={
                   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <AdminLeaveManagement />
+                  </div>
+                }
+              />
+              <Route
+                path="/admin/AdminNoticeManagement"
+                element={
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <AdminNoticeManagement />
                   </div>
                 }
               />
