@@ -124,7 +124,7 @@ export const ProfessorHome: React.FC<ProfessorHomeProps> = ({ user }) => {
            const data = await response.json();
            const mappedCourses = data.map((c: any) => ({
              ...c,
-             subjectName: c.subject?.sName || c.courseCode // Ensure subjectName exists
+             subjectName: c.courseName || c.subject?.sName || c.courseCode // Prioritize courseName
            }));
            setMyCourses(mappedCourses);
         }
@@ -138,7 +138,7 @@ export const ProfessorHome: React.FC<ProfessorHomeProps> = ({ user }) => {
   }, [user.memberNo]);
 
   return (
-    <div className="space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Row 1 */}
         <div className="lg:col-span-2">
@@ -281,7 +281,8 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
   const [markedForDeletion, setMarkedForDeletion] = useState<Set<string>>(new Set());
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [newCourse, setNewCourse] = useState({
-    subjectName: "소프트웨어공학",
+    courseName: "소프트웨어공학",
+    subjectName: "소프트웨어공학", // Keep for compatibility or remove if not needed
     courseCode: "CS303",
     courseTime: "월 10:00-12:00",
     classroom: "공학관 305호",
@@ -314,7 +315,7 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
             // The backend Course entity has 'subject' object. Frontend Course has 'subjectName'.
             const mappedCourses = data.map((c: any) => ({
                 ...c,
-                subjectName: c.subject?.sName || c.courseCode, // Fallback
+                subjectName: c.courseName || c.subject?.sName || c.courseCode, // Prioritize courseName
                 subjectCode: c.subject?.sCode
             }));
             setLocalCourses(mappedCourses);
@@ -407,6 +408,7 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
               setIsRegisterModalOpen(false);
               // Reset to dummy data for next entry (debugging convenience)
               setNewCourse({ 
+                courseName: "데이터베이스",
                 subjectName: "데이터베이스", 
                 courseCode: "CS304", 
                 courseTime: "수 13:00-15:00", 
@@ -542,9 +544,9 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
       >
           <form onSubmit={handleRegisterCourse} className="space-y-4">
               <Input 
-                label="과목명" 
-                value={newCourse.subjectName} 
-                onChange={e => setNewCourse({...newCourse, subjectName: e.target.value})} 
+                label="강의명" 
+                value={newCourse.courseName} 
+                onChange={e => setNewCourse({...newCourse, courseName: e.target.value, subjectName: e.target.value})} 
                 required 
                 className="rounded-none border-slate-400 focus:border-slate-900 focus:ring-slate-900"
               />
@@ -768,6 +770,9 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
 
 // --- Student Management Logic (Imported from feature/professor, adapted for main-ui types) ---
 // DTO와 맞는 타입 정의
+// --- Helper Components & Interfaces ---
+// [해결] 두 브랜치의 인터페이스를 모두 정의.
+
 interface StudentGrade {
     enrollmentId: number;
     studentNo: string;
@@ -781,37 +786,79 @@ interface StudentGrade {
     gradeLetter: string;
 }
 
-const AttendanceAndGradesView: React.FC<{ selectedCourse: Course, mode: 'attendance' | 'grades', setMode: any }> = ({ selectedCourse }) => {
+interface AttendanceRecord {
+    enrollmentId: number; // merge에서는 studentId등이 섞여있었으나 enrollmentId가 고유키로 적합
+    studentId: string;
+    studentName: string;
+    attendanceId: number | null;
+    status: string;
+    remark: string;
+}
+
+// [해결] AttendanceAndGradesView 컴포넌트 병합
+// mode를 props로 받아 출석/성적 화면을 전환합니다.
+const AttendanceAndGradesView: React.FC<{ selectedCourse: Course, mode: 'attendance' | 'grades', setMode: (m: 'attendance' | 'grades') => void }> = ({ selectedCourse, mode, setMode }) => {
+    // 1. 성적 관련 State (feature/grade 유래)
     const [students, setStudents] = useState<StudentGrade[]>([]);
-
-    useEffect(() => {
-        if (selectedCourse) {
-            const token = localStorage.getItem("token");
-
-            fetch(`http://localhost:8080/api/professor/grades?courseCode=${selectedCourse.courseCode}`, {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`,
-                },
-            })
-                .then(res => res.json())
-                .then(data => setStudents(data))
-                .catch(err => console.error("성적 로딩 실패:", err));
-        }
-    }, [selectedCourse]);
     
-    const handleInputChange = (index: number, field: string, value: string) => {
+    // 2. 출석 관련 State (merge 유래)
+    const [selectedWeek, setSelectedWeek] = useState(1);
+    const [attendanceList, setAttendanceList] = useState<AttendanceRecord[]>([]);
+    const totalWeeks = 15;
+
+    // 데이터 로딩 (모드나 코스가 바뀔 때마다 실행)
+    useEffect(() => {
+        if (!selectedCourse) return;
+        const token = localStorage.getItem("token");
+
+        const fetchData = async () => {
+            try {
+                if (mode === 'grades') {
+                    // 성적 데이터 로드 (feature/grade 로직)
+                    const res = await fetch(`http://localhost:8080/api/professor/grades?courseCode=${selectedCourse.courseCode}`, {
+                        headers: { "Authorization": `Bearer ${token}` },
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        setStudents(data);
+                    }
+                } else {
+                    // 출석 데이터 로드 (merge 로직)
+                    const res = await fetch(`http://localhost:8080/api/attendance?courseCode=${selectedCourse.courseCode}&week=${selectedWeek}`, {
+                        headers: { "Authorization": `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        setAttendanceList(data);
+                    }
+                }
+            } catch (err) {
+                console.error("데이터 로딩 실패:", err);
+            }
+        };
+
+        fetchData();
+    }, [selectedCourse, mode, selectedWeek]);
+    
+    // 성적 입력 핸들러
+    const handleGradeInputChange = (index: number, field: string, value: string) => {
         const newStudents = [...students];
         // @ts-ignore
         newStudents[index][field] = Number(value); 
         setStudents(newStudents);
     };
 
-    const handleSave = async () => {
+    // 출석 입력 핸들러
+    const handleAttendanceChange = (enrollmentId: number, field: 'status' | 'remark', val: string) => {
+        setAttendanceList(prev => prev.map(item => 
+            item.enrollmentId === enrollmentId ? { ...item, [field]: val } : item
+        ));
+    };
+
+    // 성적 저장 (feature/grade 로직)
+    const handleSaveGrades = async () => {
         try {
             const token = localStorage.getItem("token");
-
             for (const student of students) {
                 await fetch("http://localhost:8080/api/professor/grades", {
                     method: "PUT",
@@ -820,7 +867,6 @@ const AttendanceAndGradesView: React.FC<{ selectedCourse: Course, mode: 'attenda
                         "Authorization": `Bearer ${token}`
                     },
                     body: JSON.stringify({
-                        // ... (body 내용은 그대로)
                         enrollmentId: student.enrollmentId,
                         midtermScore: student.midtermScore,
                         finalScore: student.finalScore,
@@ -830,12 +876,9 @@ const AttendanceAndGradesView: React.FC<{ selectedCourse: Course, mode: 'attenda
                 });
             }
             alert("성적이 성공적으로 저장되었습니다!");
-            
+            // 저장 후 재조회
             const res = await fetch(`http://localhost:8080/api/professor/grades?courseCode=${selectedCourse.courseCode}`, {
-                headers: { 
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}` 
-                }
+                headers: { "Authorization": `Bearer ${token}` }
             });
             const data = await res.json();
             setStudents(data);
@@ -844,87 +887,139 @@ const AttendanceAndGradesView: React.FC<{ selectedCourse: Course, mode: 'attenda
         }
     };
 
+    // 출석 저장 (merge 로직)
+    const handleSaveAttendance = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            const response = await fetch(`http://localhost:8080/api/attendance?week=${selectedWeek}`, {
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}` 
+                },
+                body: JSON.stringify(attendanceList)
+            });
+            if (response.ok) {
+                alert("출결이 저장되었습니다.");
+            } else {
+                alert("저장 실패");
+            }
+        } catch (error) {
+            console.error("Save error", error);
+            alert("오류가 발생했습니다.");
+        }
+    };
+
     return (
         <div>
-            <div className="overflow-x-auto border border-brand-gray rounded-lg">
-                <table className="min-w-full divide-y divide-brand-gray">
-                    <thead className="bg-brand-gray-light">
-                        <tr>
-                            <th className="px-4 py-3 text-left text-xs font-bold">학번</th>
-                            <th className="px-4 py-3 text-left text-xs font-bold">이름</th>
-                            <th className="px-2 py-3 text-center text-xs font-bold">중간</th>
-                            <th className="px-2 py-3 text-center text-xs font-bold">기말</th>
-                            <th className="px-2 py-3 text-center text-xs font-bold">과제</th>
-                            <th className="px-2 py-3 text-center text-xs font-bold">출석</th>
-                            <th className="px-4 py-3 text-center text-xs font-bold bg-blue-50">총점/등급</th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-brand-gray">
-                        {students.length === 0 ? (
-                            <tr>
-                                <td colSpan={7} className="text-center py-8 text-slate-500">
-                                    수강 신청한 학생이 없습니다.
+            {/* 상단 탭 버튼 */}
+            <div className="mb-4 flex space-x-2">
+                <Button size="sm" variant={mode === 'attendance' ? 'primary' : 'secondary'} onClick={() => setMode('attendance')}>출석 관리</Button>
+                <Button size="sm" variant={mode === 'grades' ? 'primary' : 'secondary'} onClick={() => setMode('grades')}>성적 입력</Button>
+            </div>
+
+            {mode === 'attendance' ? (
+                // --- 출석 모드 UI (merge) ---
+                 <>
+                    <div className="mb-4 flex items-center space-x-3">
+                        <span className="font-bold text-slate-700">주차 선택:</span>
+                        <select value={selectedWeek} onChange={(e) => setSelectedWeek(parseInt(e.target.value))} className="px-3 py-1.5 border border-slate-300 rounded-md text-sm">
+                            {Array.from({ length: totalWeeks }, (_, i) => i + 1).map(week => <option key={week} value={week}>{week}주차</option>)}
+                        </select>
+                    </div>
+                    <Table headers={["학번", "이름", "출결 상태", "비고"]}>
+                        {attendanceList.length > 0 ? attendanceList.map(student => (
+                            <tr key={student.enrollmentId}>
+                                <td className="px-6 py-4 text-sm text-slate-500">{student.studentId}</td>
+                                <td className="px-6 py-4 text-sm font-medium">{student.studentName}</td>
+                                <td className="px-6 py-4 text-sm">
+                                    <select value={student.status || ""} onChange={(e) => handleAttendanceChange(student.enrollmentId, 'status', e.target.value)} className="px-2 py-1 rounded text-xs font-bold border border-slate-300">
+                                        <option value="">선택</option>
+                                        <option value="출석">출석</option>
+                                        <option value="지각">지각</option>
+                                        <option value="결석">결석</option>
+                                        <option value="공결">공결</option>
+                                    </select>
+                                </td>
+                                <td className="px-6 py-4 text-sm">
+                                    <input type="text" value={student.remark || ""} onChange={(e) => handleAttendanceChange(student.enrollmentId, 'remark', e.target.value)} className="w-full border border-slate-300 rounded-md text-sm px-2 py-1" placeholder="비고 입력" />
                                 </td>
                             </tr>
-                        ) : (
-                            students.map((s, idx) => (
-                                <tr key={s.enrollmentId} className="hover:bg-slate-50">
-                                    <td className="px-4 py-3 text-sm text-slate-500">{s.studentNo}</td>
-                                    <td className="px-4 py-3 text-sm font-medium">{s.studentName}</td>
-                                    
-                                    {/* 입력 칸들 */}
-                                    <td className="px-2 py-3 text-center"><input type="number" className="w-16 text-center border rounded p-1" value={s.midtermScore || 0} onChange={e => handleInputChange(idx, 'midtermScore', e.target.value)} /></td>
-                                    <td className="px-2 py-3 text-center"><input type="number" className="w-16 text-center border rounded p-1" value={s.finalScore || 0} onChange={e => handleInputChange(idx, 'finalScore', e.target.value)} /></td>
-                                    <td className="px-2 py-3 text-center"><input type="number" className="w-16 text-center border rounded p-1" value={s.assignmentScore || 0} onChange={e => handleInputChange(idx, 'assignmentScore', e.target.value)} /></td>
-                                    <td className="px-2 py-3 text-center"><input type="number" className="w-16 text-center border rounded p-1" value={s.attendanceScore || 0} onChange={e => handleInputChange(idx, 'attendanceScore', e.target.value)} /></td>
-                                    
-                                    {/* 총점/등급 */}
-                                    <td className="px-4 py-3 text-center font-bold text-slate-700 bg-blue-50">
-                                        {s.totalScore ? `${s.totalScore} (${s.gradeLetter})` : "-"}
-                                    </td>
-                                </tr>
-                            ))
+                        )) : (
+                             <tr><td colSpan={4} className="text-center py-4 text-slate-500">수강생이 없습니다.</td></tr>
                         )}
-                    </tbody>
-                </table>
-            </div>
-            <div className="p-4 flex justify-end border-t border-brand-gray bg-slate-50">
-                <Button onClick={handleSave}>성적 저장</Button>
-            </div>
+                    </Table>
+                    <div className="mt-6 flex justify-end"><Button onClick={handleSaveAttendance}>출결 저장</Button></div>
+                </>
+            ) : (
+                // --- 성적 모드 UI (feature/grade) ---
+                <>
+                    <div className="overflow-x-auto border border-brand-gray rounded-lg">
+                        <table className="min-w-full divide-y divide-brand-gray">
+                            <thead className="bg-brand-gray-light">
+                                <tr>
+                                    <th className="px-4 py-3 text-left text-xs font-bold">학번</th>
+                                    <th className="px-4 py-3 text-left text-xs font-bold">이름</th>
+                                    <th className="px-2 py-3 text-center text-xs font-bold">중간</th>
+                                    <th className="px-2 py-3 text-center text-xs font-bold">기말</th>
+                                    <th className="px-2 py-3 text-center text-xs font-bold">과제</th>
+                                    <th className="px-2 py-3 text-center text-xs font-bold">출석</th>
+                                    <th className="px-4 py-3 text-center text-xs font-bold bg-blue-50">총점/등급</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-brand-gray">
+                                {students.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={7} className="text-center py-8 text-slate-500">
+                                            수강 신청한 학생이 없습니다.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    students.map((s, idx) => (
+                                        <tr key={s.enrollmentId} className="hover:bg-slate-50">
+                                            <td className="px-4 py-3 text-sm text-slate-500">{s.studentNo}</td>
+                                            <td className="px-4 py-3 text-sm font-medium">{s.studentName}</td>
+                                            
+                                            {/* 입력 칸들 */}
+                                            <td className="px-2 py-3 text-center"><input type="number" className="w-16 text-center border rounded p-1" value={s.midtermScore || 0} onChange={e => handleGradeInputChange(idx, 'midtermScore', e.target.value)} /></td>
+                                            <td className="px-2 py-3 text-center"><input type="number" className="w-16 text-center border rounded p-1" value={s.finalScore || 0} onChange={e => handleGradeInputChange(idx, 'finalScore', e.target.value)} /></td>
+                                            <td className="px-2 py-3 text-center"><input type="number" className="w-16 text-center border rounded p-1" value={s.assignmentScore || 0} onChange={e => handleGradeInputChange(idx, 'assignmentScore', e.target.value)} /></td>
+                                            <td className="px-2 py-3 text-center"><input type="number" className="w-16 text-center border rounded p-1" value={s.attendanceScore || 0} onChange={e => handleGradeInputChange(idx, 'attendanceScore', e.target.value)} /></td>
+                                            
+                                            {/* 총점/등급 */}
+                                            <td className="px-4 py-3 text-center font-bold text-slate-700 bg-blue-50">
+                                                {s.totalScore ? `${s.totalScore} (${s.gradeLetter})` : "-"}
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div className="p-4 flex justify-end border-t border-brand-gray bg-slate-50">
+                        <Button onClick={handleSaveGrades}>성적 저장</Button>
+                    </div>
+                </>
+            )}
         </div>
     );
 };
 
+// [해결] ProfessorStudentManagement 메인 컴포넌트 병합
 export const ProfessorStudentManagement: React.FC<{ user: User; viewType?: "attendance" | "grades" }> = ({ user, viewType }) => {
-  
-  if (viewType === 'attendance') {
-    return (
-      <Card title="수강생 출결 관리">
-        <div className="p-8 text-center text-slate-500 bg-slate-50 rounded-lg border border-dashed border-slate-300 py-16">
-            <svg className="mx-auto h-12 w-12 text-slate-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <h3 className="text-lg font-bold text-slate-700 mb-2">출결 관리 기능 준비 중</h3>
-            <p className="text-slate-500">
-                이 기능은 추후 업데이트될 예정입니다.<br/>
-                (현재 성적 관리 기능만 이용 가능합니다)
-            </p>
-        </div>
-      </Card>
-    );
-  }
-
   const [myCourses, setMyCourses] = useState<Course[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   
-  const [managementMode, setManagementMode] = useState<'attendance'|'grades'>('grades');
+  // viewType prop이 있으면 그걸 우선하고, 없으면 grades를 기본값으로
+  const [managementMode, setManagementMode] = useState<'attendance'|'grades'>(viewType || 'grades');
 
   // 화면이 켜지면 백엔드에서 강의 목록 가져오기
   useEffect(() => {
-    if (user.id) {
-      const token = localStorage.getItem("token"); // 토큰
+    if (user.memberNo) {
+      const token = localStorage.getItem("token");
 
-      fetch(`http://localhost:8080/api/professor/courses?professorId=${user.id}`, {
+      // API 경로를 프로젝트 규칙에 맞게 통일 (여기서는 courses/professor/{id} 사용)
+      fetch(`http://localhost:8080/api/courses/professor/${user.memberNo}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -933,15 +1028,10 @@ export const ProfessorStudentManagement: React.FC<{ user: User; viewType?: "atte
       })
         .then((res) => res.json())
         .then((data) => {
-          const courses = data.map((d: any) => ({
-            courseCode: d.courseCode,
-            subjectName: d.subjectName,
-            courseClass: d.courseClass,
-            professorName: user.name,
-            credit: 3,
-            currentStudents: d.currentStudents || 0,
-            courseTime: d.courseTime || "",
-            classroom: d.classroom || "",
+          // 데이터 매핑
+          const courses = data.map((c: any) => ({
+             ...c,
+             subjectName: c.courseName || c.subject?.sName || c.courseCode
           }));
           
           setMyCourses(courses);
@@ -952,10 +1042,15 @@ export const ProfessorStudentManagement: React.FC<{ user: User; viewType?: "atte
         })
         .catch((err) => console.error("강의 목록 불러오기 실패:", err));
     }
-  }, [user.id]);
+  }, [user.memberNo]);
+
+  // prop이 바뀔 때 모드 업데이트
+  useEffect(() => {
+      if(viewType) setManagementMode(viewType);
+  }, [viewType]);
 
   return (
-    <Card title="학생 성적 관리">
+    <Card title="학생 성적/출결 관리">
       {/* 강의 선택 드롭다운 */}
       <div className="mb-6 pb-4 border-b border-slate-200 flex items-center space-x-4">
         <label className="font-semibold text-slate-700 shrink-0">강의 선택:</label>
@@ -991,46 +1086,126 @@ export const ProfessorStudentManagement: React.FC<{ user: User; viewType?: "atte
   );
 };
 
-// --- Other Views (Merged Logic) ---
-
-export const ProfessorSyllabus: React.FC = () => {
+export const ProfessorSyllabus: React.FC<{ user: User }> = ({ user }) => {
     const location = useLocation();
     const [isEditing, setIsEditing] = useState(false);
     const [course, setCourse] = useState<Course | null>(null);
+    const [myCourses, setMyCourses] = useState<Course[]>([]);
     
+    // Evaluation parts
+    const [evalBreakdown, setEvalBreakdown] = useState({ mid: 0, final: 0, assign: 0, attend: 0 });
+    const [evalDesc, setEvalDesc] = useState('');
+
     const [syllabus, setSyllabus] = useState({ 
         overview: '', 
         objectives: '', 
         textbook: '', 
-        evaluation: '',
         credits: '',
         classTime: ''
     });
 
+    // Fetch courses for the selector
     useEffect(() => {
-      if (location.state?.course) {
-        const c = location.state.course as Course;
-        setCourse(c);
-        setSyllabus({
-          classTime: c.courseTime || '',
-          credits: c.credit ? String(c.credit) : '',
-          overview: c.content || '',
-          objectives: c.objectives || '',
-          textbook: c.textbookInfo || '',
-          evaluation: c.evaluationMethod || ''
-        });
-      }
-    }, [location.state]);
+        const fetchCourses = async () => {
+            if (!user?.memberNo) return;
+            try {
+                const token = localStorage.getItem("token");
+                const response = await fetch(`http://localhost:8080/api/courses/professor/${user.memberNo}`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    const mappedCourses = data.map((c: any) => ({
+                        ...c,
+                        subjectName: c.courseName || c.subject?.sName || c.courseCode
+                    }));
+                    setMyCourses(mappedCourses);
+                    
+                    // If navigated with state, use that course, otherwise default to first if available
+                    if (location.state?.course) {
+                        // Find updated info from fetched list to be sure
+                        const found = mappedCourses.find((mc: any) => mc.courseCode === location.state.course.courseCode);
+                        setCourse(found || location.state.course);
+                    } else if (mappedCourses.length > 0 && !course) {
+                        // Select first by default if not set
+                        setCourse(mappedCourses[0]);
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch courses", error);
+            }
+        };
+        fetchCourses();
+    }, [user.memberNo, location.state]);
+
+    // Update syllabus state when course changes
+    useEffect(() => {
+        if (course) {
+            // Calculate credits from courseTime (1 hour = 1 credit)
+            const calculateCredits = (timeStr: string) => {
+                if (!timeStr) return 0;
+                const parts = timeStr.split(",").map(s => s.trim());
+                let totalHours = 0;
+                parts.forEach(part => {
+                    const match = part.match(/([월화수목금])\s*(\d{2}:\d{2})-(\d{2}:\d{2})/);
+                    if (match) {
+                        const [, , start, end] = match;
+                        const [startH, startM] = start.split(':').map(Number);
+                        const [endH, endM] = end.split(':').map(Number);
+                        const duration = (endH + endM / 60) - (startH + startM / 60);
+                        totalHours += duration;
+                    }
+                });
+                return Math.round(totalHours);
+            };
+
+            const calculatedCredits = calculateCredits(course.courseTime || '');
+
+            setSyllabus({
+                classTime: course.courseTime || '',
+                credits: String(calculatedCredits),
+                overview: course.content || '',
+                objectives: course.objectives || '',
+                textbook: course.textbookInfo || '',
+            });
+
+            // Parse evaluation method
+            try {
+                if (course.evaluationMethod && course.evaluationMethod.startsWith('{')) {
+                    const parsed = JSON.parse(course.evaluationMethod);
+                    setEvalBreakdown({ 
+                        mid: parsed.mid || 0, 
+                        final: parsed.final || 0, 
+                        assign: parsed.assign || 0, 
+                        attend: parsed.attend || 0 
+                    });
+                    setEvalDesc(parsed.desc || '');
+                } else {
+                    // Legacy plain text
+                    setEvalBreakdown({ mid: 0, final: 0, assign: 0, attend: 0 });
+                    setEvalDesc(course.evaluationMethod || '');
+                }
+            } catch (e) {
+                setEvalBreakdown({ mid: 0, final: 0, assign: 0, attend: 0 });
+                setEvalDesc(course.evaluationMethod || '');
+            }
+        }
+    }, [course]);
 
     const handleSave = async () => {
         if (!course) return;
         
+        // Serialize evaluation method
+        const evalJson = JSON.stringify({
+            ...evalBreakdown,
+            desc: evalDesc
+        });
+
         const updatedData = {
             courseObjectives: syllabus.objectives,
             courseContent: syllabus.overview,
-            evaluationMethod: syllabus.evaluation,
+            evaluationMethod: evalJson,
             textbookInfo: syllabus.textbook
-            // We don't update credits/time here usually as they are admin fields, but for this flow let's stick to content
         };
 
         try {
@@ -1047,6 +1222,7 @@ export const ProfessorSyllabus: React.FC = () => {
             if (response.ok) {
                 alert("강의계획서가 저장되었습니다.");
                 setIsEditing(false);
+                // Refresh local course data logic could go here or re-fetch
             } else {
                 alert("저장 실패");
             }
@@ -1056,8 +1232,12 @@ export const ProfessorSyllabus: React.FC = () => {
         }
     };
 
-    if (!course && !location.state?.course) {
-        return <div className="p-8 text-center text-slate-500">강의 관리 페이지에서 강의를 선택해주세요.</div>;
+    if (myCourses.length === 0) {
+        return (
+            <Card title="강의계획서 관리">
+                <div className="p-8 text-center text-slate-500">등록된 강의가 없습니다. 강의를 먼저 등록해주세요.</div>
+            </Card>
+        );
     }
 
     const title = course ? `${course.subjectName} 강의계획서` : "강의계획서 관리";
@@ -1075,32 +1255,115 @@ export const ProfessorSyllabus: React.FC = () => {
             </Button>
         }>
              <div className="space-y-6">
+                {/* Course Selector */}
+                <div className="flex items-center space-x-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                    <label className="font-bold text-slate-700">강의 선택:</label>
+                    <select 
+                        className="p-2 border border-slate-300 rounded-md text-sm"
+                        value={course?.courseCode || ''}
+                        onChange={(e) => {
+                            const selected = myCourses.find(c => c.courseCode === e.target.value);
+                            if (selected) setCourse(selected);
+                        }}
+                    >
+                        {myCourses.map(c => (
+                            <option key={c.courseCode} value={c.courseCode}>
+                                {c.subjectName} ({c.courseCode})
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-bold text-slate-700 mb-2">취득 학점</label>
-                        <input type="text" className="w-full border border-slate-300 p-3 rounded-md text-sm focus:ring-brand-blue focus:border-brand-blue" disabled={!isEditing} value={syllabus.credits} onChange={e => setSyllabus({...syllabus, credits: e.target.value})} />
+                        <input type="text" className="w-full border border-slate-300 p-3 rounded-md text-sm bg-gray-100" disabled value={syllabus.credits} readOnly />
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-slate-700 mb-2">강의 요일/시간</label>
-                        <input type="text" className="w-full border border-slate-300 p-3 rounded-md text-sm focus:ring-brand-blue focus:border-brand-blue" disabled={!isEditing} value={syllabus.classTime} onChange={e => setSyllabus({...syllabus, classTime: e.target.value})} />
+                        <input type="text" className="w-full border border-slate-300 p-3 rounded-md text-sm bg-gray-100" disabled value={syllabus.classTime} readOnly />
                     </div>
                 </div>
                 <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">강의 개요</label>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">강의 개요 (Course Content)</label>
                     <textarea className="w-full border border-slate-300 p-3 rounded-md text-sm focus:ring-brand-blue focus:border-brand-blue" rows={3} disabled={!isEditing} value={syllabus.overview} onChange={e => setSyllabus({...syllabus, overview: e.target.value})} />
                 </div>
                 <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">강의 목표</label>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">강의 목표 (Course Objectives)</label>
                     <textarea className="w-full border border-slate-300 p-3 rounded-md text-sm focus:ring-brand-blue focus:border-brand-blue" rows={2} disabled={!isEditing} value={syllabus.objectives} onChange={e => setSyllabus({...syllabus, objectives: e.target.value})} />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">교재</label>
-                        <input type="text" className="w-full border border-slate-300 p-3 rounded-md text-sm focus:ring-brand-blue focus:border-brand-blue" disabled={!isEditing} value={syllabus.textbook} onChange={e => setSyllabus({...syllabus, textbook: e.target.value})} />
+                
+                {/* Evaluation Method Section */}
+                <div className="border p-4 rounded-md border-slate-200">
+                    <label className="block text-sm font-bold text-slate-700 mb-4">평가 방법 (Evaluation Method)</label>
+                    <div className="grid grid-cols-4 gap-4 mb-4">
+                        <div>
+                            <label className="block text-xs text-slate-500 mb-1">중간고사 (%)</label>
+                            <input 
+                                type="number" 
+                                step="5"
+                                className="w-full border border-slate-300 p-2 rounded-md text-sm text-right" 
+                                disabled={!isEditing}
+                                value={evalBreakdown.mid} 
+                                onChange={e => setEvalBreakdown({...evalBreakdown, mid: parseInt(e.target.value)||0})} 
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs text-slate-500 mb-1">기말고사 (%)</label>
+                            <input 
+                                type="number" 
+                                step="5"
+                                className="w-full border border-slate-300 p-2 rounded-md text-sm text-right" 
+                                disabled={!isEditing}
+                                value={evalBreakdown.final} 
+                                onChange={e => setEvalBreakdown({...evalBreakdown, final: parseInt(e.target.value)||0})} 
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs text-slate-500 mb-1">과제 (%)</label>
+                            <input 
+                                type="number" 
+                                step="5"
+                                className="w-full border border-slate-300 p-2 rounded-md text-sm text-right" 
+                                disabled={!isEditing}
+                                value={evalBreakdown.assign} 
+                                onChange={e => setEvalBreakdown({...evalBreakdown, assign: parseInt(e.target.value)||0})} 
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs text-slate-500 mb-1">출석 (%)</label>
+                            <input 
+                                type="number" 
+                                step="5"
+                                className="w-full border border-slate-300 p-2 rounded-md text-sm text-right" 
+                                disabled={!isEditing}
+                                value={evalBreakdown.attend} 
+                                onChange={e => setEvalBreakdown({...evalBreakdown, attend: parseInt(e.target.value)||0})} 
+                            />
+                        </div>
+                    </div>
+                    <div className="text-right text-xs text-slate-500 mb-4">
+                        합계: <span className={`font-bold ${(evalBreakdown.mid + evalBreakdown.final + evalBreakdown.assign + evalBreakdown.attend) === 100 ? 'text-green-600' : 'text-red-500'}`}>
+                            {evalBreakdown.mid + evalBreakdown.final + evalBreakdown.assign + evalBreakdown.attend}%
+                        </span>
                     </div>
                     <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">평가 방법</label>
-                        <input type="text" className="w-full border border-slate-300 p-3 rounded-md text-sm focus:ring-brand-blue focus:border-brand-blue" disabled={!isEditing} value={syllabus.evaluation} onChange={e => setSyllabus({...syllabus, evaluation: e.target.value})} />
+                        <label className="block text-xs text-slate-500 mb-1">평가 상세 설명</label>
+                        <textarea 
+                            className="w-full border border-slate-300 p-3 rounded-md text-sm focus:ring-brand-blue focus:border-brand-blue" 
+                            rows={3} 
+                            disabled={!isEditing} 
+                            value={evalDesc} 
+                            onChange={e => setEvalDesc(e.target.value)} 
+                            placeholder="평가 방법에 대한 상세 설명을 입력하세요."
+                        />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1">
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">교재 정보 (Textbook)</label>
+                        <input type="text" className="w-full border border-slate-300 p-3 rounded-md text-sm focus:ring-brand-blue focus:border-brand-blue" disabled={!isEditing} value={syllabus.textbook} onChange={e => setSyllabus({...syllabus, textbook: e.target.value})} />
                     </div>
                 </div>
              </div>
@@ -1108,39 +1371,173 @@ export const ProfessorSyllabus: React.FC = () => {
     );
 };
 
-export const ProfessorCourseMaterials: React.FC = () => {
-    const [materials, setMaterials] = useState([
-        { id: 1, title: '1주차 강의자료.pdf', date: '2024-03-04', size: '2.4MB' },
-        { id: 2, title: '2주차 강의자료.pdf', date: '2024-03-11', size: '3.1MB' }
-    ]);
+export const ProfessorCourseMaterials: React.FC<{ user: User }> = ({ user }) => {
+    const [course, setCourse] = useState<Course | null>(null);
+    const [myCourses, setMyCourses] = useState<Course[]>([]);
+    const [materials, setMaterials] = useState<any[]>([]);
+    const [uploading, setUploading] = useState(false);
 
-    const handleUpload = () => {
-        const title = prompt('자료 제목을 입력하세요:');
-        if (title) {
-            setMaterials([...materials, { id: Date.now(), title: `${title}.pdf`, date: new Date().toISOString().split('T')[0], size: '1.5MB' }]);
+    // Fetch courses
+    useEffect(() => {
+        const fetchCourses = async () => {
+            if (!user?.memberNo) return;
+            try {
+                const token = localStorage.getItem("token");
+                const response = await fetch(`http://localhost:8080/api/courses/professor/${user.memberNo}`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    const mappedCourses = data.map((c: any) => ({
+                        ...c,
+                        subjectName: c.courseName || c.subject?.sName || c.courseCode
+                    }));
+                    setMyCourses(mappedCourses);
+                    if (mappedCourses.length > 0) setCourse(mappedCourses[0]);
+                }
+            } catch (error) {
+                console.error("Failed to fetch courses", error);
+            }
+        };
+        fetchCourses();
+    }, [user.memberNo]);
+
+    // Fetch materials
+    useEffect(() => {
+        const fetchMaterials = async () => {
+            if (!course) return;
+            try {
+                const token = localStorage.getItem("token");
+                const response = await fetch(`http://localhost:8080/api/materials/course/${course.courseCode}`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    setMaterials(data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch materials", error);
+            }
+        };
+        fetchMaterials();
+    }, [course]);
+
+    const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0 || !course) return;
+        
+        const file = e.target.files[0];
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("courseCode", course.courseCode);
+
+        setUploading(true);
+        try {
+            const token = localStorage.getItem("token");
+            const response = await fetch(`http://localhost:8080/api/materials/upload`, {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${token}` },
+                body: formData
+            });
+
+            if (response.ok) {
+                alert("업로드 완료");
+                // Refresh list
+                const res = await fetch(`http://localhost:8080/api/materials/course/${course.courseCode}`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                if (res.ok) setMaterials(await res.json());
+            } else {
+                alert("업로드 실패");
+            }
+        } catch (error) {
+            console.error("Upload error", error);
+            alert("오류가 발생했습니다.");
+        } finally {
+            setUploading(false);
+            // Reset input
+            e.target.value = '';
+        }
+    };
+
+    const handleDelete = async (id: number) => {
+        if (!confirm("정말 삭제하시겠습니까?")) return;
+        try {
+            const token = localStorage.getItem("token");
+            const response = await fetch(`http://localhost:8080/api/materials/${id}`, {
+                method: "DELETE",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            if (response.ok) {
+                setMaterials(materials.filter(m => m.materialId !== id));
+            } else {
+                alert("삭제 실패");
+            }
+        } catch (error) {
+            console.error("Delete error", error);
         }
     };
 
     return (
-        <Card title="강의 자료 관리" titleAction={<Button size="sm" onClick={handleUpload}>+ 자료 업로드</Button>}>
-            {materials.length > 0 ? (
-                <Table headers={['제목', '등록일', '크기', '관리']}>
-                    {materials.map(m => (
-                        <tr key={m.id}>
-                            <td className="px-6 py-4 text-sm font-medium text-slate-800">{m.title}</td>
-                            <td className="px-6 py-4 text-sm text-slate-500">{m.date}</td>
-                            <td className="px-6 py-4 text-sm text-slate-500">{m.size}</td>
-                            <td className="px-6 py-4 text-sm">
-                                <button className="text-red-600 hover:text-red-800" onClick={() => setMaterials(materials.filter(item => item.id !== m.id))}>삭제</button>
-                            </td>
-                        </tr>
-                    ))}
-                </Table>
-            ) : (
-                <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-lg bg-slate-50">
-                    <p className="text-slate-500 mb-4">등록된 강의 자료가 없습니다.</p>
+        <Card title="강의 자료 관리">
+             <div className="space-y-6">
+                {/* Course Selector */}
+                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
+                    <div className="flex items-center space-x-4">
+                        <label className="font-bold text-slate-700">강의 선택:</label>
+                        <select 
+                            className="p-2 border border-slate-300 rounded-md text-sm"
+                            value={course?.courseCode || ''}
+                            onChange={(e) => {
+                                const selected = myCourses.find(c => c.courseCode === e.target.value);
+                                if (selected) setCourse(selected);
+                            }}
+                        >
+                            {myCourses.map(c => (
+                                <option key={c.courseCode} value={c.courseCode}>
+                                    {c.subjectName} ({c.courseCode})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <input 
+                            type="file" 
+                            id="file-upload" 
+                            className="hidden" 
+                            onChange={handleUpload}
+                            disabled={!course || uploading}
+                        />
+                        <label 
+                            htmlFor="file-upload" 
+                            className={`cursor-pointer inline-flex items-center px-4 py-2 bg-brand-blue text-white text-sm font-medium rounded-md hover:bg-brand-blue-dark transition-colors ${(!course || uploading) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                            {uploading ? '업로드 중...' : '+ 자료 업로드'}
+                        </label>
+                    </div>
                 </div>
-            )}
+
+                {materials.length > 0 ? (
+                    <Table headers={['파일명', '업로드 일시', '관리']}>
+                        {materials.map(m => (
+                            <tr key={m.materialId}>
+                                <td className="px-6 py-4 text-sm font-medium text-slate-800">
+                                    <a href={`http://localhost:8080/api/materials/download/${m.filepath}`} target="_blank" rel="noreferrer" className="hover:text-brand-blue hover:underline">
+                                        {m.filename}
+                                    </a>
+                                </td>
+                                <td className="px-6 py-4 text-sm text-slate-500">{m.uploadDate ? new Date(m.uploadDate).toLocaleDateString() : '-'}</td>
+                                <td className="px-6 py-4 text-sm">
+                                    <button className="text-red-600 hover:text-red-800 font-bold" onClick={() => handleDelete(m.materialId)}>삭제</button>
+                                </td>
+                            </tr>
+                        ))}
+                    </Table>
+                ) : (
+                    <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-lg bg-slate-50">
+                        <p className="text-slate-500 mb-4">등록된 강의 자료가 없습니다.</p>
+                    </div>
+                )}
+            </div>
         </Card>
     );
 };
@@ -1182,7 +1579,7 @@ export const ProfessorAssignments: React.FC = () => {
     );
 };
 
-export const ProfessorLectureTimetable: React.FC<{ user: User }> = ({ user }) => {
+export const ProfessorLectureMyTimetable: React.FC<{ user: User }> = ({ user }) => {
   const [myCourses, setMyCourses] = useState<Course[]>([]);
 
   useEffect(() => {
@@ -1196,7 +1593,7 @@ export const ProfessorLectureTimetable: React.FC<{ user: User }> = ({ user }) =>
            const data = await response.json();
            const mappedCourses = data.map((c: any) => ({
              ...c,
-             subjectName: c.subject?.sName || c.courseCode
+             subjectName: c.courseName || c.subject?.sName || c.courseCode
            }));
            setMyCourses(mappedCourses);
         }

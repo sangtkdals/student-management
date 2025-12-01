@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import type { User, AcademicSchedule, CalendarEvent, Post } from "../types";
 import { Card, Button, Input } from "./ui";
 import { MOCK_CALENDAR_EVENTS } from "../constants";
@@ -12,7 +13,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     email: user.email,
-    phoneNumber: user.phoneNumber || "",
+    phone: user.phone || "",
     address: user.address || "",
     newPassword: "",
     confirmPassword: "",
@@ -41,7 +42,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
   const handleCancel = () => {
     setFormData({
       email: user.email,
-      phoneNumber: user.phoneNumber || "",
+      phone: user.phone || "",
       address: user.address || "",
       newPassword: "",
       confirmPassword: "",
@@ -85,7 +86,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
                   <h4 className="font-bold text-brand-blue text-sm uppercase tracking-wider">연락처 및 거주지</h4>
                 </div>
                 <Input label="이메일" name="email" value={formData.email} onChange={handleChange} placeholder="example@university.ac.kr" />
-                <Input label="전화번호" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} placeholder="010-0000-0000" />
+                <Input label="전화번호" name="phone" value={formData.phone} onChange={handleChange} placeholder="010-0000-0000" />
                 <div className="md:col-span-2">
                   <Input label="거주지 (주소)" name="address" value={formData.address} onChange={handleChange} placeholder="주소를 입력하세요" />
                 </div>
@@ -149,7 +150,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
                 </div>
                 <div className="col-span-1 md:col-span-2">
                   <span className="block text-xs font-medium text-slate-500 mb-1">전화번호</span>
-                  <span className="block text-base text-slate-800">{user.phoneNumber || "-"}</span>
+                  <span className="block text-base text-slate-800">{user.phone || "-"}</span>
                 </div>
                 <div className="col-span-1 md:col-span-2">
                   <span className="block text-xs font-medium text-slate-500 mb-1">거주지 (주소)</span>
@@ -166,12 +167,15 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
 
 export const NoticeBoard: React.FC = () => {
   const [announcements, setAnnouncements] = useState<Post[]>([]);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   useEffect(() => {
     axios
-      .get("/api/announcements")
+      .get(`/api/announcements?page=${currentPage}&size=10`)
       .then((response) => {
-        const posts = response.data.map((post: any) => ({
+        const data = response.data.content ? response.data.content : response.data;
+        const posts = data.map((post: any) => ({
           postId: post.postId,
           title: post.postTitle,
           content: post.postContent,
@@ -179,24 +183,60 @@ export const NoticeBoard: React.FC = () => {
           writerName: post.writer.mName,
         }));
         setAnnouncements(posts);
+        setTotalPages(response.data.totalPages || 1);
       })
       .catch((error) => console.error("Error fetching announcements:", error));
-  }, []);
+  }, [currentPage]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   return (
     <Card title="공지사항">
-      <ul className="divide-y divide-slate-200">
-        {announcements.map((ann) => (
-          <li key={ann.postId} className="py-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-slate-800">{ann.title}</h3>
-              <span className="text-sm text-slate-500">{new Date(ann.createdAt).toLocaleDateString()}</span>
-            </div>
-            <p className="mt-2 text-slate-600">{ann.content}</p>
-            <p className="mt-2 text-xs text-slate-400">게시자: {ann.writerName}</p>
-          </li>
-        ))}
-      </ul>
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-slate-200">
+          <thead className="bg-slate-50">
+            <tr>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                No.
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                제목
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                작성자
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                작성일자
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-slate-200">
+            {announcements.map((ann) => (
+              <tr key={ann.postId} className="hover:bg-slate-50">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{ann.postId}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                  <Link to={`/announcements/${ann.postId}`} className="hover:text-brand-blue">
+                    {ann.title}
+                  </Link>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{ann.writerName}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{new Date(ann.createdAt).toLocaleDateString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {totalPages > 1 && (
+        <div className="flex justify-center mt-4">
+          {Array.from({ length: totalPages }, (_, i) => i).map((page) => (
+            <Button key={page} variant={currentPage === page ? "primary" : "secondary"} onClick={() => handlePageChange(page)} className="mx-1">
+              {page + 1}
+            </Button>
+          ))}
+        </div>
+      )}
     </Card>
   );
 };

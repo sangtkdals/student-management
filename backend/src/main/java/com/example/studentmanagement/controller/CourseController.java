@@ -28,17 +28,20 @@ public class CourseController {
         this.subjectRepository = subjectRepository;
     }
 
+    // 프론트엔드(ProfessorStudentManagement)에서 사용하는 DTO 반환 엔드포인트
     @GetMapping("/professor/courses")
     public List<CourseDTO> getProfessorCourses(@RequestParam("professorId") String professorId) {
-        System.out.println("교수님 강의 목록 요청 (DTO): " + professorId);
         return courseRepository.findCoursesByProfessorId(professorId);
     }
 
+    // [수정] 프론트엔드(ProfessorHome, MyLectures)에서 호출하는 엔드포인트 구현 연결
     @GetMapping("/courses/professor/{professorId}")
     public ResponseEntity<?> getCoursesByProfessor(@PathVariable("professorId") String professorId) {
         try {
-            System.out.println("Fetching courses for professorNo: " + professorId);
-            return ResponseEntity.ok("기능 준비중"); 
+            // "기능 준비중" 대신 실제 로직 연결
+            // DTO가 아닌 엔티티 리스트가 필요한 경우라면 courseRepository.findByProfessor_MemberNo(professorId) 등을 호출
+            // 여기서는 위와 동일한 DTO 로직을 재사용하거나 Repository에 맞는 메서드를 호출하면 됩니다.
+            return ResponseEntity.ok(courseRepository.findCoursesByProfessorId(professorId));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body("Error: " + e.getMessage());
         }
@@ -56,6 +59,14 @@ public class CourseController {
             course.setCourseCode(courseCode);
             course.setAcademicYear(getInteger(payload, "academicYear"));
             course.setSemester(getInteger(payload, "semester"));
+            
+            // 이름 우선순위: courseName > subjectName
+            String name = (String) payload.get("courseName");
+            if (name == null || name.isEmpty()) {
+                name = (String) payload.get("subjectName");
+            }
+            course.setCourseName(name);
+            
             course.setCourseClass((String) payload.get("courseClass"));
             course.setMaxStu(getInteger(payload, "maxStudents"));
             course.setCurrentStudents(0);
@@ -63,15 +74,29 @@ public class CourseController {
             course.setCourseTime((String) payload.get("courseTime"));
             course.setCourseStatus("OPEN");
             
+            // [해결] merge 브랜치의 과목 생성 로직 채택
+            // 프론트엔드에서 보낸 학점(credit) 정보를 반영하기 위함
             String subjectCode = (String) payload.get("subjectCode");
+            Subject subject = null;
+
             if (subjectCode != null) {
-                Subject subject = subjectRepository.findById(subjectCode).orElse(null);
+                subject = subjectRepository.findById(subjectCode).orElse(null);
+                
+                // 과목이 없으면 새로 생성 (merge 브랜치 로직)
+                if (subject == null) {
+                    subject = new Subject();
+                    subject.setSCode(subjectCode);
+                    subject.setSName((String) payload.get("subjectName"));
+                    subject.setCredit(getInteger(payload, "credit")); // 학점 저장
+                    subjectRepository.save(subject);
+                }
+                
                 course.setSubject(subject);
             }
 
             String professorNo = (String) payload.get("professorNo");
             if (professorNo != null) {
-                Member professor = memberRepository.findById(professorNo).orElse(null); // findByMemberNo -> findById로 수정 (ID가 m_id가 아니라면 주의)
+                Member professor = memberRepository.findById(professorNo).orElse(null);
                 course.setProfessor(professor);
             }
 
