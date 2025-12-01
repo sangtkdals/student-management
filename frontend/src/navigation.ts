@@ -73,4 +73,5 @@ export const PROFESSOR_MENU: MenuNode[] = [
 export const ADMIN_MENU: MenuNode[] = [
   { label: "사용자 관리", path: "/admin/user-management" },
   { label: "시스템 관리", path: "/admin/system-management" },
+  { label: "휴학/복학 관리", path: "/admin/AdminLeaveManagement" },
 ];
