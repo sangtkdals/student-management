@@ -152,6 +152,8 @@ export interface Tuition {
   paymentMethod?: string;
   receiptNo?: string;
   paymentStatus: "UNPAID" | "PAID" | "OVERDUE";
+  studentName?: string;
+  department?: string;
 }
 
 // =====================================================
@@ -171,6 +173,8 @@ export interface LeaveApplication {
   approvalDate?: string;
   approverId?: string;
   rejectReason?: string;
+  studentName?: string; // 이게 없어서 오류가 났었습니다
+  department?: string;
 }
 
 // =====================================================
