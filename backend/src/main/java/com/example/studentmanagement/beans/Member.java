@@ -8,6 +8,7 @@ import java.util.Date;
 @Entity
 @JsonIgnoreProperties({"mPwd", "mNum", "hibernateLazyInitializer", "handler"})
 @Table(name = "member")
+@Inheritance(strategy = InheritanceType.JOINED)
 @Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
@@ -43,23 +44,4 @@ public class Member {
     @ManyToOne
     @JoinColumn(name = "dept_code")
     private Department department;
-
-    @Column(name = "stu_grade")
-    private Integer stuGrade;
-
-    @Column(name = "enrollment_status", length = 20)
-    private String enrollmentStatus;
-
-    @Column(name = "position", length = 50)
-    private String position;
-
-    @Column(name = "office_room", length = 50)
-    private String officeRoom;
-
-    @Column(name = "major_field", length = 200)
-    private String majorField;
-
-    @Column(name = "start_date")
-    @Temporal(TemporalType.DATE)
-    private Date startDate;
 }

@@ -2,8 +2,12 @@ package com.example.studentmanagement.service;
 
 import com.example.studentmanagement.beans.Department;
 import com.example.studentmanagement.beans.Member;
+import com.example.studentmanagement.beans.StudentMember;
+import com.example.studentmanagement.beans.ProfessorMember;
 import com.example.studentmanagement.repository.DepartmentRepository;
 import com.example.studentmanagement.repository.MemberRepository;
+import com.example.studentmanagement.repository.StudentMemberRepository;
+import com.example.studentmanagement.repository.ProfessorMemberRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,13 +20,19 @@ public class MemberService {
 
     private final MemberRepository memberRepository;
     private final DepartmentRepository departmentRepository;
+    private final StudentMemberRepository studentMemberRepository;
+    private final ProfessorMemberRepository professorMemberRepository;
     private final PasswordEncoder passwordEncoder;
 
     public MemberService(MemberRepository memberRepository,
                         DepartmentRepository departmentRepository,
+                        StudentMemberRepository studentMemberRepository,
+                        ProfessorMemberRepository professorMemberRepository,
                         PasswordEncoder passwordEncoder) {
         this.memberRepository = memberRepository;
         this.departmentRepository = departmentRepository;
+        this.studentMemberRepository = studentMemberRepository;
+        this.professorMemberRepository = professorMemberRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -89,14 +99,46 @@ public class MemberService {
             member.setDepartment(dept);
         }
 
-        member.setStuGrade(stuGrade);
-        member.setEnrollmentStatus(enrollmentStatus);
-        member.setPosition(position);
-        member.setOfficeRoom(officeRoom);
-        member.setMajorField(majorField);
-        member.setStartDate(new Date());
+        // Member 먼저 저장
+        Member savedMember = memberRepository.save(member);
 
-        return memberRepository.save(member);
+        // 타입별로 추가 정보 저장
+        if ("STUDENT".equalsIgnoreCase(memberType)) {
+            StudentMember studentMember = new StudentMember();
+            studentMember.setMemberId(savedMember.getMemberId());
+            studentMember.setPassword(savedMember.getPassword());
+            studentMember.setName(savedMember.getName());
+            studentMember.setMemberType(savedMember.getMemberType());
+            studentMember.setMemberNo(savedMember.getMemberNo());
+            studentMember.setEmail(savedMember.getEmail());
+            studentMember.setPhone(savedMember.getPhone());
+            studentMember.setResidentNumber(savedMember.getResidentNumber());
+            studentMember.setAddress(savedMember.getAddress());
+            studentMember.setDepartment(savedMember.getDepartment());
+            studentMember.setStuGrade(stuGrade != null ? stuGrade : 1);
+            studentMember.setEnrollmentStatus(enrollmentStatus != null ? enrollmentStatus : "ENROLLED");
+            return studentMemberRepository.save(studentMember);
+        } else if ("PROFESSOR".equalsIgnoreCase(memberType)) {
+            ProfessorMember professorMember = new ProfessorMember();
+            professorMember.setMemberId(savedMember.getMemberId());
+            professorMember.setPassword(savedMember.getPassword());
+            professorMember.setName(savedMember.getName());
+            professorMember.setMemberType(savedMember.getMemberType());
+            professorMember.setMemberNo(savedMember.getMemberNo());
+            professorMember.setEmail(savedMember.getEmail());
+            professorMember.setPhone(savedMember.getPhone());
+            professorMember.setResidentNumber(savedMember.getResidentNumber());
+            professorMember.setAddress(savedMember.getAddress());
+            professorMember.setDepartment(savedMember.getDepartment());
+            professorMember.setPosition(position);
+            professorMember.setOfficeRoom(officeRoom);
+            professorMember.setMajorField(majorField);
+            professorMember.setStartDate(new Date());
+            return professorMemberRepository.save(professorMember);
+        }
+
+        // ADMIN 타입은 Member 테이블에만 저장
+        return savedMember;
     }
 
     // 사용자 정보 수정
@@ -130,13 +172,27 @@ public class MemberService {
             member.setDepartment(dept);
         }
 
-        if (stuGrade != null) member.setStuGrade(stuGrade);
-        if (enrollmentStatus != null) member.setEnrollmentStatus(enrollmentStatus);
-        if (position != null) member.setPosition(position);
-        if (officeRoom != null) member.setOfficeRoom(officeRoom);
-        if (majorField != null) member.setMajorField(majorField);
+        // Member 공통 정보 저장
+        Member savedMember = memberRepository.save(member);
 
-        return memberRepository.save(member);
+        // 타입별 추가 정보 수정
+        String memberType = member.getMemberType();
+        if ("STUDENT".equalsIgnoreCase(memberType)) {
+            StudentMember studentMember = studentMemberRepository.findByMemberId(member.getMemberId())
+                    .orElseThrow(() -> new RuntimeException("학생 정보를 찾을 수 없습니다."));
+            if (stuGrade != null) studentMember.setStuGrade(stuGrade);
+            if (enrollmentStatus != null) studentMember.setEnrollmentStatus(enrollmentStatus);
+            studentMemberRepository.save(studentMember);
+        } else if ("PROFESSOR".equalsIgnoreCase(memberType)) {
+            ProfessorMember professorMember = professorMemberRepository.findByMemberId(member.getMemberId())
+                    .orElseThrow(() -> new RuntimeException("교수 정보를 찾을 수 없습니다."));
+            if (position != null) professorMember.setPosition(position);
+            if (officeRoom != null) professorMember.setOfficeRoom(officeRoom);
+            if (majorField != null) professorMember.setMajorField(majorField);
+            professorMemberRepository.save(professorMember);
+        }
+
+        return savedMember;
     }
 
     // 사용자 삭제

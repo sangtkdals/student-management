@@ -1,7 +1,11 @@
 package com.example.studentmanagement.controller;
 
 import com.example.studentmanagement.beans.Member;
+import com.example.studentmanagement.beans.StudentMember;
+import com.example.studentmanagement.beans.ProfessorMember;
 import com.example.studentmanagement.service.MemberService;
+import com.example.studentmanagement.repository.StudentMemberRepository;
+import com.example.studentmanagement.repository.ProfessorMemberRepository;
 import lombok.Data;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,9 +17,15 @@ import java.util.List;
 public class MemberController {
 
     private final MemberService memberService;
+    private final StudentMemberRepository studentMemberRepository;
+    private final ProfessorMemberRepository professorMemberRepository;
 
-    public MemberController(MemberService memberService) {
+    public MemberController(MemberService memberService,
+                           StudentMemberRepository studentMemberRepository,
+                           ProfessorMemberRepository professorMemberRepository) {
         this.memberService = memberService;
+        this.studentMemberRepository = studentMemberRepository;
+        this.professorMemberRepository = professorMemberRepository;
     }
 
     // GET /api/members - 전체 사용자 목록 조회 (필터링 옵션)
@@ -109,12 +119,23 @@ public class MemberController {
         dto.setAddress(member.getAddress());
         dto.setDeptCode(member.getDepartment() != null ? member.getDepartment().getDeptCode() : null);
         dto.setDeptName(member.getDepartment() != null ? member.getDepartment().getDeptName() : null);
-        dto.setStuGrade(member.getStuGrade());
-        dto.setEnrollmentStatus(member.getEnrollmentStatus());
-        dto.setPosition(member.getPosition());
-        dto.setOfficeRoom(member.getOfficeRoom());
-        dto.setMajorField(member.getMajorField());
-        dto.setStartDate(member.getStartDate());
+
+        // 타입별 추가 정보 조회
+        String memberType = member.getMemberType();
+        if ("STUDENT".equalsIgnoreCase(memberType)) {
+            studentMemberRepository.findByMemberId(member.getMemberId()).ifPresent(sm -> {
+                dto.setStuGrade(sm.getStuGrade());
+                dto.setEnrollmentStatus(sm.getEnrollmentStatus());
+            });
+        } else if ("PROFESSOR".equalsIgnoreCase(memberType)) {
+            professorMemberRepository.findByMemberId(member.getMemberId()).ifPresent(pm -> {
+                dto.setPosition(pm.getPosition());
+                dto.setOfficeRoom(pm.getOfficeRoom());
+                dto.setMajorField(pm.getMajorField());
+                dto.setStartDate(pm.getStartDate());
+            });
+        }
+
         return dto;
     }
 

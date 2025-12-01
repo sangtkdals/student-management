@@ -2,8 +2,10 @@ package com.example.studentmanagement.controller;
 
 import com.example.studentmanagement.beans.LeaveApplication;
 import com.example.studentmanagement.beans.Member;
+import com.example.studentmanagement.beans.StudentMember;
 import com.example.studentmanagement.dto.LeaveApplicationDTO;
 import com.example.studentmanagement.service.LeaveApplicationService;
+import com.example.studentmanagement.repository.StudentMemberRepository;
 import com.example.studentmanagement.util.JwtUtil;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -19,8 +21,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:5173")  // 프론트엔드 주소 (Vite 기본 포트)
 public class LeaveApplicationController {
-    
+
     private final LeaveApplicationService leaveApplicationService;
+    private final StudentMemberRepository studentMemberRepository;
     private final JwtUtil jwtUtil;
 
     // GET /api/leave-applications - 모든 휴학 신청 조회
@@ -132,8 +135,13 @@ public class LeaveApplicationController {
         dto.setStudentNo(member.getMemberNo());
         dto.setStudentName(member.getName());
         dto.setDepartment(member.getDepartment() != null ? member.getDepartment().getDeptName() : "");
-        dto.setGradeLevel(member.getStuGrade());
-        dto.setEnrollmentStatus(member.getEnrollmentStatus());
+
+        // StudentMember에서 학년과 학적 상태 조회
+        studentMemberRepository.findByMemberId(member.getMemberId()).ifPresent(sm -> {
+            dto.setGradeLevel(sm.getStuGrade());
+            dto.setEnrollmentStatus(sm.getEnrollmentStatus());
+        });
+
         return dto;
     }
 

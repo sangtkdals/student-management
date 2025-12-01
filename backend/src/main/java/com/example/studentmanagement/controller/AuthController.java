@@ -2,6 +2,8 @@ package com.example.studentmanagement.controller;
 
 import com.example.studentmanagement.beans.Department;
 import com.example.studentmanagement.beans.Member;
+import com.example.studentmanagement.beans.StudentMember;
+import com.example.studentmanagement.beans.ProfessorMember;
 import com.example.studentmanagement.repository.DepartmentRepository;
 import com.example.studentmanagement.repository.MemberRepository;
 import com.example.studentmanagement.util.JwtUtil;
@@ -37,13 +39,42 @@ public class AuthController {
                 return ResponseEntity.badRequest().body("이미 존재하는 ID입니다.");
             }
 
-            Member member = new Member();
+            Member member;
+            String mType = payload.get("m_type");
+
+            if ("student".equalsIgnoreCase(mType) || "STUDENT".equalsIgnoreCase(mType)) {
+                StudentMember student = new StudentMember();
+                if (payload.get("stu_grade") != null && !payload.get("stu_grade").isEmpty()) {
+                    student.setStuGrade(Integer.parseInt(payload.get("stu_grade")));
+                }
+                student.setEnrollmentStatus(payload.get("enrollment_status"));
+                member = student;
+            } else if ("professor".equalsIgnoreCase(mType) || "PROFESSOR".equalsIgnoreCase(mType)) {
+                ProfessorMember professor = new ProfessorMember();
+                professor.setPosition(payload.get("position"));
+                professor.setOfficeRoom(payload.get("office_room"));
+                professor.setMajorField(payload.get("major_field"));
+                
+                String startDateStr = payload.get("start_date");
+                if (startDateStr != null && !startDateStr.isEmpty()) {
+                    try {
+                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                        Date startDate = sdf.parse(startDateStr);
+                        professor.setStartDate(startDate);
+                    } catch (ParseException e) {
+                        System.err.println("Date parse error: " + e.getMessage());
+                    }
+                }
+                member = professor;
+            } else {
+                member = new Member();
+            }
             
             // Common Fields
             member.setMemberId(userId);
             member.setPassword(payload.get("m_pwd"));
             member.setName(payload.get("m_name"));
-            member.setMemberType(payload.get("m_type")); // "student" or "professor"
+            member.setMemberType(mType);
             member.setMemberNo(payload.get("m_no"));
             member.setEmail(payload.get("m_email"));
             member.setPhone(payload.get("m_phone"));
@@ -55,33 +86,6 @@ public class AuthController {
             if (deptCode != null && !deptCode.isEmpty()) {
                 Department dept = departmentRepository.findById(deptCode).orElse(null);
                 member.setDepartment(dept);
-            }
-
-            // Student Specific
-            if ("student".equalsIgnoreCase(payload.get("m_type"))) {
-                if (payload.get("stu_grade") != null && !payload.get("stu_grade").isEmpty()) {
-                    member.setStuGrade(Integer.parseInt(payload.get("stu_grade")));
-                }
-                member.setEnrollmentStatus(payload.get("enrollment_status"));
-            }
-
-            // Professor Specific
-            if ("professor".equalsIgnoreCase(payload.get("m_type"))) {
-                member.setPosition(payload.get("position"));
-                member.setOfficeRoom(payload.get("office_room"));
-                member.setMajorField(payload.get("major_field"));
-                
-                String startDateStr = payload.get("start_date");
-                if (startDateStr != null && !startDateStr.isEmpty()) {
-                    try {
-                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-                        Date startDate = sdf.parse(startDateStr);
-                        member.setStartDate(startDate);
-                    } catch (ParseException e) {
-                        // ignore or log
-                        System.err.println("Date parse error: " + e.getMessage());
-                    }
-                }
             }
 
             memberRepository.save(member);
@@ -119,8 +123,8 @@ public class AuthController {
             }
             
             // Additional fields based on role
-            if ("professor".equalsIgnoreCase(member.getMemberType())) {
-                response.put("major", member.getMajorField());
+            if (member instanceof ProfessorMember) {
+                response.put("major", ((ProfessorMember) member).getMajorField());
             }
             
             return ResponseEntity.ok(response);
