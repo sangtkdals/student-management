@@ -263,7 +263,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = "student" })
         </div>
         <div className="bg-white p-8 rounded-lg border border-brand-gray shadow-sm">
           <form onSubmit={handleLogin} className="space-y-6">
-            <div className="grid grid-cols-2 gap-2 p-1 bg-brand-gray-light rounded-md">
+            <div className="grid grid-cols-3 gap-2 p-1 bg-brand-gray-light rounded-md">
               <button
                 type="button"
                 onClick={() => setRole("student")}
@@ -277,6 +277,13 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = "student" })
                 className={`w-full px-4 py-2 text-sm font-bold rounded ${role === "professor" ? "bg-brand-blue text-white" : "text-slate-500"}`}
               >
                 교수
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole("admin")}
+                className={`w-full px-4 py-2 text-sm font-bold rounded ${role === "admin" ? "bg-brand-blue text-white" : "text-slate-500"}`}
+              >
+                관리자
               </button>
             </div>
 
