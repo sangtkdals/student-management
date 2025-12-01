@@ -1,16 +1,20 @@
+import type { Course as AppCourse } from "../types";
 
-export interface Course {
-  id: number;
+// Re-exporting Course with adjusted properties for local component usage if needed
+// For now, we can just re-export it. Or create a new specific type.
+// Let's make it compatible.
+export type Course = AppCourse & {
+  id: number | string;
   code: string;
   name: string;
   professor: string;
-  credits: number;
+  credit: number;
   time: string;
   location: string;
-  type: 'Major Requirement' | 'Major Elective' | 'General Elective';
+  type: string;
   capacity: number;
   enrolled: number;
-}
+};
 
 export interface User {
   studentId: string;

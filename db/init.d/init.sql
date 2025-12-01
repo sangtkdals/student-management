@@ -97,24 +97,24 @@ CREATE TABLE subject (
 -- =====================================================
 DROP TABLE IF EXISTS course;
 CREATE TABLE `course` (
-   `course_code` VARCHAR(20) NOT NULL COLLATE 'utf8mb4_0900_ai_ci',
-   `academic_year` INT NULL DEFAULT NULL,
-   `semester` INT NULL DEFAULT NULL,
-   `s_code` VARCHAR(20) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
-   `course_class` VARCHAR(10) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
-   `professor_no` VARCHAR(20) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
-   `max_stu` INT NULL DEFAULT NULL,
-   `classroom` VARCHAR(50) NULL DEFAULT NULL COMMENT '강의실' COLLATE 'utf8mb4_0900_ai_ci',
-   `course_objectives` TEXT NULL DEFAULT NULL COMMENT '강의 목표' COLLATE 'utf8mb4_0900_ai_ci',
-   `course_content` TEXT NULL DEFAULT NULL COMMENT '강의 내용' COLLATE 'utf8mb4_0900_ai_ci',
-   `evaluation_method` VARCHAR(1000) NULL DEFAULT NULL COMMENT '평가 방법' COLLATE 'utf8mb4_0900_ai_ci',
-   `textbook_info` VARCHAR(1000) NULL DEFAULT NULL COMMENT '교재 정보' COLLATE 'utf8mb4_0900_ai_ci',
-   `course_status` VARCHAR(20) NULL DEFAULT NULL COMMENT '개설상태' COLLATE 'utf8mb4_0900_ai_ci',
-   PRIMARY KEY (`course_code`) USING BTREE,
-   INDEX `fk_course_prof` (`professor_no`) USING BTREE,
-   INDEX `fk_course_s_code` (`s_code`) USING BTREE,
-   CONSTRAINT `fk_course_prof` FOREIGN KEY (`professor_no`) REFERENCES `member` (`m_no`) ON UPDATE NO ACTION ON DELETE NO ACTION,
-   CONSTRAINT `fk_course_s_code` FOREIGN KEY (`s_code`) REFERENCES `subject` (`s_code`) ON UPDATE NO ACTION ON DELETE NO ACTION
+	`course_code` VARCHAR(20) NOT NULL COLLATE 'utf8mb4_0900_ai_ci',
+	`academic_year` INT NULL DEFAULT NULL,
+	`semester` INT NULL DEFAULT NULL,
+	`s_code` VARCHAR(20) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
+	`course_class` VARCHAR(10) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
+	`professor_no` VARCHAR(20) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
+	`max_stu` INT NULL DEFAULT NULL,
+	`classroom` VARCHAR(50) NULL DEFAULT NULL COMMENT '강의실' COLLATE 'utf8mb4_0900_ai_ci',
+	`course_objectives` TEXT NULL DEFAULT NULL COMMENT '강의 목표' COLLATE 'utf8mb4_0900_ai_ci',
+	`course_content` TEXT NULL DEFAULT NULL COMMENT '강의 내용' COLLATE 'utf8mb4_0900_ai_ci',
+	`evaluation_method` VARCHAR(1000) NULL DEFAULT NULL COMMENT '평가 방법' COLLATE 'utf8mb4_0900_ai_ci',
+	`textbook_info` VARCHAR(1000) NULL DEFAULT NULL COMMENT '교재 정보' COLLATE 'utf8mb4_0900_ai_ci',
+	`course_status` VARCHAR(20) NULL DEFAULT NULL COMMENT '개설상태' COLLATE 'utf8mb4_0900_ai_ci',
+	PRIMARY KEY (`course_code`) USING BTREE,
+	INDEX `fk_course_prof` (`professor_no`) USING BTREE,
+	INDEX `fk_course_s_code` (`s_code`) USING BTREE,
+	CONSTRAINT `fk_course_prof` FOREIGN KEY (`professor_no`) REFERENCES `member` (`m_no`) ON UPDATE NO ACTION ON DELETE NO ACTION,
+	CONSTRAINT `fk_course_s_code` FOREIGN KEY (`s_code`) REFERENCES `subject` (`s_code`) ON UPDATE NO ACTION ON DELETE NO ACTION
 )
 COLLATE='utf8mb4_0900_ai_ci'
 ENGINE=InnoDB;
@@ -458,4 +458,3 @@ INSERT INTO course_schedule (course_code, day_of_week, start_time, end_time) VAL
 ('CSE2010_01', 1, '15:00:00', '16:50:00'),
 ('CSE2020_01', 2, '10:00:00', '11:50:00'),
 ('CSE3030_01', 3, '13:00:00', '14:50:00');
-
