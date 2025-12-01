@@ -36,7 +36,15 @@ import { ProfessorSyllabus } from "./components/professor/ProfessorSyllabus";
 import { ProfessorCourseMaterials, ProfessorAssignments } from "./components/professor/ProfessorMiscViews";
 
 // Admin Views
-import { AdminDashboard, AdminUserManagement, AdminSystemManagement } from "./components/AdminViews";
+import { 
+  AdminDashboard, 
+  AdminUserManagement, 
+  AdminSystemManagement,
+  AdminLeaveManagement,
+  AdminNoticeManagement,
+  AdminScheduleManagement,
+  AdminTuitionManagement, 
+} from "./components/admin";
 
 // Loading Bar Component
 const LoadingBar = () => (
@@ -303,6 +311,38 @@ const AppRoutes = ({ user, onLogout, enrolledCourses }: { user: User; onLogout: 
                 element={
                   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <AdminSystemManagement />
+                  </div>
+                }
+              />
+              <Route
+                path="/admin/leave-management"
+                element={
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <AdminLeaveManagement />
+                  </div>
+                }
+              />
+              <Route
+                path="/admin/notice-management"
+                element={
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <AdminNoticeManagement />
+                  </div>
+                }
+              />
+              <Route
+                path="/admin/schedule-management"
+                element={
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <AdminScheduleManagement />
+                  </div>
+                }
+              />
+              <Route
+                path="/admin/tuition-management"
+                element={
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <AdminTuitionManagement />
                   </div>
                 }
               />
