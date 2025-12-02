@@ -22,7 +22,7 @@ import {
   StudentReturnApplication,
   StudentReturnHistory,
   StudentCertificateIssuance,
-  StudentTimetable,
+  StudentMyTimetable,
 } from "./components/StudentViews";
 
 // Professor Views
@@ -200,7 +200,7 @@ const AppRoutes = ({ user, onLogout }: { user: User; onLogout: () => void }) => 
                 path="/student/timetable"
                 element={
                   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <StudentTimetable />
+                    <StudentMyTimetable />
                   </div>
                 }
               />
