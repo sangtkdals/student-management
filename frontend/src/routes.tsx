@@ -6,34 +6,33 @@ import type { User } from "./types";
 import TopNavigation from "./components/TopNavigation";
 import Footer from "./components/Footer";
 import { DashboardHero, DashboardContent } from "./components/Dashboard";
-import { UserProfile, NoticeBoard, AcademicCalendar } from "./components/CommonViews";
 import AnnouncementDetail from "./components/AnnouncementDetail";
 
+// Common Views
+import { UserProfile } from "./components/common/UserProfile";
+import { NoticeBoard } from "./components/common/NoticeBoard";
+import { AcademicCalendar } from "./components/common/AcademicCalendar";
+
 // Student Views
+import { StudentHome } from "./components/student/StudentHome";
+import { StudentCourseRegistration } from "./components/student/StudentCourseRegistration";
+import { StudentGradeCenter } from "./components/student/StudentGradeCenter";
+import { StudentMyTimetable } from "./components/student/StudentMyTimetable";
+import { StudentTuitionHistory, StudentTuitionPayment } from "./components/student/StudentTuitionViews";
 import {
-  StudentHome,
-  StudentCourseRegistration,
-  StudentGradeCenter,
-  StudentTuitionHistory,
   StudentLeaveApplication,
-  StudentGraduationCheck,
-  StudentTuitionPayment,
   StudentLeaveHistory,
   StudentReturnApplication,
   StudentReturnHistory,
-  StudentCertificateIssuance,
-  StudentMyTimetable,
-} from "./components/StudentViews";
+} from "./components/student/StudentAcademicStatusViews";
+import { StudentGraduationCheck, StudentCertificateIssuance } from "./components/student/StudentMiscViews";
 
 // Professor Views
-import {
-  ProfessorHome,
-  ProfessorStudentManagement,
-  ProfessorMyLectures,
-  ProfessorSyllabus,
-  ProfessorCourseMaterials,
-  ProfessorAssignments,
-} from "./components/ProfessorViews";
+import { ProfessorHome } from "./components/professor/ProfessorHome";
+import { ProfessorMyLectures } from "./components/professor/ProfessorMyLectures";
+import { ProfessorStudentManagement } from "./components/professor/ProfessorStudentManagement";
+import { ProfessorSyllabus } from "./components/professor/ProfessorSyllabus";
+import { ProfessorCourseMaterials, ProfessorAssignments } from "./components/professor/ProfessorMiscViews";
 
 // Admin Views
 import { AdminDashboard, AdminUserManagement, AdminSystemManagement } from "./components/AdminViews";
@@ -51,7 +50,6 @@ const AppRoutes = ({ user, onLogout }: { user: User; onLogout: () => void }) => 
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
 
-  // 학생(/student)과 교수(/professor) 경로에서도 파란색 배너(DashboardHero)가 나오도록 설정
   const isDashboard = ["/", "/student", "/professor", "/admin/dashboard"].includes(location.pathname);
 
   return (
@@ -59,7 +57,6 @@ const AppRoutes = ({ user, onLogout }: { user: User; onLogout: () => void }) => 
       {isLoading && <LoadingBar />}
       <TopNavigation user={user} onLogout={onLogout} />
 
-      {/* 파란색 배너 (프로필 + 오늘의 시간표) */}
       {isDashboard && <DashboardHero user={user} navigate={navigate} />}
       <main className="flex-1">
         <Routes>
@@ -128,7 +125,7 @@ const AppRoutes = ({ user, onLogout }: { user: User; onLogout: () => void }) => 
                 path="/student/all-grades"
                 element={
                   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <StudentGradeCenter user={user} /> {/* ★ user 전달! */}
+                    <StudentGradeCenter user={user} />
                   </div>
                 }
               />
@@ -196,19 +193,22 @@ const AppRoutes = ({ user, onLogout }: { user: User; onLogout: () => void }) => 
                   </div>
                 }
               />
+
+              {/* [수정] Navigation.ts의 경로(/student/Mytimetable)와 일치시킴 */}
               <Route
-                path="/student/timetable"
+                path="/student/Mytimetable"
                 element={
                   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <StudentMyTimetable />
                   </div>
                 }
               />
+
               <Route
                 path="/student/current-grades"
                 element={
                   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <StudentGradeCenter user={user} /> {/* ★ user 전달! */}
+                    <StudentGradeCenter user={user} />
                   </div>
                 }
               />
@@ -218,8 +218,6 @@ const AppRoutes = ({ user, onLogout }: { user: User; onLogout: () => void }) => 
           {/* Professor Specific Routes */}
           {user.role === "professor" && (
             <>
-              {/* Reusing the component with different viewType props as per feature/professor logic */}
-
               <Route
                 path="/professor/student-attendance"
                 element={
@@ -249,7 +247,7 @@ const AppRoutes = ({ user, onLogout }: { user: User; onLogout: () => void }) => 
                 path="/professor/syllabus"
                 element={
                   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <ProfessorSyllabus />
+                    <ProfessorSyllabus user={user} />
                   </div>
                 }
               />
@@ -257,7 +255,7 @@ const AppRoutes = ({ user, onLogout }: { user: User; onLogout: () => void }) => 
                 path="/professor/course-materials"
                 element={
                   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <ProfessorCourseMaterials />
+                    <ProfessorCourseMaterials user={user} />
                   </div>
                 }
               />
