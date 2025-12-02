@@ -18,6 +18,7 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
     courseTime: "월 10:00-12:00",
     classroom: "공학관 305호",
     subjectCode: "", // Auto-generated
+    subjectType: "1", // Default: 전공선택
     courseClass: "01",
     maxStudents: 50,
     credit: 0,
@@ -214,6 +215,7 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
           courseTime: "",
           classroom: "정보관 202호",
           subjectCode: "",
+          subjectType: "1",
           courseClass: "002",
           maxStudents: 45,
           credit: 0,
@@ -358,6 +360,22 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
                         {dept.deptName}
                     </option>
                 ))}
+            </select>
+          </div>
+
+          {/* Subject Type Selection */}
+          <div>
+            <label className="block text-sm font-bold text-slate-900 mb-1">이수 구분</label>
+            <select
+                className="block w-full px-3 py-2 bg-white border border-slate-400 text-sm shadow-sm focus:outline-none focus:border-slate-900 focus:ring-slate-900 rounded-none"
+                value={newCourse.subjectType}
+                onChange={(e) => setNewCourse({ ...newCourse, subjectType: e.target.value })}
+                required
+            >
+                <option value="1">전공선택</option>
+                <option value="2">전공필수</option>
+                <option value="3">균형교양</option>
+                <option value="4">자율교양</option>
             </select>
           </div>
 

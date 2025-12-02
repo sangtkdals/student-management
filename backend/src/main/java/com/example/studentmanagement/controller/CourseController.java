@@ -136,6 +136,7 @@ public class CourseController {
             subject.setSCode(subjectCode);
             subject.setSName((String) payload.get("subjectName"));
             subject.setCredit(getInteger(payload, "credit"));
+            subject.setSType(getInteger(payload, "subjectType")); // Set Subject Type (Integer)
             subject.setDepartment(department); // Assign selected or professor's dept
             subjectRepository.save(subject);
             
