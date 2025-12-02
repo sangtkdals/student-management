@@ -106,6 +106,7 @@ export interface Course {
   subjectName?: string;
   professorName?: string;
   credit?: number; // subject 테이블에서 가져옴
+  deptCode?: string; // 추가: 학과 코드
   subject?: Subject; // For filtering by type
   currentStudents?: number; // From DTO
 }

@@ -240,13 +240,20 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = "student" })
                 </div>
                 
                 {/* ID with Check Button */}
-                <div className="md:col-span-2 flex items-end gap-2">
-                    <div className="flex-1">
-                        <Input label="아이디" value={regData.m_id} onChange={(e) => handleInputChange("m_id", e.target.value)} required />
+                <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">아이디</label>
+                    <div className="flex gap-2">
+                        <input
+                            type="text"
+                            className="flex-1 block w-full px-3 py-2 bg-white border border-slate-300 text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue rounded-md"
+                            value={regData.m_id}
+                            onChange={(e) => handleInputChange("m_id", e.target.value)}
+                            required
+                        />
+                        <Button type="button" onClick={checkIdDuplicate} className="whitespace-nowrap bg-slate-600 hover:bg-slate-700 py-2">
+                            중복확인
+                        </Button>
                     </div>
-                    <Button type="button" onClick={checkIdDuplicate} className="mb-[2px] h-[42px] whitespace-nowrap bg-slate-600 hover:bg-slate-700">
-                        중복확인
-                    </Button>
                 </div>
 
                 {/* Password and Confirm Password */}

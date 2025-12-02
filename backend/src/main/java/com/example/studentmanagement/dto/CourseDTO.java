@@ -26,6 +26,7 @@ public class CourseDTO {
     private List<CourseSchedule> schedules;
     private String courseStatus;
     private int credit;
+    private String deptCode; // 학과 코드 추가
     
     // Additional fields to match DB structure
     private String courseObjectives;
@@ -41,9 +42,13 @@ public class CourseDTO {
         if (course.getSubject() != null) {
             this.sCode = course.getSubject().getSCode();
             this.subjectName = course.getSubject().getSName();
+            if (course.getSubject().getDepartment() != null) {
+                this.deptCode = course.getSubject().getDepartment().getDeptCode();
+            }
         } else {
             this.sCode = null;
             this.subjectName = "Unknown";
+            this.deptCode = "Unknown";
         }
         
         this.courseClass = course.getCourseClass();
