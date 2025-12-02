@@ -80,17 +80,21 @@ COLLATE='utf8mb4_0900_ai_ci' ENGINE=InnoDB;
 -- =====================================================
 -- 3) subject
 -- =====================================================
-DROP TABLE IF EXISTS subject;
-CREATE TABLE subject (
-    s_code    VARCHAR(20) PRIMARY KEY,
-    s_name    VARCHAR(200),
-    credit    INT,
-    s_type    VARCHAR(20),             -- MAJOR, GENERAL, ELECTIVE
-    dept_code VARCHAR(20),
-    s_desc    VARCHAR(2000),
-    CONSTRAINT fk_subject_dept
-        FOREIGN KEY (dept_code) REFERENCES department(dept_code)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE `subject` (
+	`s_code` VARCHAR(20) NOT NULL COLLATE 'utf8mb4_0900_ai_ci',
+	`s_name` VARCHAR(200) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
+	`credit` INT NULL DEFAULT NULL,
+	`s_type` TINYINT NULL DEFAULT NULL,
+	`dept_code` VARCHAR(20) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
+	`s_desc` VARCHAR(2000) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
+	PRIMARY KEY (`s_code`) USING BTREE,
+	INDEX `fk_subject_dept` (`dept_code`) USING BTREE,
+	CONSTRAINT `fk_subject_dept` FOREIGN KEY (`dept_code`) REFERENCES `department` (`dept_code`) ON UPDATE NO ACTION ON DELETE NO ACTION
+)
+COLLATE='utf8mb4_0900_ai_ci'
+ENGINE=InnoDB
+;
+
 
 -- =====================================================
 -- 4) course
@@ -425,15 +429,15 @@ INSERT INTO professor_member (m_id, position, office_room) VALUES ('prof_lee', '
 
 -- Subject 데이터
 INSERT INTO subject (s_code, s_name, credit, s_type, dept_code) VALUES
-('CSE4001', '소프트웨어 공학', 3, 'Major Requirement', 'CS'),
-('CSE4002', '데이터베이스 시스템', 3, 'Major Requirement', 'CS'),
-('CSE3010', '알고리즘 분석', 3, 'Major Requirement', 'CS'),
-('CSE3021', '운영체제', 3, 'Major Elective', 'CS'),
-('CSE4033', '인공지능', 3, 'Major Elective', 'CS'),
-('GED1001', '글쓰기와 의사소통', 2, 'General Elective', 'ADM'),
-('CSE2010', '자료구조', 3, 'Major Requirement', 'CS'),
-('CSE2020', '객체지향프로그래밍', 3, 'Major Requirement', 'CS'),
-('CSE3030', '컴퓨터네트워크', 3, 'Major Elective', 'CS');
+('CSE4001', '소프트웨어 공학', 3, 1, 'CS'),
+('CSE4002', '데이터베이스 시스템', 3, 1, 'CS'),
+('CSE3010', '알고리즘 분석', 3, 1, 'CS'),
+('CSE3021', '운영체제', 3, 2, 'CS'),
+('CSE4033', '인공지능', 3, 2, 'CS'),
+('GED1001', '글쓰기와 의사소통', 2, 3, 'ADM'),
+('CSE2010', '자료구조', 3, 1, 'CS'),
+('CSE2020', '객체지향프로그래밍', 3, 1, 'CS'),
+('CSE3030', '컴퓨터네트워크', 3, 2, 'CS');
 
 -- Course 데이터
 INSERT INTO course (course_code, academic_year, semester, s_code, course_class, professor_no, max_stu, classroom, course_status) VALUES
