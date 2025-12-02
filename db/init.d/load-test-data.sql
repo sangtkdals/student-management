@@ -10,7 +10,7 @@ DELIMITER $$
 CREATE PROCEDURE GenerateStudentData()
 BEGIN
     DECLARE i INT DEFAULT 1;
-    WHILE i <= 1000 DO
+    WHILE i <= 100 DO
         SET @m_id = CONCAT('student_test', i);
         SET @m_name = CONCAT('테스트학생', i);
         SET @m_no = CONCAT('2024', LPAD(i, 4, '0'));
@@ -34,3 +34,28 @@ CALL GenerateStudentData();
 
 -- 프로시저 삭제
 DROP PROCEDURE IF EXISTS GenerateStudentData;
+
+-- 테스트용 공지사항 데이터를 생성하는 저장 프로시저
+DROP PROCEDURE IF EXISTS GenerateAnnouncementData;
+DELIMITER $$
+CREATE PROCEDURE GenerateAnnouncementData()
+BEGIN
+    DECLARE i INT DEFAULT 1;
+    WHILE i <= 10000 DO
+        SET @title = CONCAT('공지사항 테스트 ', i);
+        SET @content = CONCAT('공지사항 테스트 내용입니다. ', i);
+
+        INSERT INTO post (board_id, post_title, post_content, writer_id)
+        SELECT b.board_id, @title, @content, 'admin001'
+        FROM board b WHERE b.board_code = 'announcements';
+
+        SET i = i + 1;
+    END WHILE;
+END$$
+DELIMITER ;
+
+-- 프로시저 호출하여 데이터 생성
+CALL GenerateAnnouncementData();
+
+-- 프로시저 삭제
+DROP PROCEDURE IF EXISTS GenerateAnnouncementData;
