@@ -34,14 +34,14 @@ public class Course {
     @Column(name = "semester")
     private Integer semester;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "s_code")
     private Subject subject;
 
     @Column(name = "course_class", length = 10)
     private String courseClass;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "professor_no", referencedColumnName = "m_no")
     private Member professor;
 
@@ -51,7 +51,7 @@ public class Course {
     @Column(name = "classroom", length = 50)
     private String classroom;
 
-    @OneToMany(mappedBy = "course")
+    @OneToMany(mappedBy = "course", fetch = FetchType.EAGER)
     @JsonManagedReference
     private List<CourseSchedule> courseSchedules;
 

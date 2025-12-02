@@ -95,7 +95,6 @@ CREATE TABLE subject (
 -- =====================================================
 -- 4) course
 -- =====================================================
-DROP TABLE IF EXISTS course;
 CREATE TABLE `course` (
 	`course_code` VARCHAR(20) NOT NULL COLLATE 'utf8mb4_0900_ai_ci',
 	`academic_year` INT NULL DEFAULT NULL,
@@ -107,7 +106,7 @@ CREATE TABLE `course` (
 	`classroom` VARCHAR(50) NULL DEFAULT NULL COMMENT '강의실' COLLATE 'utf8mb4_0900_ai_ci',
 	`course_objectives` TEXT NULL DEFAULT NULL COMMENT '강의 목표' COLLATE 'utf8mb4_0900_ai_ci',
 	`course_content` TEXT NULL DEFAULT NULL COMMENT '강의 내용' COLLATE 'utf8mb4_0900_ai_ci',
-	`evaluation_method` VARCHAR(1000) NULL DEFAULT NULL COMMENT '평가 방법' COLLATE 'utf8mb4_0900_ai_ci',
+	`evaluation_method` JSON NULL DEFAULT NULL COMMENT '강의 평가 방법 및 비율 (JSON 형식)',
 	`textbook_info` VARCHAR(1000) NULL DEFAULT NULL COMMENT '교재 정보' COLLATE 'utf8mb4_0900_ai_ci',
 	`course_status` VARCHAR(20) NULL DEFAULT NULL COMMENT '개설상태' COLLATE 'utf8mb4_0900_ai_ci',
 	PRIMARY KEY (`course_code`) USING BTREE,
@@ -117,7 +116,8 @@ CREATE TABLE `course` (
 	CONSTRAINT `fk_course_s_code` FOREIGN KEY (`s_code`) REFERENCES `subject` (`s_code`) ON UPDATE NO ACTION ON DELETE NO ACTION
 )
 COLLATE='utf8mb4_0900_ai_ci'
-ENGINE=InnoDB;
+ENGINE=InnoDB
+;
 
 -- =====================================================
 -- 4-1) course_schedule

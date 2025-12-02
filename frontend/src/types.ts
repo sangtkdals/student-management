@@ -93,6 +93,7 @@ export interface Course {
   maxStudents: number;
   classroom?: string;
   courseSchedules?: CourseSchedule[];
+  courseTime?: string;
 
   // 강의 계획서 관련
   objectives?: string;

@@ -37,14 +37,27 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
       });
       if (response.ok) {
         const data = await response.json();
-        // Map backend response to Course type if needed, or assuming it matches
-        // Need to ensure subjectName is present (join in backend or provided)
-        // The backend Course entity has 'subject' object. Frontend Course has 'subjectName'.
-        const mappedCourses = data.map((c: any) => ({
-          ...c,
-          subjectName: c.courseName || c.subject?.sName || c.courseCode, // Prioritize courseName
-          subjectCode: c.subject?.sCode,
-        }));
+        // Map backend response to Course type
+        const mappedCourses = data.map((c: any) => {
+          // Construct courseTime from courseSchedules if available
+          let timeStr = c.courseTime || "";
+          if (!timeStr && c.courseSchedules && c.courseSchedules.length > 0) {
+             const dayMap: { [key: number]: string } = { 1: "월", 2: "화", 3: "수", 4: "목", 5: "금", 6: "토", 7: "일" };
+             timeStr = c.courseSchedules.map((s: any) => {
+                 const day = dayMap[s.dayOfWeek] || "";
+                 const start = s.startTime ? s.startTime.substring(0, 5) : "";
+                 const end = s.endTime ? s.endTime.substring(0, 5) : "";
+                 return `${day} ${start}-${end}`;
+             }).join(", ");
+          }
+
+          return {
+            ...c,
+            subjectName: c.courseName || c.subject?.sName || c.courseCode, 
+            subjectCode: c.subject?.sCode,
+            courseTime: timeStr
+          };
+        });
         setLocalCourses(mappedCourses);
       } else {
         console.error("Failed to fetch courses");
