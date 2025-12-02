@@ -6,13 +6,17 @@ interface TuitionData {
   tuitionId: number;
   studentNo: string;
   studentName: string;
-  department: string;
   academicYear: number;
   semester: number;
-  amount: number;
-  scholarship: number;
+  tuitionAmount: number;
+  scholarshipAmount: number;
+  paidAmount: number;
   paymentStatus: "PAID" | "UNPAID";
-  paymentDate?: string;
+  paidDate?: string;
+  billDate?: string;
+  dueDate?: string;
+  paymentMethod?: string;
+  receiptNo?: string;
 }
 
 export const AdminTuitionManagement: React.FC = () => {
@@ -33,38 +37,14 @@ export const AdminTuitionManagement: React.FC = () => {
   const fetchTuitionList = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get("/api/tuition/admin/list", {
+      const response = await axios.get("/api/admin/tuitions", {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       setTuitionList(response.data);
     } catch (error) {
       console.error("Error fetching tuition list:", error);
-      // MOCK 데이터 (API 연동 전 테스트용)
-      setTuitionList([
-        {
-          tuitionId: 1,
-          studentNo: "2024001",
-          studentName: "김철수",
-          department: "컴퓨터공학과",
-          academicYear: 2024,
-          semester: 1,
-          amount: 4000000,
-          scholarship: 1000000,
-          paymentStatus: "UNPAID"
-        },
-        {
-          tuitionId: 2,
-          studentNo: "2024002",
-          studentName: "이영희",
-          department: "경영학과",
-          academicYear: 2024,
-          semester: 1,
-          amount: 3500000,
-          scholarship: 0,
-          paymentStatus: "PAID",
-          paymentDate: "2024-02-20"
-        },
-      ]);
+      // MOCK 데이터 사용 안 함 - 에러 로깅만
+      console.error("Failed to fetch tuition list");
     }
   };
 
@@ -72,7 +52,7 @@ export const AdminTuitionManagement: React.FC = () => {
     if (confirm("해당 학생의 등록금을 '납부 완료' 처리하시겠습니까?")) {
       try {
         const token = localStorage.getItem('token');
-        await axios.put(`/api/tuition/${id}/confirm`, {}, {
+        await axios.put(`/api/admin/tuitions/${id}/confirm`, {}, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         alert("납부 처리되었습니다.");
@@ -92,7 +72,17 @@ export const AdminTuitionManagement: React.FC = () => {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.post("/api/tuition", formData, {
+      const payload = {
+        studentNo: formData.studentNo,
+        academicYear: formData.year,
+        semester: formData.semester,
+        tuitionAmount: formData.amount,
+        scholarshipAmount: formData.scholarship,
+        paymentStatus: "UNPAID",
+        billDate: new Date().toISOString().split('T')[0],
+        dueDate: new Date(new Date().setMonth(new Date().getMonth() + 2)).toISOString().split('T')[0]
+      };
+      await axios.post("/api/admin/tuitions", payload, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       alert("등록금 고지서가 생성되었습니다.");
@@ -129,17 +119,22 @@ export const AdminTuitionManagement: React.FC = () => {
           <Button onClick={() => setIsModalOpen(true)}>개별 고지서 생성</Button>
         </div>
 
-        <Table headers={["학번", "이름", "학과", "학기", "실납부금액", "상태", "관리"]}>
+        <Table headers={["학번", "이름", "학기", "등록금", "장학금", "실납부금액", "상태", "관리"]}>
           {tuitionList.map((item) => (
             <tr key={item.tuitionId}>
               <td className="px-6 py-4 text-sm">{item.studentNo}</td>
               <td className="px-6 py-4 text-sm font-medium">{item.studentName}</td>
-              <td className="px-6 py-4 text-sm">{item.department}</td>
               <td className="px-6 py-4 text-sm">
                 {item.academicYear}-{item.semester}
               </td>
+              <td className="px-6 py-4 text-sm">
+                {item.tuitionAmount?.toLocaleString()}원
+              </td>
+              <td className="px-6 py-4 text-sm text-green-600">
+                {item.scholarshipAmount?.toLocaleString()}원
+              </td>
               <td className="px-6 py-4 text-sm font-bold text-slate-700">
-                {(item.amount - item.scholarship).toLocaleString()}원
+                {((item.tuitionAmount || 0) - (item.scholarshipAmount || 0)).toLocaleString()}원
               </td>
               <td className="px-6 py-4 text-sm">{getStatusBadge(item.paymentStatus)}</td>
               <td className="px-6 py-4 text-sm">
@@ -148,7 +143,7 @@ export const AdminTuitionManagement: React.FC = () => {
                     납부 확인
                   </Button>
                 ) : (
-                  <span className="text-xs text-slate-400">{item.paymentDate}</span>
+                  <span className="text-xs text-slate-400">{item.paidDate}</span>
                 )}
               </td>
             </tr>

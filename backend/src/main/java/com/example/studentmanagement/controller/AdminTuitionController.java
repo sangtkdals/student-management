@@ -1,0 +1,156 @@
+package com.example.studentmanagement.controller;
+
+import com.example.studentmanagement.dto.TuitionDTO;
+import com.example.studentmanagement.service.TuitionService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/admin/tuitions")
+public class AdminTuitionController {
+
+    private final TuitionService tuitionService;
+
+    public AdminTuitionController(TuitionService tuitionService) {
+        this.tuitionService = tuitionService;
+    }
+
+    // 모든 등록금 조회
+    @GetMapping
+    public ResponseEntity<List<TuitionDTO>> getAllTuitions() {
+        try {
+            List<TuitionDTO> tuitions = tuitionService.getAllTuitions();
+            return ResponseEntity.ok(tuitions);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // 등록금 ID로 조회
+    @GetMapping("/{tuitionId}")
+    public ResponseEntity<?> getTuitionById(@PathVariable Integer tuitionId) {
+        try {
+            TuitionDTO tuition = tuitionService.getTuitionById(tuitionId);
+            return ResponseEntity.ok(tuition);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    // 학생별 등록금 조회
+    @GetMapping("/student/{studentNo}")
+    public ResponseEntity<List<TuitionDTO>> getTuitionsByStudent(@PathVariable String studentNo) {
+        try {
+            List<TuitionDTO> tuitions = tuitionService.getTuitionsByStudent(studentNo);
+            return ResponseEntity.ok(tuitions);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // 학년도 및 학기별 등록금 조회
+    @GetMapping("/search")
+    public ResponseEntity<List<TuitionDTO>> getTuitionsByAcademicYearAndSemester(
+            @RequestParam Integer academicYear,
+            @RequestParam Integer semester) {
+        try {
+            List<TuitionDTO> tuitions = tuitionService.getTuitionsByAcademicYearAndSemester(academicYear, semester);
+            return ResponseEntity.ok(tuitions);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // 결제 상태별 등록금 조회
+    @GetMapping("/status/{paymentStatus}")
+    public ResponseEntity<List<TuitionDTO>> getTuitionsByPaymentStatus(@PathVariable String paymentStatus) {
+        try {
+            List<TuitionDTO> tuitions = tuitionService.getTuitionsByPaymentStatus(paymentStatus);
+            return ResponseEntity.ok(tuitions);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // 미납 등록금 조회
+    @GetMapping("/unpaid")
+    public ResponseEntity<List<TuitionDTO>> getUnpaidTuitions() {
+        try {
+            List<TuitionDTO> tuitions = tuitionService.getUnpaidTuitions();
+            return ResponseEntity.ok(tuitions);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // 마감일이 지난 미납 등록금 조회
+    @GetMapping("/overdue")
+    public ResponseEntity<List<TuitionDTO>> getOverdueTuitions() {
+        try {
+            List<TuitionDTO> tuitions = tuitionService.getOverdueTuitions();
+            return ResponseEntity.ok(tuitions);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // 등록금 생성
+    @PostMapping
+    public ResponseEntity<?> createTuition(@RequestBody TuitionDTO tuitionDTO) {
+        try {
+            TuitionDTO createdTuition = tuitionService.createTuition(tuitionDTO);
+            return ResponseEntity.ok(createdTuition);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body("등록금 생성 중 오류 발생: " + e.getMessage());
+        }
+    }
+
+    // 등록금 수정
+    @PutMapping("/{tuitionId}")
+    public ResponseEntity<?> updateTuition(@PathVariable Integer tuitionId, @RequestBody TuitionDTO tuitionDTO) {
+        try {
+            TuitionDTO updatedTuition = tuitionService.updateTuition(tuitionId, tuitionDTO);
+            return ResponseEntity.ok(updatedTuition);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body("등록금 수정 중 오류 발생: " + e.getMessage());
+        }
+    }
+
+    // 등록금 삭제
+    @DeleteMapping("/{tuitionId}")
+    public ResponseEntity<?> deleteTuition(@PathVariable Integer tuitionId) {
+        try {
+            tuitionService.deleteTuition(tuitionId);
+            return ResponseEntity.ok("등록금이 삭제되었습니다.");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body("등록금 삭제 중 오류 발생: " + e.getMessage());
+        }
+    }
+
+    // 납부 확인 (결제 상태를 PAID로 변경)
+    @PutMapping("/{tuitionId}/confirm")
+    public ResponseEntity<?> confirmPayment(@PathVariable Integer tuitionId) {
+        try {
+            TuitionDTO tuitionDTO = new TuitionDTO();
+            tuitionDTO.setPaymentStatus("PAID");
+            tuitionDTO.setPaidDate(new java.util.Date());
+            TuitionDTO updatedTuition = tuitionService.updateTuition(tuitionId, tuitionDTO);
+            return ResponseEntity.ok(updatedTuition);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body("납부 확인 처리 중 오류 발생: " + e.getMessage());
+        }
+    }
+}

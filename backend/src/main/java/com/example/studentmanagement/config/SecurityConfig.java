@@ -35,6 +35,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Allow preflight requests
                 .requestMatchers("/api/login", "/api/register", "/api/refreshtoken", "/api/hello", "/error", "/api/announcements/**", "/actuator/**", "/api/courses/**", "/api/materials/**", "/api/attendance/**", "/api/enrollments/**").permitAll()
+                .requestMatchers("/api/admin/**").authenticated() // Admin endpoints require authentication
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session
