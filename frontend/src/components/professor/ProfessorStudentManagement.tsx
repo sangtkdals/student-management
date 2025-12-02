@@ -35,6 +35,18 @@ const AttendanceAndGradesView: React.FC<{ selectedCourse: Course; mode: "attenda
 
   const [gradeStudents, setGradeStudents] = useState<StudentGrade[]>([]);
 
+  const getGradeLetter = (score: number) => {
+    if (score >= 95) return "A+";
+    if (score >= 90) return "A0";
+    if (score >= 85) return "B+";
+    if (score >= 80) return "B0";
+    if (score >= 75) return "C+";
+    if (score >= 70) return "C0";
+    if (score >= 65) return "D+";
+    if (score >= 60) return "D0";
+    return "F";
+  };
+
   useEffect(() => {
     if (!selectedCourse) return;
     const token = localStorage.getItem("token");
@@ -69,7 +81,7 @@ const AttendanceAndGradesView: React.FC<{ selectedCourse: Course; mode: "attenda
                 ...d,
 
                 studentName: d.name || d.studentName, 
-                totalScore: (d.midtermScore || 0) * 0.3 + (d.finalScore || 0) * 0.3 + (d.assignmentScore || 0) * 0.2 + (d.attendanceScore || 0) * 0.2
+                totalScore: (d.midtermScore || 0) * 0.3 + (d.finalScore || 0) * 0.4 + (d.assignmentScore || 0) * 0.2 + (d.attendanceScore || 0) * 0.1
             }));
             setGradeStudents(mappedData);
           } else {
@@ -114,9 +126,9 @@ const AttendanceAndGradesView: React.FC<{ selectedCourse: Course; mode: "attenda
           const updated = { ...s, [field]: val };
           updated.totalScore = 
             (updated.midtermScore || 0) * 0.3 + 
-            (updated.finalScore || 0) * 0.3 + 
+            (updated.finalScore || 0) * 0.4 + 
             (updated.assignmentScore || 0) * 0.2 + 
-            (updated.attendanceScore || 0) * 0.2;
+            (updated.attendanceScore || 0) * 0.1;
           return updated;
         }
         return s;
@@ -222,9 +234,9 @@ const AttendanceAndGradesView: React.FC<{ selectedCourse: Course; mode: "attenda
                   <th className="px-4 py-3 text-left text-xs font-bold">학번</th>
                   <th className="px-4 py-3 text-left text-xs font-bold">이름</th>
                   <th className="px-2 py-3 text-center text-xs font-bold">중간(30)</th>
-                  <th className="px-2 py-3 text-center text-xs font-bold">기말(30)</th>
+                  <th className="px-2 py-3 text-center text-xs font-bold">기말(40)</th>
                   <th className="px-2 py-3 text-center text-xs font-bold">과제(20)</th>
-                  <th className="px-2 py-3 text-center text-xs font-bold">출석(20)</th>
+                  <th className="px-2 py-3 text-center text-xs font-bold">출석(10)</th>
                   <th className="px-4 py-3 text-center text-xs font-bold bg-blue-50">총점</th>
                 </tr>
               </thead>
@@ -269,7 +281,21 @@ const AttendanceAndGradesView: React.FC<{ selectedCourse: Course; mode: "attenda
                         />
                       </td>
                       <td className="px-4 py-3 text-center font-bold text-slate-700 bg-blue-50">
-                        {s.totalScore ? s.totalScore.toFixed(1) : "0.0"}
+                        <div className="flex flex-col items-center justify-center">
+                            {/* 1. 총점 표시 */}
+                            <span>{s.totalScore ? s.totalScore.toFixed(1) : "0.0"}</span>
+                            
+                            {/* 2. 등급 표시 (총점이 있을 때만 계산해서 보여줌) */}
+                            {s.totalScore > 0 && (
+                              <span className={`text-xs mt-1 px-2 py-0.5 rounded-full ${
+                                getGradeLetter(s.totalScore) === 'F' 
+                                  ? 'bg-red-100 text-red-700' 
+                                  : 'bg-blue-100 text-blue-700'
+                              }`}>
+                                {getGradeLetter(s.totalScore)}
+                              </span>
+                            )}
+                          </div>
                       </td>
                     </tr>
                   ))
@@ -303,9 +329,12 @@ export const ProfessorStudentManagement: React.FC<{ user: User; viewType?: "atte
         });
         if (response.ok) {
           const data = await response.json();
+
+          console.log("[디버깅] 서버에서 온 강의 데이터:", data); 
+
           const mappedCourses = data.map((c: any) => ({
             ...c,
-            subjectName: c.courseName || c.subject?.sName || c.courseCode,
+            subjectName: c.subject?.sname || c.courseName || c.courseCode,
           }));
           setMyCourses(mappedCourses);
           if (mappedCourses.length > 0) setSelectedCourse(mappedCourses[0]);
