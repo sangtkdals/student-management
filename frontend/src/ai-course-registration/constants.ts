@@ -212,4 +212,77 @@ export const MOCK_REVIEWS = [
   { course_id: 3, prof_name: "이철수", review_text: "난이도는 적당한 편이다 다음 학기에도 추천하고 싶다", rating: 3 },
   { course_id: 2, prof_name: "김영희", review_text: "과제가 너무 많고 기준도 애매하다 다시 들어도 괜찮을 것 같다", rating: 2 },
   { course_id: 6, prof_name: "최수진", review_text: "특별히 좋지도 나쁘지도 않다 전체적으로 만족스러운 강의였다", rating: 3 },
+    // ===== 여기부터 추가: id 9 ~ 20 강의 수강평 =====
+  // 9: CSE3030 컴퓨터네트워크 (조교수)
+  { course_id: 9, prof_name: "조교수", review_text: "네트워크 기초를 차근차근 설명해줘서 이해가 잘 된다", rating: 5 },
+  { course_id: 9, prof_name: "조교수", review_text: "이론 위주라 약간 지루한 편이지만 기본기는 확실히 잡힌다", rating: 3 },
+  { course_id: 9, prof_name: "조교수", review_text: "예제가 적어서 혼자 추가로 공부해야 하는 부분이 있다", rating: 2 },
+  { course_id: 9, prof_name: "조교수", review_text: "시험 난이도는 적당한 편이고 수업 분위기는 무난하다", rating: 4 },
+
+  // 10: CSE3040 웹프로그래밍 (윤교수)
+  { course_id: 10, prof_name: "윤교수", review_text: "실습 위주라서 바로바로 코드 짜보는 게 도움이 많이 된다", rating: 5 },
+  { course_id: 10, prof_name: "윤교수", review_text: "설명이 빠른 편이라 기초가 부족하면 따라가기 힘들 수 있다", rating: 2 },
+  { course_id: 10, prof_name: "윤교수", review_text: "과제는 많지만 실제 포트폴리오에 넣을 수 있을 정도로 퀄리티가 나온다", rating: 4 },
+  { course_id: 10, prof_name: "윤교수", review_text: "프론트엔드 쪽 내용 비중이 커서 백엔드까지 기대하면 조금 아쉽다", rating: 3 },
+
+  // 11: CSE4050 컴퓨터비전 (장교수)
+  { course_id: 11, prof_name: "장교수", review_text: "수식이 많아서 난이도는 높지만 설명은 최대한 쉽게 해주려는 편이다", rating: 3 },
+  { course_id: 11, prof_name: "장교수", review_text: "실습 시간에 OpenCV 예제가 많아서 실무 감각을 익히기 좋다", rating: 5 },
+  { course_id: 11, prof_name: "장교수", review_text: "중간고사 범위가 넓어서 공부할 양이 너무 많았다", rating: 2 },
+  { course_id: 11, prof_name: "장교수", review_text: "프로젝트 비중이 커서 팀원 운을 많이 탄다", rating: 3 },
+
+  // 12: CSE4060 캡스톤디자인I (김교수)
+  { course_id: 12, prof_name: "김교수", review_text: "자율성이 높아서 스스로 많이 찾아보는 사람에게 좋다", rating: 4 },
+  { course_id: 12, prof_name: "김교수", review_text: "중간 점검 때 피드백이 구체적이라 프로젝트 방향 잡는 데 도움이 된다", rating: 5 },
+  { course_id: 12, prof_name: "김교수", review_text: "발표 준비해야 할 게 많아서 다른 과목과 병행하기 빡세다", rating: 2 },
+  { course_id: 12, prof_name: "김교수", review_text: "평가 기준이 다소 애매하다는 느낌이 들었다", rating: 3 },
+
+  // 13: GED1002 실용영어회화 (Smith)
+  { course_id: 13, prof_name: "Smith", review_text: "발음이 좋아서 듣기 연습에 도움이 많이 된다", rating: 5 },
+  { course_id: 13, prof_name: "Smith", review_text: "발표와 롤플레이 과제가 많아서 부담스럽지만 실력은 는 느낌이다", rating: 4 },
+  { course_id: 13, prof_name: "Smith", review_text: "숙제가 많고 피드백은 짧게만 해줘서 아쉬웠다", rating: 2 },
+  { course_id: 13, prof_name: "Smith", review_text: "수업 분위기가 자유로워서 말하기 연습하기 좋다", rating: 5 },
+
+  // 14: GED1003 심리학개론 (임교수)
+  { course_id: 14, prof_name: "임교수", review_text: "일상 예시를 많이 들어줘서 심리학 개념이 잘 와닿는다", rating: 5 },
+  { course_id: 14, prof_name: "임교수", review_text: "내용이 많아서 시험 기간에 벼락치기하기 꽤 힘들다", rating: 3 },
+  { course_id: 14, prof_name: "임교수", review_text: "강의 슬라이드가 깔끔해서 복습하기 편하다", rating: 4 },
+  { course_id: 14, prof_name: "임교수", review_text: "출석 체크가 엄격한 편이라 지각하면 손해가 크다", rating: 2 },
+
+  // 15: GED1004 4차산업혁명과미래 (류교수)
+  { course_id: 15, prof_name: "류교수", review_text: "최신 기술 트렌드를 소개해줘서 흥미롭게 들었다", rating: 5 },
+  { course_id: 15, prof_name: "류교수", review_text: "토론 위주라 발표를 싫어하는 사람에게는 부담스럽다", rating: 3 },
+  { course_id: 15, prof_name: "류교수", review_text: "레포트 분량이 생각보다 많아서 막판에 고생했다", rating: 2 },
+  { course_id: 15, prof_name: "류교수", review_text: "시험 난이도는 쉬운 편이라 출석만 잘 하면 점수 받기 좋다", rating: 4 },
+
+  // 16: CSE3050 모바일앱프로그래밍 (송교수)
+  { course_id: 16, prof_name: "송교수", review_text: "안드로이드 스튜디오로 직접 앱 만드는 실습이 재밌다", rating: 5 },
+  { course_id: 16, prof_name: "송교수", review_text: "기초가 없으면 처음 몇 주는 많이 헤맬 수 있다", rating: 2 },
+  { course_id: 16, prof_name: "송교수", review_text: "과제 난이도가 점점 올라가서 성취감은 있지만 빡세다", rating: 4 },
+  { course_id: 16, prof_name: "송교수", review_text: "예제 코드 설명이 조금 빠른 편이라 아쉬웠다", rating: 3 },
+
+  // 17: CSE2030 컴퓨터구조 (양교수)
+  { course_id: 17, prof_name: "양교수", review_text: "이론 위주지만 설명을 잘 쪼개서 해줘서 생각보다 들을 만하다", rating: 4 },
+  { course_id: 17, prof_name: "양교수", review_text: "중간고사 범위가 너무 넓어서 공부하기 힘들었다", rating: 2 },
+  { course_id: 17, prof_name: "양교수", review_text: "판서가 깔끔해서 필기만 잘해도 큰 도움된다", rating: 5 },
+  { course_id: 17, prof_name: "양교수", review_text: "기초가 부족하면 처음에 용어가 너무 어렵다", rating: 3 },
+
+  // 18: CSE4070 빅데이터분석 (황교수)
+  { course_id: 18, prof_name: "황교수", review_text: "파이썬으로 데이터 분석 실습하는 부분이 가장 도움 됐다", rating: 5 },
+  { course_id: 18, prof_name: "황교수", review_text: "라이브러리 설명이 빠르게 지나가서 복습이 필수다", rating: 3 },
+  { course_id: 18, prof_name: "황교수", review_text: "프로젝트 비중이 커서 발표 준비에 시간을 많이 쓴다", rating: 4 },
+  { course_id: 18, prof_name: "황교수", review_text: "평가 기준이 다소 불명확하다는 느낌을 받았다", rating: 2 },
+
+  // 19: CSE4080 정보보안개론 (서교수)
+  { course_id: 19, prof_name: "서교수", review_text: "보안 사고 사례를 많이 소개해줘서 흥미롭게 들었다", rating: 5 },
+  { course_id: 19, prof_name: "서교수", review_text: "용어가 많아서 초반에는 이해하기 어렵다", rating: 3 },
+  { course_id: 19, prof_name: "서교수", review_text: "암기해야 할 내용이 많아 시험 준비가 부담됐다", rating: 2 },
+  { course_id: 19, prof_name: "서교수", review_text: "정리된 요약본을 잘 제공해줘서 복습하기 편했다", rating: 4 },
+
+  // 20: GED1005 축구와전술 (손교수)
+  { course_id: 20, prof_name: "손교수", review_text: "축구 전술을 실제 경기 영상으로 설명해줘서 이해가 잘 된다", rating: 5 },
+  { course_id: 20, prof_name: "손교수", review_text: "이론보다 영상 보는 비중이 커서 시험 준비는 따로 해야 한다", rating: 3 },
+  { course_id: 20, prof_name: "손교수", review_text: "출석만 잘 하면 점수 받기 쉬운 편이다", rating: 4 },
+  { course_id: 20, prof_name: "손교수", review_text: "축구에 관심이 없으면 다소 지루할 수 있다", rating: 2 },
+
 ];

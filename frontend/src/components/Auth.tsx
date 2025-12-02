@@ -49,51 +49,49 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = "student" })
   };
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(""); // 에러 메시지 초기화
+  e.preventDefault();
+  setError("");
 
-    try {
-      // 백엔드 API로 로그인 요청
-      const response = await fetch("http://localhost:8080/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        // Member 엔티티의 필드명(m_id, m_pwd)에 맞춰 요청 본문을 수정
-        body: JSON.stringify({ m_id: userId, m_pwd: password }),
-      });
+  try {
+    const response = await fetch("http://localhost:8080/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ m_id: userId, m_pwd: password }),
+    });
 
-      if (response.ok) {
-        const data = await response.json();
+    console.log("login response status:", response.status);
 
-        // 토큰 저장
-        localStorage.setItem("token", data.token);
-
-        // 백엔드 응답(Map)을 프론트엔드 User 타입으로 변환
-        const loggedInUser: User = {
-          id: data.userId,
-          memberNo: data.memberNo,
-          name: data.name,
-          role: data.role.toLowerCase() as UserRole,
-          email: data.email,
-          deptCode: data.deptCode,
-          departmentName: data.departmentName,
-          avatarUrl: `https://picsum.photos/seed/${data.userId}/100/100`, // 임시 아바타 URL
-        };
-        
-        // 사용자 정보 저장 (새로고침 시 유지용)
-        localStorage.setItem("user", JSON.stringify(loggedInUser));
-
-        onLogin(loggedInUser);
-      } else {
-        // 서버가 4xx, 5xx 등의 에러 응답을 보냈을 때
-        const errorText = await response.text();
-        setError(errorText || "아이디 또는 비밀번호가 올바르지 않습니다.");
-      }
-    } catch (err) {
-      // 네트워크 에러 등 fetch 자체가 실패했을 때
-      console.error("Login API call failed:", err);
-      setError("서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.");
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("login error body:", errorText);
+      setError(errorText || `로그인 실패 (status: ${response.status})`);
+      return;
     }
-  };
+
+    const data = await response.json();
+    console.log("login success data:", data);
+
+    localStorage.setItem("token", data.token ?? "");
+
+    const loggedInUser: User = {
+      id: data.userId,
+      memberNo: data.memberNo,
+      name: data.name,
+      role: (data.role ?? "student").toLowerCase() as UserRole,
+      email: data.email,
+      deptCode: data.deptCode,
+      departmentName: data.departmentName,
+      avatarUrl: `https://picsum.photos/seed/${data.userId}/100/100`,
+    };
+
+    localStorage.setItem("user", JSON.stringify(loggedInUser));
+    onLogin(loggedInUser);
+  } catch (err) {
+    console.error("Login API call failed:", err);
+    setError("서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.");
+  }
+};
+
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
