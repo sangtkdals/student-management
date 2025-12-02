@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import { Card, Button, Modal } from "../ui";
 
 // ==================== 휴학 신청 ====================
@@ -17,13 +18,34 @@ export const StudentLeaveApplication: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleConfirmSubmit = () => {
+  const handleConfirmSubmit = async () => {
     setIsProcessing(true);
-    setTimeout(() => {
-      setIsProcessing(false);
+    try {
+      const token = localStorage.getItem('token');
+      const endSemester = startSemester.semester + duration - 1;
+      const endYear = startSemester.year + Math.floor((startSemester.semester + duration - 1 - 1) / 2);
+
+      const payload = {
+        leaveType: leaveType === "general" ? "GENERAL" : "MILITARY",
+        startYear: startSemester.year,
+        startSemester: startSemester.semester,
+        endYear: endYear,
+        endSemester: ((endSemester - 1) % 2) + 1,
+        applicationReason: reason
+      };
+
+      await axios.post("/api/student/leave-applications", payload, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
       setApplicationStatus("submitted");
       setIsModalOpen(false);
-    }, 1500);
+    } catch (error) {
+      console.error("Error submitting leave application:", error);
+      alert("휴학 신청 중 오류가 발생했습니다.");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   if (applicationStatus === "submitted") {
@@ -225,40 +247,56 @@ export const StudentLeaveApplication: React.FC = () => {
 // ==================== 휴학 내역 조회 ====================
 export const StudentLeaveHistory: React.FC = () => {
   const navigate = useNavigate();
+  const [leaveHistory, setLeaveHistory] = useState<any[]>([]);
 
-  const leaveHistory = [
-    {
-      id: 1,
-      type: "일반 휴학",
-      startYear: 2024,
-      startSemester: 1,
-      duration: 2,
-      reason: "개인 사정",
-      status: "승인",
-      applicationDate: "2023-12-15",
-      approvalDate: "2023-12-18",
-    },
-    {
-      id: 2,
-      type: "군 휴학",
-      startYear: 2022,
-      startSemester: 2,
-      duration: 4,
-      reason: "군 입대",
-      status: "완료",
-      applicationDate: "2022-07-20",
-      approvalDate: "2022-07-22",
-    },
-  ];
+  React.useEffect(() => {
+    fetchLeaveHistory();
+  }, []);
+
+  const fetchLeaveHistory = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get("/api/student/leave-applications/my", {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setLeaveHistory(response.data);
+    } catch (error) {
+      console.error("Error fetching leave history:", error);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     const styles = {
+      PENDING: "bg-yellow-100 text-yellow-800",
+      APPROVED: "bg-green-100 text-green-800",
+      REJECTED: "bg-red-100 text-red-800",
       승인: "bg-green-100 text-green-800",
       대기: "bg-yellow-100 text-yellow-800",
       완료: "bg-slate-100 text-slate-600",
       반려: "bg-red-100 text-red-800",
     };
     return styles[status as keyof typeof styles] || "bg-slate-100 text-slate-600";
+  };
+
+  const getStatusLabel = (status: string) => {
+    const labels: { [key: string]: string } = {
+      PENDING: "대기",
+      APPROVED: "승인",
+      REJECTED: "반려"
+    };
+    return labels[status] || status;
+  };
+
+  const getLeaveTypeLabel = (leaveType: string) => {
+    const labels: { [key: string]: string } = {
+      GENERAL: "일반 휴학",
+      MILITARY: "군 휴학"
+    };
+    return labels[leaveType] || leaveType;
+  };
+
+  const calculateDuration = (startYear: number, startSemester: number, endYear: number, endSemester: number) => {
+    return (endYear - startYear) * 2 + (endSemester - startSemester) + 1;
   };
 
   return (
@@ -280,38 +318,53 @@ export const StudentLeaveHistory: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            {leaveHistory.map((leave) => (
-              <div key={leave.id} className="border border-slate-200 rounded-lg p-5 hover:shadow-md transition-shadow bg-white">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-bold text-slate-800">{leave.type}</h3>
-                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${getStatusBadge(leave.status)}`}>{leave.status}</span>
+            {leaveHistory.map((leave) => {
+              const duration = calculateDuration(leave.startYear, leave.startSemester, leave.endYear, leave.endSemester);
+              return (
+                <div key={leave.applicationId} className="border border-slate-200 rounded-lg p-5 hover:shadow-md transition-shadow bg-white">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-lg font-bold text-slate-800">{getLeaveTypeLabel(leave.leaveType)}</h3>
+                        <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${getStatusBadge(leave.approvalStatus)}`}>
+                          {getStatusLabel(leave.approvalStatus)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-500">
+                        {leave.startYear}년 {leave.startSemester}학기부터 {duration}학기간
+                      </p>
                     </div>
-                    <p className="text-sm text-slate-500">
-                      {leave.startYear}년 {leave.startSemester}학기부터 {leave.duration}학기간
-                    </p>
+                    <div className="text-right">
+                      <p className="text-xs text-slate-400">신청일</p>
+                      <p className="text-sm font-medium text-slate-700">
+                        {new Date(leave.applicationDate).toLocaleDateString()}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-xs text-slate-400">신청일</p>
-                    <p className="text-sm font-medium text-slate-700">{leave.applicationDate}</p>
-                  </div>
-                </div>
 
-                <div className="bg-slate-50 rounded-lg p-4 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">휴학 사유</span>
-                    <span className="text-slate-800 font-medium">{leave.reason}</span>
-                  </div>
-                  {leave.approvalDate && (
+                  <div className="bg-slate-50 rounded-lg p-4 space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-slate-500">승인일</span>
-                      <span className="text-slate-800 font-medium">{leave.approvalDate}</span>
+                      <span className="text-slate-500">휴학 사유</span>
+                      <span className="text-slate-800 font-medium">{leave.applicationReason}</span>
                     </div>
-                  )}
+                    {leave.approvalDate && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-500">승인일</span>
+                        <span className="text-slate-800 font-medium">
+                          {new Date(leave.approvalDate).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
+                    {leave.rejectReason && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-500">거절 사유</span>
+                        <span className="text-red-800 font-medium">{leave.rejectReason}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </Card>

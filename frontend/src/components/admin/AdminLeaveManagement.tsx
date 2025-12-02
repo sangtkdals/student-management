@@ -16,7 +16,7 @@ export const AdminLeaveManagement: React.FC = () => {
   const fetchApplications = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get("/api/leave-applications", {
+      const response = await axios.get("/api/admin/leave-applications", {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       setApplications(response.data);
@@ -28,7 +28,7 @@ export const AdminLeaveManagement: React.FC = () => {
   const fetchStudentsOnLeave = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get("/api/leave-applications/on-leave", {
+      const response = await axios.get("/api/admin/leave-applications/approved", {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       setStudentsOnLeave(response.data);
@@ -41,7 +41,7 @@ export const AdminLeaveManagement: React.FC = () => {
     if (confirm("승인하시겠습니까?")) {
       try {
         const token = localStorage.getItem('token');
-        await axios.put(`/api/leave-applications/${id}/approve`, {}, {
+        await axios.post(`/api/admin/leave-applications/${id}/approve`, {}, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         fetchApplications();
@@ -59,7 +59,7 @@ export const AdminLeaveManagement: React.FC = () => {
     if (reason) {
       try {
         const token = localStorage.getItem('token');
-        await axios.put(`/api/leave-applications/${id}/reject`, { reason }, {
+        await axios.post(`/api/admin/leave-applications/${id}/reject`, { rejectReason: reason }, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         fetchApplications();
@@ -75,7 +75,7 @@ export const AdminLeaveManagement: React.FC = () => {
     if (confirm(`${studentName} 학생을 복학 처리하시겠습니까?`)) {
       try {
         const token = localStorage.getItem('token');
-        await axios.put(`/api/leave-applications/return/${studentNo}`, {}, {
+        await axios.put(`/api/admin/leave-applications/return/${studentNo}`, {}, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         fetchStudentsOnLeave();
