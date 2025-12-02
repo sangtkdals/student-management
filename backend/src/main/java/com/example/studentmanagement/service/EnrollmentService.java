@@ -10,6 +10,7 @@ import com.example.studentmanagement.repository.MemberRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,16 +25,15 @@ public class EnrollmentService {
     private final CourseRepository courseRepository;
     private final MemberRepository memberRepository;
     private final RedisTemplate<String, Object> redisTemplate;
-    private final EnrollmentDbWriterService enrollmentDbWriterService;
 
-    public EnrollmentService(EnrollmentRepository enrollmentRepository, CourseRepository courseRepository, MemberRepository memberRepository, @Qualifier("redisTemplate") RedisTemplate<String, Object> redisTemplate, EnrollmentDbWriterService enrollmentDbWriterService) {
+    public EnrollmentService(EnrollmentRepository enrollmentRepository, CourseRepository courseRepository, MemberRepository memberRepository, @Qualifier("redisTemplate") RedisTemplate<String, Object> redisTemplate) {
         this.enrollmentRepository = enrollmentRepository;
         this.courseRepository = courseRepository;
         this.memberRepository = memberRepository;
         this.redisTemplate = redisTemplate;
-        this.enrollmentDbWriterService = enrollmentDbWriterService;
     }
 
+    @Transactional
     public void enrollCourse(String studentNo, String courseCode) {
         // 1. Redis Set을 이용한 중복 신청 확인 (DB 조회보다 빠름)
         String enrollmentKey = "enrollment:" + courseCode;
@@ -70,7 +70,21 @@ public class EnrollmentService {
         // 5. DB 저장을 비동기로 처리하여 사용자 응답 속도 향상
         Course course = new Course();
         course.setCourseCode(courseCode);
-        enrollmentDbWriterService.saveEnrollmentAsync(studentNo, course);
+        saveEnrollmentAsync(studentNo, course);
+    }
+
+    @Async
+    @Transactional
+    public void saveEnrollmentAsync(String studentNo, Course course) {
+        Member student = memberRepository.findByMemberNo(studentNo)
+                .orElseThrow(() -> new EntityNotFoundException("Student not found: " + studentNo));
+
+        Enrollment enrollment = new Enrollment();
+        enrollment.setStudent(student);
+        enrollment.setCourse(course);
+        enrollment.setEnrollmentDate(Date.from(Instant.now()));
+        enrollment.setEnrollmentStatus("ENROLLED");
+        enrollmentRepository.save(enrollment);
     }
 
     @Transactional
