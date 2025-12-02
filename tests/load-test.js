@@ -46,10 +46,10 @@ export default function () {
   // 수강 신청 API에 POST 요청을 보냅니다.
   const res = http.post(url, payload, params);
 
-  // 응답 검증
+  // 응답 검증: 성공(200), 정원초과/중복신청(409) 등 예상된 응답들을 확인합니다.
   check(res, {
-    "is status 200 (ok)": (r) => r.status === 200,
-    "is status 400 (bad request)": (r) => r.status === 400,
+    "수강신청 성공 (200 OK)": (r) => r.status === 200,
+    "정원 초과 또는 중복 신청 (409 Conflict)": (r) => r.status === 409,
   });
 
   // 다음 요청 전 1초 대기

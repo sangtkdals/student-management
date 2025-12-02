@@ -3,9 +3,11 @@ package com.example.studentmanagement.service;
 import com.example.studentmanagement.beans.Course;
 import com.example.studentmanagement.beans.Enrollment;
 import com.example.studentmanagement.beans.Member;
+import com.example.studentmanagement.exception.EnrollmentException;
 import com.example.studentmanagement.repository.CourseRepository;
 import com.example.studentmanagement.repository.EnrollmentRepository;
 import com.example.studentmanagement.repository.MemberRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,17 +31,17 @@ public class EnrollmentService {
     @Transactional
     public void enrollCourse(String studentNo, String courseCode) {
         Member student = memberRepository.findByMemberNo(studentNo)
-                .orElseThrow(() -> new RuntimeException("Student not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Student not found: " + studentNo));
         Course course = courseRepository.findById(courseCode)
-                .orElseThrow(() -> new RuntimeException("Course not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Course not found: " + courseCode));
 
         if (enrollmentRepository.existsByStudent_MemberNoAndCourse_CourseCode(studentNo, courseCode)) {
-            throw new RuntimeException("Already enrolled in this course");
+            throw new EnrollmentException("Already enrolled in this course");
         }
 
         long currentStudents = enrollmentRepository.countByCourse_CourseCode(courseCode);
         if (currentStudents >= course.getMaxStu()) {
-            throw new RuntimeException("Course is full");
+            throw new EnrollmentException("Course is full");
         }
 
         Enrollment enrollment = new Enrollment();
@@ -53,7 +55,7 @@ public class EnrollmentService {
     @Transactional
     public void cancelEnrollment(String studentNo, String courseCode) {
         Enrollment enrollment = enrollmentRepository.findByStudent_MemberNoAndCourse_CourseCode(studentNo, courseCode)
-                .orElseThrow(() -> new RuntimeException("Enrollment not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Enrollment not found for student " + studentNo + " in course " + courseCode));
 
         enrollmentRepository.delete(enrollment);
     }
