@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Card, Button, Modal } from "../ui";
@@ -84,7 +84,7 @@ export const StudentLeaveApplication: React.FC = () => {
               <Button variant="secondary" onClick={() => navigate("/student/leave-history")}>
                 휴학 내역 조회
               </Button>
-              <Button onClick={() => navigate("/student/home")}>홈으로</Button>
+              <Button onClick={() => navigate("/student")}>홈으로</Button>
             </div>
           </div>
         </Card>
@@ -270,6 +270,8 @@ export const StudentLeaveHistory: React.FC = () => {
       PENDING: "bg-yellow-100 text-yellow-800",
       APPROVED: "bg-green-100 text-green-800",
       REJECTED: "bg-red-100 text-red-800",
+      RETURNED: "bg-blue-100 text-blue-800",
+      RETURN_PENDING: "bg-purple-100 text-purple-800",
       승인: "bg-green-100 text-green-800",
       대기: "bg-yellow-100 text-yellow-800",
       완료: "bg-slate-100 text-slate-600",
@@ -280,9 +282,11 @@ export const StudentLeaveHistory: React.FC = () => {
 
   const getStatusLabel = (status: string) => {
     const labels: { [key: string]: string } = {
-      PENDING: "대기",
-      APPROVED: "승인",
-      REJECTED: "반려"
+      PENDING: "심사 대기",
+      APPROVED: "승인됨",
+      REJECTED: "거부됨",
+      RETURNED: "복학 완료",
+      RETURN_PENDING: "복학 신청 대기"
     };
     return labels[status] || status;
   };
@@ -290,13 +294,34 @@ export const StudentLeaveHistory: React.FC = () => {
   const getLeaveTypeLabel = (leaveType: string) => {
     const labels: { [key: string]: string } = {
       GENERAL: "일반 휴학",
-      MILITARY: "군 휴학"
+      MILITARY: "군 휴학",
+      "복학신청": "복학 신청"
     };
     return labels[leaveType] || leaveType;
   };
 
   const calculateDuration = (startYear: number, startSemester: number, endYear: number, endSemester: number) => {
     return (endYear - startYear) * 2 + (endSemester - startSemester) + 1;
+  };
+
+  const handleCancelApplication = async (applicationId: number, applicationType: string) => {
+    const confirmMessage = applicationType === "복학신청"
+      ? "복학 신청을 취소하시겠습니까?"
+      : "휴학 신청을 취소하시겠습니까?";
+
+    if (confirm(confirmMessage)) {
+      try {
+        const token = localStorage.getItem('token');
+        await axios.delete(`/api/student/leave-applications/${applicationId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        alert("신청이 취소되었습니다.");
+        fetchLeaveHistory();
+      } catch (error: any) {
+        console.error("Error canceling application:", error);
+        alert(error.response?.data || "신청 취소 중 오류가 발생했습니다.");
+      }
+    }
   };
 
   return (
@@ -319,7 +344,10 @@ export const StudentLeaveHistory: React.FC = () => {
         ) : (
           <div className="space-y-4">
             {leaveHistory.map((leave) => {
-              const duration = calculateDuration(leave.startYear, leave.startSemester, leave.endYear, leave.endSemester);
+              const isReturnApplication = leave.leaveType === "복학신청";
+              const duration = !isReturnApplication && leave.startYear && leave.endYear
+                ? calculateDuration(leave.startYear, leave.startSemester, leave.endYear, leave.endSemester)
+                : null;
               return (
                 <div key={leave.applicationId} className="border border-slate-200 rounded-lg p-5 hover:shadow-md transition-shadow bg-white">
                   <div className="flex justify-between items-start mb-4">
@@ -330,9 +358,11 @@ export const StudentLeaveHistory: React.FC = () => {
                           {getStatusLabel(leave.approvalStatus)}
                         </span>
                       </div>
-                      <p className="text-sm text-slate-500">
-                        {leave.startYear}년 {leave.startSemester}학기부터 {duration}학기간
-                      </p>
+                      {!isReturnApplication && duration !== null && (
+                        <p className="text-sm text-slate-500">
+                          {leave.startYear}년 {leave.startSemester}학기부터 {duration}학기간
+                        </p>
+                      )}
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-slate-400">신청일</p>
@@ -362,6 +392,18 @@ export const StudentLeaveHistory: React.FC = () => {
                       </div>
                     )}
                   </div>
+
+                  {(leave.approvalStatus === "PENDING" || leave.approvalStatus === "RETURN_PENDING") && (
+                    <div className="mt-4 flex justify-end">
+                      <Button
+                        variant="secondary"
+                        onClick={() => handleCancelApplication(leave.applicationId, leave.leaveType)}
+                        className="text-sm"
+                      >
+                        신청 취소
+                      </Button>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -375,31 +417,92 @@ export const StudentLeaveHistory: React.FC = () => {
 // ==================== 복학 신청 ====================
 export const StudentReturnApplication: React.FC = () => {
   const navigate = useNavigate();
-  const [returnSemester, setReturnSemester] = useState({ year: 2025, semester: 2 });
+  const [returnReason, setReturnReason] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [applicationStatus, setApplicationStatus] = useState<"idle" | "submitted">("idle");
+  const [currentLeave, setCurrentLeave] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  // 현재 휴학 중인 정보 (예시)
-  const currentLeave = {
-    type: "일반 휴학",
-    startYear: 2024,
-    startSemester: 1,
-    duration: 2,
+  useEffect(() => {
+    fetchCurrentLeaveStatus();
+  }, []);
+
+  const fetchCurrentLeaveStatus = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get("/api/student/leave-applications/my-leave-status", {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setCurrentLeave(response.data);
+    } catch (error) {
+      console.error("Error fetching current leave status:", error);
+      setErrorMessage("현재 휴학 정보를 불러올 수 없습니다.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSubmit = () => {
+    if (!returnReason.trim()) {
+      alert("복학 사유를 입력해주세요.");
+      return;
+    }
     setIsModalOpen(true);
   };
 
-  const handleConfirmSubmit = () => {
+  const handleConfirmSubmit = async () => {
     setIsProcessing(true);
-    setTimeout(() => {
-      setIsProcessing(false);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post("/api/student/leave-applications/return-request", {
+        applicationReason: returnReason
+      }, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       setApplicationStatus("submitted");
       setIsModalOpen(false);
-    }, 1500);
+    } catch (error: any) {
+      console.error("Error submitting return application:", error);
+      alert(error.response?.data || "복학 신청 중 오류가 발생했습니다.");
+    } finally {
+      setIsProcessing(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Card title="복학 신청">
+          <div className="flex justify-center items-center py-16">
+            <div className="text-slate-500">로딩 중...</div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (errorMessage || !currentLeave) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Card title="복학 신청">
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="rounded-full bg-red-100 p-4 mb-4">
+              <svg className="h-12 w-12 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">복학 신청 불가</h3>
+            <p className="text-slate-600">{errorMessage || "현재 휴학 중인 상태가 아닙니다."}</p>
+            <div className="mt-6">
+              <Button onClick={() => navigate("/student")}>홈으로</Button>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   if (applicationStatus === "submitted") {
     return (
@@ -412,24 +515,22 @@ export const StudentReturnApplication: React.FC = () => {
               </svg>
             </div>
             <h3 className="text-2xl font-bold text-slate-800 mb-2">신청 완료</h3>
-            <p className="text-slate-600 mb-4">복학 신청이 정상적으로 제출되었습니다.</p>
+            <p className="text-slate-600 mb-4">복학 신청이 정상적으로 제출되었습니다. 관리자 승인 후 복학 처리됩니다.</p>
             <div className="bg-slate-50 p-6 rounded-lg text-left max-w-md w-full mx-auto border border-slate-200 space-y-3">
-              <div className="flex justify-between">
-                <span className="text-slate-500 text-sm">복학 학기</span>
-                <span className="font-bold text-slate-800">
-                  {returnSemester.year}년 {returnSemester.semester}학기
-                </span>
-              </div>
               <div className="flex justify-between">
                 <span className="text-slate-500 text-sm">신청 일시</span>
                 <span className="text-slate-800 text-sm">{new Date().toLocaleString()}</span>
               </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500 text-sm">상태</span>
+                <span className="font-bold text-yellow-800">승인 대기 중</span>
+              </div>
             </div>
             <div className="mt-6 space-x-3">
-              <Button variant="secondary" onClick={() => navigate("/student/return-history")}>
-                복학 내역 조회
+              <Button variant="secondary" onClick={() => navigate("/student/leave-history")}>
+                신청 내역 조회
               </Button>
-              <Button onClick={() => navigate("/student/home")}>홈으로</Button>
+              <Button onClick={() => navigate("/student")}>홈으로</Button>
             </div>
           </div>
         </Card>
@@ -471,37 +572,36 @@ export const StudentReturnApplication: React.FC = () => {
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-slate-500 block mb-1">휴학 유형</span>
-                <span className="font-medium text-slate-800">{currentLeave.type}</span>
+                <span className="font-medium text-slate-800">{currentLeave.leaveType}</span>
               </div>
               <div>
                 <span className="text-slate-500 block mb-1">휴학 기간</span>
                 <span className="font-medium text-slate-800">
-                  {currentLeave.startYear}년 {currentLeave.startSemester}학기 ~ {currentLeave.duration}학기
+                  {currentLeave.startYear}년 {currentLeave.startSemester}학기 ~ {currentLeave.endYear}년 {currentLeave.endSemester}학기
                 </span>
+              </div>
+              <div>
+                <span className="text-slate-500 block mb-1">승인 날짜</span>
+                <span className="font-medium text-slate-800">
+                  {currentLeave.approvalDate ? new Date(currentLeave.approvalDate).toLocaleDateString() : '-'}
+                </span>
+              </div>
+              <div>
+                <span className="text-slate-500 block mb-1">학생 이름</span>
+                <span className="font-medium text-slate-800">{currentLeave.studentName}</span>
               </div>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-3">복학 학기 선택</label>
-            <div className="grid grid-cols-2 gap-4">
-              <select
-                value={returnSemester.year}
-                onChange={(e) => setReturnSemester({ ...returnSemester, year: parseInt(e.target.value) })}
-                className="p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-transparent"
-              >
-                <option value={2025}>2025년</option>
-                <option value={2026}>2026년</option>
-              </select>
-              <select
-                value={returnSemester.semester}
-                onChange={(e) => setReturnSemester({ ...returnSemester, semester: parseInt(e.target.value) })}
-                className="p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-transparent"
-              >
-                <option value={1}>1학기</option>
-                <option value={2}>2학기</option>
-              </select>
-            </div>
+            <label className="block text-sm font-bold text-slate-700 mb-3">복학 사유</label>
+            <textarea
+              value={returnReason}
+              onChange={(e) => setReturnReason(e.target.value)}
+              placeholder="복학 사유를 입력해주세요"
+              className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-transparent resize-none"
+              rows={4}
+            />
           </div>
 
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
@@ -530,18 +630,22 @@ export const StudentReturnApplication: React.FC = () => {
 
       <Modal isOpen={isModalOpen} onClose={() => !isProcessing && setIsModalOpen(false)} title="복학 신청 확인">
         <div className="space-y-4">
-          <p className="text-slate-600">다음 내용으로 복학을 신청하시겠습니까?</p>
+          <p className="text-slate-600">복학을 신청하시겠습니까?</p>
 
           <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-2">
             <div className="flex justify-between">
-              <span className="text-slate-500 text-sm">복학 학기</span>
-              <span className="font-bold text-slate-800">
-                {returnSemester.year}년 {returnSemester.semester}학기
-              </span>
+              <span className="text-slate-500 text-sm">현재 휴학 유형</span>
+              <span className="font-medium text-slate-800">{currentLeave.leaveType}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-500 text-sm">현재 휴학 유형</span>
-              <span className="font-medium text-slate-800">{currentLeave.type}</span>
+              <span className="text-slate-500 text-sm">휴학 기간</span>
+              <span className="font-medium text-slate-800">
+                {currentLeave.startYear}-{currentLeave.startSemester} ~ {currentLeave.endYear}-{currentLeave.endSemester}
+              </span>
+            </div>
+            <div className="border-t pt-2 mt-2">
+              <span className="text-slate-500 text-sm block mb-1">복학 사유</span>
+              <span className="text-slate-800 text-sm">{returnReason}</span>
             </div>
           </div>
 

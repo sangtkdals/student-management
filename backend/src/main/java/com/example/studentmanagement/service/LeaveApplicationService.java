@@ -248,4 +248,101 @@ public class LeaveApplicationService {
         LeaveApplication updatedApplication = leaveApplicationRepository.save(latestApproved);
         return new LeaveApplicationDTO(updatedApplication, getStudentName(updatedApplication), getApproverName(updatedApplication));
     }
+
+    // 학생의 복학 신청 생성 (관리자 승인 필요)
+    @Transactional
+    public LeaveApplicationDTO createReturnRequest(LeaveApplicationDTO dto) {
+        Member student = memberRepository.findByMemberNo(dto.getStudentNo())
+                .orElseThrow(() -> new EntityNotFoundException("Student not found with number: " + dto.getStudentNo()));
+
+        // 현재 승인된 휴학 상태인지 확인
+        List<LeaveApplication> approvedApplications = leaveApplicationRepository.findByStudent_MemberNo(dto.getStudentNo())
+                .stream()
+                .filter(app -> "APPROVED".equals(app.getApprovalStatus()))
+                .toList();
+
+        if (approvedApplications.isEmpty()) {
+            throw new IllegalStateException("현재 휴학 중인 상태가 아닙니다.");
+        }
+
+        // 이미 복학 신청 대기 중인지 확인
+        List<LeaveApplication> pendingReturns = leaveApplicationRepository.findByStudent_MemberNo(dto.getStudentNo())
+                .stream()
+                .filter(app -> "RETURN_PENDING".equals(app.getApprovalStatus()))
+                .toList();
+
+        if (!pendingReturns.isEmpty()) {
+            throw new IllegalStateException("이미 복학 신청이 대기 중입니다.");
+        }
+
+        // 복학 신청 생성
+        LeaveApplication returnApplication = new LeaveApplication();
+        returnApplication.setStudent(student);
+        returnApplication.setLeaveType("복학신청");
+        returnApplication.setApplicationReason(dto.getApplicationReason());
+        returnApplication.setApplicationDate(new Date());
+        returnApplication.setApprovalStatus("RETURN_PENDING"); // 복학 신청 대기 상태
+
+        LeaveApplication savedApplication = leaveApplicationRepository.save(returnApplication);
+        return new LeaveApplicationDTO(savedApplication, getStudentName(savedApplication), null);
+    }
+
+    // 학생의 현재 휴학 정보 조회
+    public LeaveApplicationDTO getCurrentLeaveByStudent(String studentNo) {
+        List<LeaveApplication> approvedApplications = leaveApplicationRepository.findByStudent_MemberNo(studentNo)
+                .stream()
+                .filter(app -> "APPROVED".equals(app.getApprovalStatus()))
+                .sorted((a, b) -> b.getApplicationDate().compareTo(a.getApplicationDate()))
+                .toList();
+
+        if (approvedApplications.isEmpty()) {
+            throw new EntityNotFoundException("현재 승인된 휴학 정보가 없습니다.");
+        }
+
+        LeaveApplication currentLeave = approvedApplications.get(0);
+        return new LeaveApplicationDTO(currentLeave, getStudentName(currentLeave), getApproverName(currentLeave));
+    }
+
+    // 복학 신청 승인 처리
+    @Transactional
+    public LeaveApplicationDTO approveReturnRequest(Integer applicationId, String approverNo) {
+        LeaveApplication returnApplication = leaveApplicationRepository.findById(applicationId)
+                .orElseThrow(() -> new EntityNotFoundException("Application not found with id: " + applicationId));
+
+        if (!"RETURN_PENDING".equals(returnApplication.getApprovalStatus())) {
+            throw new IllegalStateException("복학 신청 대기 상태가 아닙니다.");
+        }
+
+        Member approver = memberRepository.findByMemberNo(approverNo)
+                .orElseThrow(() -> new EntityNotFoundException("Approver not found with number: " + approverNo));
+
+        // 복학 신청을 승인으로 변경
+        returnApplication.setApprovalStatus("RETURNED");
+        returnApplication.setApprovalDate(new Date());
+        returnApplication.setApprover(approver);
+
+        // 기존 휴학 신청도 RETURNED로 변경
+        String studentNo = returnApplication.getStudent().getMemberNo();
+        List<LeaveApplication> approvedApplications = leaveApplicationRepository.findByStudent_MemberNo(studentNo)
+                .stream()
+                .filter(app -> "APPROVED".equals(app.getApprovalStatus()))
+                .toList();
+
+        for (LeaveApplication app : approvedApplications) {
+            app.setApprovalStatus("RETURNED");
+            leaveApplicationRepository.save(app);
+        }
+
+        // 학생의 재적 상태를 재학으로 변경
+        Member student = returnApplication.getStudent();
+        if (student instanceof com.example.studentmanagement.beans.StudentMember) {
+            com.example.studentmanagement.beans.StudentMember studentMember =
+                (com.example.studentmanagement.beans.StudentMember) student;
+            studentMember.setEnrollmentStatus("ENROLLED");
+            memberRepository.save(studentMember);
+        }
+
+        LeaveApplication updatedApplication = leaveApplicationRepository.save(returnApplication);
+        return new LeaveApplicationDTO(updatedApplication, getStudentName(updatedApplication), getApproverName(updatedApplication));
+    }
 }

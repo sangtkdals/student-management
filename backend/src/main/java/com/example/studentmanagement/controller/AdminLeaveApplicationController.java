@@ -187,7 +187,7 @@ public class AdminLeaveApplicationController {
         }
     }
 
-    // 복학 처리
+    // 복학 처리 (구버전 - 학생번호로 직접 처리)
     @PutMapping("/return/{studentNo}")
     public ResponseEntity<?> processReturn(
             @PathVariable String studentNo,
@@ -203,6 +203,37 @@ public class AdminLeaveApplicationController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.badRequest().body("복학 처리 중 오류 발생: " + e.getMessage());
+        }
+    }
+
+    // 복학 신청 승인 (학생의 복학 신청을 승인)
+    @PostMapping("/{applicationId}/approve-return")
+    public ResponseEntity<?> approveReturnRequest(
+            @PathVariable Integer applicationId,
+            Authentication authentication) {
+        try {
+            // JWT에서 memberNo 추출
+            String approverNo = "admin001"; // 임시로 하드코딩, 실제로는 authentication에서 추출
+
+            LeaveApplicationDTO approvedReturn = leaveApplicationService.approveReturnRequest(applicationId, approverNo);
+            return ResponseEntity.ok(approvedReturn);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body("복학 승인 처리 중 오류 발생: " + e.getMessage());
+        }
+    }
+
+    // 복학 신청 대기 목록 조회
+    @GetMapping("/return-pending")
+    public ResponseEntity<List<LeaveApplicationDTO>> getReturnPendingApplications() {
+        try {
+            List<LeaveApplicationDTO> applications = leaveApplicationService.getApplicationsByStatus("RETURN_PENDING");
+            return ResponseEntity.ok(applications);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
         }
     }
 }
