@@ -164,8 +164,4 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/departments")
-    public ResponseEntity<List<Department>> getDepartments() {
-        return ResponseEntity.ok(departmentRepository.findAll());
-    }
 }
