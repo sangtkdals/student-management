@@ -65,7 +65,7 @@ public class SecurityConfig {
 
                 // **학생(STUDENT)만 접근 가능**
                 .requestMatchers("/api/student/**").hasRole("STUDENT") // StudentLeaveApplicationController 등
-                .requestMatchers("/api/enrollments/**").hasRole("STUDENT") // 수강신청 관련
+                .requestMatchers("/api/enrollments/**").hasAnyRole("STUDENT", "PROFESSOR") // 수강신청 관련
                 
                 // 학생,교수 접근 가능
                 .requestMatchers("/api/grades/**").hasAnyRole("STUDENT", "ADMIN")
