@@ -34,7 +34,7 @@ export const ProfessorSyllabus: React.FC<{ user: User }> = ({ user }) => {
           const data = await response.json();
           const mappedCourses = data.map((c: any) => ({
             ...c,
-            subjectName: c.courseName || c.subject?.sName || c.courseCode,
+            subjectName: c.subjectName || c.courseName || c.subject?.sName || c.courseCode,
           }));
           setMyCourses(mappedCourses);
 
@@ -58,29 +58,9 @@ export const ProfessorSyllabus: React.FC<{ user: User }> = ({ user }) => {
   // Update syllabus state when course changes
   useEffect(() => {
     if (course) {
-      // Calculate credits from courseTime (1 hour = 1 credit)
-      const calculateCredits = (timeStr: string) => {
-        if (!timeStr) return 0;
-        const parts = timeStr.split(",").map((s) => s.trim());
-        let totalHours = 0;
-        parts.forEach((part) => {
-          const match = part.match(/([월화수목금])\s*(\d{2}:\d{2})-(\d{2}:\d{2})/);
-          if (match) {
-            const [, , start, end] = match;
-            const [startH, startM] = start.split(":").map(Number);
-            const [endH, endM] = end.split(":").map(Number);
-            const duration = endH + endM / 60 - (startH + startM / 60);
-            totalHours += duration;
-          }
-        });
-        return Math.round(totalHours);
-      };
-
-      const calculatedCredits = calculateCredits(course.courseTime || "");
-
       setSyllabus({
         classTime: course.courseTime || "",
-        credits: String(calculatedCredits),
+        credits: String(course.credit || 0), // Use course.credit directly
         overview: course.content || "",
         objectives: course.objectives || "",
         textbook: course.textbookInfo || "",
@@ -191,7 +171,7 @@ export const ProfessorSyllabus: React.FC<{ user: User }> = ({ user }) => {
           >
             {myCourses.map((c) => (
               <option key={c.courseCode} value={c.courseCode}>
-                {c.subjectName} ({c.courseCode})
+                {c.subjectName}
               </option>
             ))}
           </select>

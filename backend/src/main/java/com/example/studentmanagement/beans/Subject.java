@@ -21,8 +21,8 @@ public class Subject {
     @Column(name = "credit")
     private Integer credit;
 
-    @Column(name = "s_type", length = 20)
-    private String sType;
+    @Column(name = "s_type")
+    private Integer sType;
 
     @ManyToOne
     @JoinColumn(name = "dept_code")

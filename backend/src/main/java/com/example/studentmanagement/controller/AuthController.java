@@ -14,6 +14,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -125,6 +126,8 @@ public class AuthController {
             // Additional fields based on role
             if (member instanceof ProfessorMember) {
                 response.put("major", ((ProfessorMember) member).getMajorField());
+            } else if (member instanceof StudentMember) {
+                response.put("gradeLevel", ((StudentMember) member).getStuGrade());
             }
             
             return ResponseEntity.ok(response);
@@ -151,5 +154,18 @@ public class AuthController {
         } else {
             return ResponseEntity.status(401).body("Invalid refresh token");
         }
+    }
+
+    @GetMapping("/check-id")
+    public ResponseEntity<?> checkId(@RequestParam String userId) {
+        boolean exists = memberRepository.findByMemberId(userId).isPresent();
+        Map<String, Boolean> response = new HashMap<>();
+        response.put("exists", exists);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/departments")
+    public ResponseEntity<List<Department>> getDepartments() {
+        return ResponseEntity.ok(departmentRepository.findAll());
     }
 }

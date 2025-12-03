@@ -14,17 +14,20 @@ const TodaySchedule: React.FC<{ user: User }> = ({ user }) => {
       setLoading(true);
       const token = localStorage.getItem("token");
       try {
-        const response = await fetch(`/api/courses/professor/${user.memberNo}`, {
+        const response = await fetch(`/api/enrollments/${user.memberNo}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response.ok) {
           const data = await response.json();
-          const allCourses: Course[] = data.map((course: any) => ({
-            ...course,
-            courseSchedules: course.schedules,
+          const allCourses: Course[] = data.map((enrollment: any) => ({
+            ...enrollment.course,
+            courseSchedules: enrollment.course.schedules,
           }));
 
           const today = new Date().getDay(); // 0: Sunday, 1: Monday, ..., 6: Saturday
+
+          // Assuming DB dayOfWeek: 1 = Monday, ..., 7 = Sunday. Adjust if different.
+          // JS getDay() is 0-6 (Sun-Sat), so we map it to the DB's format.
           const dbToday = today === 0 ? 7 : today;
 
           const filteredCourses = allCourses.filter((course) => course.courseSchedules?.some((schedule) => Number(schedule.dayOfWeek) === dbToday));
@@ -38,7 +41,7 @@ const TodaySchedule: React.FC<{ user: User }> = ({ user }) => {
 
           setTodayCourses(sortedCourses);
         } else {
-          console.error("Failed to fetch courses for today's schedule");
+          console.error("Failed to fetch enrollments for today's schedule");
           setTodayCourses([]);
         }
       } catch (error) {
@@ -86,13 +89,13 @@ const TodaySchedule: React.FC<{ user: User }> = ({ user }) => {
       <div className="flex justify-between items-center mb-4">
         <h3 className="font-bold text-slate-800 flex items-center">
           <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-          오늘의 강의
+          오늘의 시간표
         </h3>
         <span className="text-xs text-slate-500">{formatDate()}</span>
       </div>
       <div className="space-y-3">
         {loading ? (
-          <p className="text-sm text-slate-500">강의 목록을 불러오는 중입니다...</p>
+          <p className="text-sm text-slate-500">시간표를 불러오는 중입니다...</p>
         ) : todayCourses.length > 0 ? (
           todayCourses.map((course, idx) => {
             const schedule = course.courseSchedules?.[0];
@@ -106,10 +109,7 @@ const TodaySchedule: React.FC<{ user: User }> = ({ user }) => {
                     {course.classroom} | {schedule.startTime}-{schedule.endTime}
                   </p>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <span className={`text-xs px-2 py-1 rounded bg-slate-100 text-slate-600`}>{course.currentStudents}명 수강</span>
-                  <span className={`text-xs px-2 py-1 rounded ${status.style}`}>{status.text}</span>
-                </div>
+                <span className={`text-xs px-2 py-1 rounded ${status.style}`}>{status.text}</span>
               </div>
             );
           })
@@ -121,7 +121,7 @@ const TodaySchedule: React.FC<{ user: User }> = ({ user }) => {
   );
 };
 
-const DashboardHero: React.FC<{ user: User; navigate: ReturnType<typeof useNavigate> }> = ({ user, navigate }) => {
+export const DashboardHero: React.FC<{ user: User; navigate: ReturnType<typeof useNavigate> }> = ({ user, navigate }) => {
   return (
     <div className="bg-brand-blue w-full">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -187,7 +187,7 @@ const DashboardHero: React.FC<{ user: User; navigate: ReturnType<typeof useNavig
   );
 };
 
-const DashboardContent: React.FC<{ navigate: ReturnType<typeof useNavigate>; user: User }> = ({ navigate, user }) => {
+export const DashboardContent: React.FC<{ navigate: ReturnType<typeof useNavigate>; user: User }> = ({ navigate, user }) => {
   const [schedules, setSchedules] = useState<any[]>([]);
 
   useEffect(() => {
@@ -275,34 +275,36 @@ const DashboardContent: React.FC<{ navigate: ReturnType<typeof useNavigate>; use
             <h3 className="ml-2 text-lg font-bold text-slate-800">바로가기</h3>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => navigate("/professor/my-lectures")}
-              className="p-3 bg-slate-50 rounded-lg hover:bg-blue-50 hover:text-brand-blue transition-colors text-center"
-            >
-              <div className="mx-auto mb-1 w-6 h-6">{ICONS.courses}</div>
-              <span className="text-xs font-bold">내 강의</span>
-            </button>
-            <button
-              onClick={() => navigate("/professor/student-attendance")}
-              className="p-3 bg-slate-50 rounded-lg hover:bg-blue-50 hover:text-brand-blue transition-colors text-center"
-            >
-              <div className="mx-auto mb-1 w-6 h-6">{ICONS.users}</div>
-              <span className="text-xs font-bold">출결 관리</span>
-            </button>
-            <button
-              onClick={() => navigate("/professor/grade-management")}
-              className="p-3 bg-slate-50 rounded-lg hover:bg-blue-50 hover:text-brand-blue transition-colors text-center"
-            >
-              <div className="mx-auto mb-1 w-6 h-6">{ICONS.grades}</div>
-              <span className="text-xs font-bold">성적 관리</span>
-            </button>
-            <button
-              onClick={() => navigate("/professor/syllabus")}
-              className="p-3 bg-slate-50 rounded-lg hover:bg-blue-50 hover:text-brand-blue transition-colors text-center"
-            >
-              <div className="mx-auto mb-1 w-6 h-6">{ICONS.grades}</div>
-              <span className="text-xs font-bold">강의계획서</span>
-            </button>
+            <>
+              <button
+                onClick={() => navigate("/student/course-registration")}
+                className="p-3 bg-slate-50 rounded-lg hover:bg-blue-50 hover:text-brand-blue transition-colors text-center"
+              >
+                <div className="mx-auto mb-1 w-6 h-6">{ICONS.courses}</div>
+                <span className="text-xs font-bold">수강신청</span>
+              </button>
+              <button
+                onClick={() => navigate("/student/all-grades")}
+                className="p-3 bg-slate-50 rounded-lg hover:bg-blue-50 hover:text-brand-blue transition-colors text-center"
+              >
+                <div className="mx-auto mb-1 w-6 h-6">{ICONS.grades}</div>
+                <span className="text-xs font-bold">성적조회</span>
+              </button>
+              <button
+                onClick={() => navigate("/student/tuition-history")}
+                className="p-3 bg-slate-50 rounded-lg hover:bg-blue-50 hover:text-brand-blue transition-colors text-center"
+              >
+                <div className="mx-auto mb-1 w-6 h-6">{ICONS.tuition}</div>
+                <span className="text-xs font-bold">등록금</span>
+              </button>
+              <button
+                onClick={() => navigate("/student/certificate-issuance")}
+                className="p-3 bg-slate-50 rounded-lg hover:bg-blue-50 hover:text-brand-blue transition-colors text-center"
+              >
+                <div className="mx-auto mb-1 w-6 h-6">{ICONS.profile}</div>
+                <span className="text-xs font-bold">증명서</span>
+              </button>
+            </>
           </div>
         </div>
       </div>
@@ -310,7 +312,7 @@ const DashboardContent: React.FC<{ navigate: ReturnType<typeof useNavigate>; use
   );
 };
 
-export const ProfessorHome: React.FC<{ user: User }> = ({ user }) => {
+export const StudentDashboard = ({ user }: { user: User }) => {
   const navigate = useNavigate();
   return (
     <>
@@ -319,3 +321,5 @@ export const ProfessorHome: React.FC<{ user: User }> = ({ user }) => {
     </>
   );
 };
+
+export default StudentDashboard;

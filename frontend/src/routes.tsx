@@ -6,7 +6,7 @@ import DEUCourseRegistrationApp from "./DEUCourseRegistrationApp";
 // Components
 import TopNavigation from "./components/TopNavigation";
 import Footer from "./components/Footer";
-import { DashboardHero, DashboardContent } from "./components/Dashboard";
+import Dashboard from "./components/Dashboard";
 import AnnouncementDetail from "./components/AnnouncementDetail";
 
 // Common Views
@@ -55,35 +55,19 @@ const LoadingBar = () => (
 
 // Authenticated Application Wrapper
 const AppRoutes = ({ user, onLogout, enrolledCourses }: { user: User; onLogout: () => void; enrolledCourses: Course[] }) => {
-  const navigate = useNavigate();
-  const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
-
-  const isDashboard = ["/", "/student", "/professor", "/admin/dashboard"].includes(location.pathname);
 
   return (
     <div className="min-h-screen bg-brand-gray-light flex flex-col font-sans">
       {isLoading && <LoadingBar />}
       <TopNavigation user={user} onLogout={onLogout} />
 
-      {isDashboard && <DashboardHero user={user} navigate={navigate} />}
       <main className="flex-1">
         <Routes>
           {/* Main Role Dashboards */}
-          <Route
-            path="/"
-            element={
-              user.role === "student" ? (
-                <StudentHome user={user} />
-              ) : user.role === "professor" ? (
-                <ProfessorHome user={user} />
-              ) : (
-                <DashboardContent user={user} navigate={navigate} />
-              )
-            }
-          />
-          <Route path="/student" element={<StudentHome user={user} />} />
-          <Route path="/professor" element={<ProfessorHome user={user} />} />
+          <Route path="/" element={<Dashboard user={user} />} />
+          <Route path="/student" element={<Dashboard user={user} />} />
+          <Route path="/professor" element={<Dashboard user={user} />} />
 
           {/* Common Routes */}
           <Route
@@ -208,7 +192,7 @@ const AppRoutes = ({ user, onLogout, enrolledCourses }: { user: User; onLogout: 
                 path="/student/Mytimetable"
                 element={
                   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <StudentMyTimetable enrolledCourses={enrolledCourses} />
+                    <StudentMyTimetable user={user} />
                   </div>
                 }
               />

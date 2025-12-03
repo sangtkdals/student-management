@@ -80,22 +80,25 @@ COLLATE='utf8mb4_0900_ai_ci' ENGINE=InnoDB;
 -- =====================================================
 -- 3) subject
 -- =====================================================
-DROP TABLE IF EXISTS subject;
-CREATE TABLE subject (
-    s_code    VARCHAR(20) PRIMARY KEY,
-    s_name    VARCHAR(200),
-    credit    INT,
-    s_type    VARCHAR(20),             -- MAJOR, GENERAL, ELECTIVE
-    dept_code VARCHAR(20),
-    s_desc    VARCHAR(2000),
-    CONSTRAINT fk_subject_dept
-        FOREIGN KEY (dept_code) REFERENCES department(dept_code)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE `subject` (
+	`s_code` VARCHAR(20) NOT NULL COLLATE 'utf8mb4_0900_ai_ci',
+	`s_name` VARCHAR(200) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
+	`credit` INT NULL DEFAULT NULL,
+	`s_type` INT NULL DEFAULT NULL,
+	`dept_code` VARCHAR(20) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
+	`s_desc` VARCHAR(2000) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
+	PRIMARY KEY (`s_code`) USING BTREE,
+	INDEX `fk_subject_dept` (`dept_code`) USING BTREE,
+	CONSTRAINT `fk_subject_dept` FOREIGN KEY (`dept_code`) REFERENCES `department` (`dept_code`) ON UPDATE NO ACTION ON DELETE NO ACTION
+)
+COLLATE='utf8mb4_0900_ai_ci'
+ENGINE=InnoDB
+;
+
 
 -- =====================================================
 -- 4) course
 -- =====================================================
-DROP TABLE IF EXISTS course;
 CREATE TABLE `course` (
 	`course_code` VARCHAR(20) NOT NULL COLLATE 'utf8mb4_0900_ai_ci',
 	`academic_year` INT NULL DEFAULT NULL,
@@ -107,7 +110,7 @@ CREATE TABLE `course` (
 	`classroom` VARCHAR(50) NULL DEFAULT NULL COMMENT '강의실' COLLATE 'utf8mb4_0900_ai_ci',
 	`course_objectives` TEXT NULL DEFAULT NULL COMMENT '강의 목표' COLLATE 'utf8mb4_0900_ai_ci',
 	`course_content` TEXT NULL DEFAULT NULL COMMENT '강의 내용' COLLATE 'utf8mb4_0900_ai_ci',
-	`evaluation_method` VARCHAR(1000) NULL DEFAULT NULL COMMENT '평가 방법' COLLATE 'utf8mb4_0900_ai_ci',
+	`evaluation_method` JSON NULL DEFAULT NULL COMMENT '강의 평가 방법 및 비율 (JSON 형식)',
 	`textbook_info` VARCHAR(1000) NULL DEFAULT NULL COMMENT '교재 정보' COLLATE 'utf8mb4_0900_ai_ci',
 	`course_status` VARCHAR(20) NULL DEFAULT NULL COMMENT '개설상태' COLLATE 'utf8mb4_0900_ai_ci',
 	PRIMARY KEY (`course_code`) USING BTREE,
@@ -117,7 +120,8 @@ CREATE TABLE `course` (
 	CONSTRAINT `fk_course_s_code` FOREIGN KEY (`s_code`) REFERENCES `subject` (`s_code`) ON UPDATE NO ACTION ON DELETE NO ACTION
 )
 COLLATE='utf8mb4_0900_ai_ci'
-ENGINE=InnoDB;
+ENGINE=InnoDB
+;
 
 -- =====================================================
 -- 4-1) course_schedule
@@ -332,6 +336,7 @@ CREATE TABLE academic_schedule (
     schedule_content  VARCHAR(1000),
     start_date        DATE,
     end_date          DATE,
+    category          VARCHAR(50),
     background_color  VARCHAR(20),
     recurrence_type   VARCHAR(20)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -425,15 +430,15 @@ INSERT INTO professor_member (m_id, position, office_room) VALUES ('prof_lee', '
 
 -- Subject 데이터
 INSERT INTO subject (s_code, s_name, credit, s_type, dept_code) VALUES
-('CSE4001', '소프트웨어 공학', 3, 'Major Requirement', 'CS'),
-('CSE4002', '데이터베이스 시스템', 3, 'Major Requirement', 'CS'),
-('CSE3010', '알고리즘 분석', 3, 'Major Requirement', 'CS'),
-('CSE3021', '운영체제', 3, 'Major Elective', 'CS'),
-('CSE4033', '인공지능', 3, 'Major Elective', 'CS'),
-('GED1001', '글쓰기와 의사소통', 2, 'General Elective', 'ADM'),
-('CSE2010', '자료구조', 3, 'Major Requirement', 'CS'),
-('CSE2020', '객체지향프로그래밍', 3, 'Major Requirement', 'CS'),
-('CSE3030', '컴퓨터네트워크', 3, 'Major Elective', 'CS');
+('CSE4001', '소프트웨어 공학', 3, 1, 'CS'),
+('CSE4002', '데이터베이스 시스템', 3, 1, 'CS'),
+('CSE3010', '알고리즘 분석', 3, 1, 'CS'),
+('CSE3021', '운영체제', 3, 2, 'CS'),
+('CSE4033', '인공지능', 3, 2, 'CS'),
+('GED1001', '글쓰기와 의사소통', 2, 3, 'ADM'),
+('CSE2010', '자료구조', 3, 1, 'CS'),
+('CSE2020', '객체지향프로그래밍', 3, 1, 'CS'),
+('CSE3030', '컴퓨터네트워크', 3, 2, 'CS');
 
 -- Course 데이터
 INSERT INTO course (course_code, academic_year, semester, s_code, course_class, professor_no, max_stu, classroom, course_status) VALUES
@@ -458,3 +463,31 @@ INSERT INTO course_schedule (course_code, day_of_week, start_time, end_time) VAL
 ('CSE2010_01', 1, '15:00:00', '16:50:00'),
 ('CSE2020_01', 2, '10:00:00', '11:50:00'),
 ('CSE3030_01', 3, '13:00:00', '14:50:00');
+
+-- =====================================================
+-- Additional User Insertion
+-- =====================================================
+
+-- 신규 학생 계정 추가
+INSERT INTO member (m_id, m_pwd, m_name, m_type, m_no, m_email, dept_code)
+VALUES ('new_student', '1234', '박새로이', 'STUDENT', '20240001', 'new.student@deu.ac.kr', 'CS');
+INSERT INTO student_member (m_id, stu_grade, enrollment_status)
+VALUES ('new_student', 1, 'ENROLLED');
+
+-- 신규 교수 계정 추가
+INSERT INTO member (m_id, m_pwd, m_name, m_type, m_no, m_email, dept_code)
+VALUES ('new_professor', '1234', '최교수', 'PROFESSOR', 'prof005', 'new.professor@deu.ac.kr', 'CS');
+INSERT INTO professor_member (m_id, position, office_room, start_date)
+VALUES ('new_professor', '조교수', '정보관 408호', '2024-03-01');
+
+-- =====================================================
+-- Sample Academic Schedule Data
+-- =====================================================
+INSERT INTO academic_schedule (academic_year, semester, schedule_title, start_date, end_date, category) VALUES
+(2025, 2, '2학기 개강', '2025-09-01', '2025-09-01', 'academic'),
+(2025, 2, '수강신청 정정 기간', '2025-09-01', '2025-09-05', 'academic'),
+(2025, 2, '추석 연휴', '2025-10-05', '2025-10-07', 'holiday'),
+(2025, 2, '중간고사', '2025-10-20', '2025-10-24', 'academic'),
+(2025, 2, '개교기념일', '2025-11-03', '2025-11-03', 'holiday'),
+(2025, 2, '기말고사', '2025-12-15', '2025-12-19', 'academic'),
+(2025, 2, '동계 방학', '2025-12-22', '2026-02-28', 'academic');

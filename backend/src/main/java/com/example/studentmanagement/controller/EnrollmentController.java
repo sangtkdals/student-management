@@ -21,7 +21,7 @@ public class EnrollmentController {
     }
 
     @GetMapping("/{studentId}")
-    public ResponseEntity<List<EnrollmentDTO>> getEnrollments(@PathVariable String studentId) {
+    public ResponseEntity<List<EnrollmentDTO>> getEnrollments(@PathVariable("studentId") String studentId) {
         List<Enrollment> enrollments = enrollmentService.getEnrollmentsByStudent(studentId);
         List<EnrollmentDTO> enrollmentDTOs = enrollments.stream()
                 .map(EnrollmentDTO::new)
