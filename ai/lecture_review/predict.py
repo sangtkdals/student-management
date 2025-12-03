@@ -46,7 +46,7 @@ def predict_review(review_text: str):
     }
 
 if __name__ == "__main__":
-    test_text = "교수님이 tmi가 너무 많아서 집중하기 어렵지만 과제나 팀플이 없어서 좋음"
+    test_text = "이 강의는 정말 유익하고 재미있었어요!"
     result = predict_review(test_text)
     print("입력:", test_text)
     print("예측 별점:", result["rating"])
