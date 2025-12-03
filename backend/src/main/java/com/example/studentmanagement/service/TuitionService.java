@@ -1,6 +1,7 @@
 package com.example.studentmanagement.service;
 
 import com.example.studentmanagement.beans.Member;
+import com.example.studentmanagement.beans.StudentMember;
 import com.example.studentmanagement.beans.Tuition;
 import com.example.studentmanagement.dto.BatchTuitionRequestDTO;
 import com.example.studentmanagement.dto.StudentTuitionStatusDTO;
@@ -193,6 +194,11 @@ public class TuitionService {
         Tuition tuition = tuitionRepository.findById(tuitionId)
                 .orElseThrow(() -> new EntityNotFoundException("Tuition not found with id: " + tuitionId));
         tuitionRepository.delete(tuition);
+    }
+
+    @Transactional
+    public void deleteTuitions(List<Integer> tuitionIds) {
+        tuitionRepository.deleteAllById(tuitionIds);
     }
 
     // 학생 이름 가져오기 헬퍼 메서드
@@ -405,5 +411,59 @@ public class TuitionService {
         }
 
         return newTuitions.size();
+    }
+
+    public List<StudentTuitionStatusDTO> getStudentsByDepartmentAndGradeWithTuitionStatus(String deptCode, int grade, Integer academicYear, Integer semester) {
+        List<StudentMember> students = memberRepository.findStudentsByDepartmentAndGrade(deptCode, grade);
+
+        return students.stream()
+                .map(student -> {
+                    StudentTuitionStatusDTO dto = new StudentTuitionStatusDTO();
+                    dto.setStudentNo(student.getMemberNo());
+                    dto.setStudentName(student.getName());
+                    dto.setDeptCode(student.getDepartment() != null ? student.getDepartment().getDeptCode() : null);
+                    dto.setDeptName(student.getDepartment() != null ? student.getDepartment().getDeptName() : null);
+                    dto.setStuGrade(student.getStuGrade());
+                    dto.setEnrollmentStatus(student.getEnrollmentStatus());
+
+                    List<Tuition> existingTuitions = tuitionRepository.findByStudentAndAcademicYearAndSemester(
+                        student.getMemberNo(), academicYear, semester
+                    );
+
+                    if (!existingTuitions.isEmpty()) {
+                        Tuition existingTuition = existingTuitions.get(0);
+                        dto.setHasExistingTuition(true);
+                        dto.setExistingTuitionId(existingTuition.getTuitionId());
+                        dto.setPaymentStatus(existingTuition.getPaymentStatus());
+                    } else {
+                        dto.setHasExistingTuition(false);
+                    }
+
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+
+    public List<TuitionDTO> getTuitionsByDepartmentAndGrade(String deptCode, int grade) {
+        List<StudentMember> students = memberRepository.findStudentsByDepartmentAndGrade(deptCode, grade);
+        List<String> studentNos = students.stream().map(StudentMember::getMemberNo).collect(Collectors.toList());
+        List<Tuition> tuitions = tuitionRepository.findByStudent_MemberNoIn(studentNos);
+        return tuitions.stream()
+                .map(tuition -> new TuitionDTO(tuition, getStudentName(tuition)))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public TuitionDTO confirmPayment(Integer tuitionId) {
+        Tuition tuition = tuitionRepository.findById(tuitionId)
+                .orElseThrow(() -> new EntityNotFoundException("Tuition not found with id: " + tuitionId));
+
+        tuition.setPaymentStatus("PAID");
+        tuition.setPaidDate(new Date());
+        // 필요하다면 paidAmount 등 다른 필드도 업데이트
+        // tuition.setPaidAmount(tuition.getTuitionAmount() - tuition.getScholarshipAmount());
+        
+        Tuition updatedTuition = tuitionRepository.save(tuition);
+        return new TuitionDTO(updatedTuition, getStudentName(updatedTuition));
     }
 }

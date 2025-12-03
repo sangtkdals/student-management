@@ -42,4 +42,6 @@ public interface TuitionRepository extends JpaRepository<Tuition, Integer> {
             @Param("academicYear") Integer academicYear,
             @Param("semester") Integer semester
     );
+
+    List<Tuition> findByStudent_MemberNoIn(List<String> studentNos);
 }

@@ -141,6 +141,18 @@ public class AdminTuitionController {
         }
     }
 
+    // 선택 등록금 일괄 삭제
+    @DeleteMapping("/batch-delete")
+    public ResponseEntity<?> batchDeleteTuitions(@RequestBody List<Integer> tuitionIds) {
+        try {
+            tuitionService.deleteTuitions(tuitionIds);
+            return ResponseEntity.ok("선택된 등록금이 삭제되었습니다.");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body("일괄 삭제 중 오류 발생: " + e.getMessage());
+        }
+    }
+
     // 납부 확인 (결제 상태를 PAID로 변경)
     @PutMapping("/{tuitionId}/confirm")
     public ResponseEntity<?> confirmPayment(@PathVariable Integer tuitionId) {
@@ -177,14 +189,13 @@ public class AdminTuitionController {
         }
     }
 
-    // 학과, 학년도, 학기별 등록금 조회
-    @GetMapping("/department/{deptCode}")
-    public ResponseEntity<List<TuitionDTO>> getTuitionsByDepartmentAndYearAndSemester(
+    // 학과 및 학년별 등록금 조회
+    @GetMapping("/department/{deptCode}/grade/{grade}")
+    public ResponseEntity<List<TuitionDTO>> getTuitionsByDepartmentAndGrade(
             @PathVariable String deptCode,
-            @RequestParam Integer academicYear,
-            @RequestParam Integer semester) {
+            @PathVariable int grade) {
         try {
-            List<TuitionDTO> tuitions = tuitionService.getTuitionsByDepartmentAndYearAndSemester(deptCode, academicYear, semester);
+            List<TuitionDTO> tuitions = tuitionService.getTuitionsByDepartmentAndGrade(deptCode, grade);
             return ResponseEntity.ok(tuitions);
         } catch (Exception e) {
             e.printStackTrace();
@@ -200,6 +211,22 @@ public class AdminTuitionController {
             @RequestParam Integer semester) {
         try {
             List<StudentTuitionStatusDTO> students = tuitionService.getStudentsByDepartmentWithTuitionStatus(deptCode, academicYear, semester);
+            return ResponseEntity.ok(students);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // 학과 및 학년별 학생 목록 조회 (등록금 생성 여부 포함)
+    @GetMapping("/department/{deptCode}/grade/{grade}/students")
+    public ResponseEntity<List<StudentTuitionStatusDTO>> getStudentsByDepartmentAndGradeWithTuitionStatus(
+            @PathVariable String deptCode,
+            @PathVariable int grade,
+            @RequestParam Integer academicYear,
+            @RequestParam Integer semester) {
+        try {
+            List<StudentTuitionStatusDTO> students = tuitionService.getStudentsByDepartmentAndGradeWithTuitionStatus(deptCode, grade, academicYear, semester);
             return ResponseEntity.ok(students);
         } catch (Exception e) {
             e.printStackTrace();
