@@ -1,0 +1,26 @@
+# Redis 서비스 상태 확인
+sudo systemctl status redis
+sudo systemctl status redis-server
+
+# Redis 서비스 시작
+sudo systemctl start redis
+sudo systemctl start redis-server
+
+# Redis 서비스 중지
+sudo systemctl stop redis
+sudo systemctl stop redis-server
+
+# Redis 서비스 재시작
+sudo systemctl restart redis
+sudo systemctl restart redis-server
+
+# Redis 서비스 부팅 시 자동 실행 설정
+sudo systemctl enable redis
+sudo systemctl enable redis-server
+
+# Redis 서비스 자동 실행 해제
+sudo systemctl disable redis
+sudo systemctl disable redis-server
+
+# (참고) Redis 관련 서비스명 검색
+systemctl list-units --type=service | grep redis
