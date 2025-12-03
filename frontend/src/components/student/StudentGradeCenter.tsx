@@ -172,7 +172,7 @@ export const StudentGradeCenter: React.FC<{ user: User }> = ({ user }) => {
   }, [location.pathname]);
 
 useEffect(() => {
-    const studentId = user?.id;
+    const studentId = user?.memberNo;
 
     const token = localStorage.getItem('token'); 
 

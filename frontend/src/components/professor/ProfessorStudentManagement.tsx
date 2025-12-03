@@ -324,7 +324,7 @@ export const ProfessorStudentManagement: React.FC<{ user: User; viewType?: "atte
       if (!user?.memberNo) return;
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`http://localhost:8080/api/courses/professor/${user.memberNo}`, {
+        const response = await fetch(`http://localhost:8080/api/professor-new/courses/${user.memberNo}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response.ok) {
@@ -334,7 +334,7 @@ export const ProfessorStudentManagement: React.FC<{ user: User; viewType?: "atte
 
           const mappedCourses = data.map((c: any) => ({
             ...c,
-            subjectName: c.subject?.sname || c.courseName || c.courseCode,
+            subjectName: c.subjectName || c.subject?.sname || c.courseName || c.courseCode,
           }));
           setMyCourses(mappedCourses);
           if (mappedCourses.length > 0) setSelectedCourse(mappedCourses[0]);
