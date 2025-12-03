@@ -88,4 +88,8 @@ public class JwtUtil {
     public String getRefreshToken(String memberId) {
         return (String) redisTemplate.opsForValue().get(memberId);
     }
+
+    public String getMemberNoFromToken(String token) {
+        return extractClaim(token, claims -> claims.get("memberNo", String.class));
+    }
 }

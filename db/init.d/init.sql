@@ -481,6 +481,41 @@ INSERT INTO professor_member (m_id, position, office_room, start_date)
 VALUES ('new_professor', '조교수', '정보관 408호', '2024-03-01');
 
 -- =====================================================
+-- Additional CS Student Data
+-- =====================================================
+-- 1학년
+INSERT INTO member (m_id, m_pwd, m_name, m_type, m_no, m_email, dept_code) VALUES ('cs_student1_1', '1234', '김하나', 'STUDENT', '20241001', 'cs1_1@deu.ac.kr', 'CS');
+INSERT INTO student_member (m_id, stu_grade, enrollment_status) VALUES ('cs_student1_1', 1, 'ENROLLED');
+INSERT INTO member (m_id, m_pwd, m_name, m_type, m_no, m_email, dept_code) VALUES ('cs_student1_2', '1234', '이두리', 'STUDENT', '20241002', 'cs1_2@deu.ac.kr', 'CS');
+INSERT INTO student_member (m_id, stu_grade, enrollment_status) VALUES ('cs_student1_2', 1, 'ENROLLED');
+INSERT INTO member (m_id, m_pwd, m_name, m_type, m_no, m_email, dept_code) VALUES ('cs_student1_3', '1234', '박세희', 'STUDENT', '20241003', 'cs1_3@deu.ac.kr', 'CS');
+INSERT INTO student_member (m_id, stu_grade, enrollment_status) VALUES ('cs_student1_3', 1, 'ENROLLED');
+
+-- 2학년
+INSERT INTO member (m_id, m_pwd, m_name, m_type, m_no, m_email, dept_code) VALUES ('cs_student2_1', '1234', '김하늘', 'STUDENT', '20231001', 'cs2_1@deu.ac.kr', 'CS');
+INSERT INTO student_member (m_id, stu_grade, enrollment_status) VALUES ('cs_student2_1', 2, 'ENROLLED');
+INSERT INTO member (m_id, m_pwd, m_name, m_type, m_no, m_email, dept_code) VALUES ('cs_student2_2', '1234', '이두나', 'STUDENT', '20231002', 'cs2_2@deu.ac.kr', 'CS');
+INSERT INTO student_member (m_id, stu_grade, enrollment_status) VALUES ('cs_student2_2', 2, 'ENROLLED');
+INSERT INTO member (m_id, m_pwd, m_name, m_type, m_no, m_email, dept_code) VALUES ('cs_student2_3', '1234', '박세준', 'STUDENT', '20231003', 'cs2_3@deu.ac.kr', 'CS');
+INSERT INTO student_member (m_id, stu_grade, enrollment_status) VALUES ('cs_student2_3', 2, 'ENROLLED');
+
+-- 3학년
+INSERT INTO member (m_id, m_pwd, m_name, m_type, m_no, m_email, dept_code) VALUES ('cs_student3_1', '1234', '김서연', 'STUDENT', '20221001', 'cs3_1@deu.ac.kr', 'CS');
+INSERT INTO student_member (m_id, stu_grade, enrollment_status) VALUES ('cs_student3_1', 3, 'ENROLLED');
+INSERT INTO member (m_id, m_pwd, m_name, m_type, m_no, m_email, dept_code) VALUES ('cs_student3_2', '1234', '이서준', 'STUDENT', '20221002', 'cs3_2@deu.ac.kr', 'CS');
+INSERT INTO student_member (m_id, stu_grade, enrollment_status) VALUES ('cs_student3_2', 3, 'ENROLLED');
+INSERT INTO member (m_id, m_pwd, m_name, m_type, m_no, m_email, dept_code) VALUES ('cs_student3_3', '1234', '박하윤', 'STUDENT', '20221003', 'cs3_3@deu.ac.kr', 'CS');
+INSERT INTO student_member (m_id, stu_grade, enrollment_status) VALUES ('cs_student3_3', 3, 'ENROLLED');
+
+-- 4학년
+INSERT INTO member (m_id, m_pwd, m_name, m_type, m_no, m_email, dept_code) VALUES ('cs_student4_1', '1234', '최도윤', 'STUDENT', '20211001', 'cs4_1@deu.ac.kr', 'CS');
+INSERT INTO student_member (m_id, stu_grade, enrollment_status) VALUES ('cs_student4_1', 4, 'ENROLLED');
+INSERT INTO member (m_id, m_pwd, m_name, m_type, m_no, m_email, dept_code) VALUES ('cs_student4_2', '1234', '정시우', 'STUDENT', '20211002', 'cs4_2@deu.ac.kr', 'CS');
+INSERT INTO student_member (m_id, stu_grade, enrollment_status) VALUES ('cs_student4_2', 4, 'ENROLLED');
+INSERT INTO member (m_id, m_pwd, m_name, m_type, m_no, m_email, dept_code) VALUES ('cs_student4_3', '1234', '윤지후', 'STUDENT', '20211003', 'cs4_3@deu.ac.kr', 'CS');
+INSERT INTO student_member (m_id, stu_grade, enrollment_status) VALUES ('cs_student4_3', 4, 'ENROLLED');
+
+-- =====================================================
 -- Sample Academic Schedule Data
 -- =====================================================
 INSERT INTO academic_schedule (academic_year, semester, schedule_title, start_date, end_date, category) VALUES

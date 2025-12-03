@@ -46,6 +46,11 @@ interface BatchCreateFormData {
 
 export const AdminTuitionManagement: React.FC = () => {
   const [tuitionList, setTuitionList] = useState<TuitionData[]>([]);
+  const [selectedTuitions, setSelectedTuitions] = useState<number[]>([]);
+  const [searchParams, setSearchParams] = useState({
+    deptCode: "",
+    grade: 1,
+  });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -57,8 +62,9 @@ export const AdminTuitionManagement: React.FC = () => {
   });
 
   // 일괄 생성 관련 상태
-  const [batchFormData, setBatchFormData] = useState<BatchCreateFormData>({
+  const [batchFormData, setBatchFormData] = useState({
     deptCode: "",
+    grade: 1,
     academicYear: new Date().getFullYear(),
     semester: 1,
     tuitionAmount: 5000000,
@@ -70,7 +76,6 @@ export const AdminTuitionManagement: React.FC = () => {
   const [departments, setDepartments] = useState<Department[]>([]);
 
   useEffect(() => {
-    fetchTuitionList();
     fetchDepartments();
   }, []);
 
@@ -100,22 +105,69 @@ export const AdminTuitionManagement: React.FC = () => {
     }
   };
 
-  const handleConfirmPayment = async (id: number) => {
-    if (confirm("해당 학생의 등록금을 '납부 완료' 처리하시겠습니까?")) {
+  const handleSearch = async () => {
+    if (!searchParams.deptCode) {
+      alert("학과를 선택해주세요.");
+      return;
+    }
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`/api/admin/tuitions/department/${searchParams.deptCode}/grade/${searchParams.grade}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setTuitionList(response.data);
+    } catch (error) {
+      console.error("Error searching tuitions:", error);
+      alert("검색 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleSelectAllTuitions = () => {
+    if (selectedTuitions.length === tuitionList.filter((t) => t.paymentStatus === "UNPAID").length) {
+      setSelectedTuitions([]);
+    } else {
+      setSelectedTuitions(tuitionList.filter((t) => t.paymentStatus === "UNPAID").map((t) => t.tuitionId));
+    }
+  };
+
+  const handleSelectTuition = (tuitionId: number) => {
+    setSelectedTuitions((prev) => (prev.includes(tuitionId) ? prev.filter((id) => id !== tuitionId) : [...prev, tuitionId]));
+  };
+
+  const handleDeleteTuition = async (id: number) => {
+    if (confirm("해당 등록금 고지서를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
       try {
         const token = localStorage.getItem("token");
-        await axios.put(
-          `/api/admin/tuitions/${id}/confirm`,
-          {},
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        alert("납부 처리되었습니다.");
+        await axios.delete(`/api/admin/tuitions/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        alert("등록금 고지서가 삭제되었습니다.");
         fetchTuitionList();
       } catch (error) {
-        console.error("Error confirming payment:", error);
-        alert("처리 실패");
+        console.error("Error deleting tuition:", error);
+        alert("삭제 실패");
+      }
+    }
+  };
+
+  const handleBatchDelete = async () => {
+    if (selectedTuitions.length === 0) {
+      alert("삭제할 항목을 선택해주세요.");
+      return;
+    }
+    if (confirm(`선택된 ${selectedTuitions.length}개의 등록금 고지서를 삭제하시겠습니까?`)) {
+      try {
+        const token = localStorage.getItem("token");
+        await axios.delete("/api/admin/tuitions/batch-delete", {
+          headers: { Authorization: `Bearer ${token}` },
+          data: selectedTuitions,
+        });
+        alert("선택된 등록금 고지서가 삭제되었습니다.");
+        setSelectedTuitions([]);
+        handleSearch(); // 목록 새로고침
+      } catch (error) {
+        console.error("Error batch deleting tuitions:", error);
+        alert("일괄 삭제 실패");
       }
     }
   };
@@ -167,7 +219,7 @@ export const AdminTuitionManagement: React.FC = () => {
     setIsLoadingStudents(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get(`/api/admin/tuitions/department/${batchFormData.deptCode}/students`, {
+      const response = await axios.get(`/api/admin/tuitions/department/${batchFormData.deptCode}/grade/${batchFormData.grade}/students`, {
         params: {
           academicYear: batchFormData.academicYear,
           semester: batchFormData.semester,
@@ -221,6 +273,7 @@ export const AdminTuitionManagement: React.FC = () => {
       setIsBatchModalOpen(false);
       setBatchFormData({
         deptCode: "",
+        grade: 1,
         academicYear: new Date().getFullYear(),
         semester: 1,
         tuitionAmount: 5000000,
@@ -257,21 +310,76 @@ export const AdminTuitionManagement: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <Card title="등록금 납부 관리">
-        <div className="mb-4 flex justify-between items-center">
-          <div className="text-sm text-slate-500">
-            총 대상자: {tuitionList.length}명 / 미납자: {tuitionList.filter((t) => t.paymentStatus === "UNPAID").length}명
-          </div>
-          <div className="flex gap-2">
-            <Button variant="secondary" onClick={() => setIsBatchModalOpen(true)}>
-              과별 일괄 생성
-            </Button>
-            <Button onClick={() => setIsModalOpen(true)}>개별 고지서 생성</Button>
+        <div className="bg-slate-50 p-4 rounded-lg mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label htmlFor="search-dept" className="block text-sm font-medium text-slate-700 mb-1">
+                학과
+              </label>
+              <select
+                id="search-dept"
+                value={searchParams.deptCode}
+                onChange={(e) => setSearchParams({ ...searchParams, deptCode: e.target.value })}
+                className="block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              >
+                <option value="">-- 학과 선택 --</option>
+                {departments.map((dept) => (
+                  <option key={dept.deptCode} value={dept.deptCode}>
+                    {dept.deptName}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="search-grade" className="block text-sm font-medium text-slate-700 mb-1">
+                학년
+              </label>
+              <select
+                id="search-grade"
+                value={searchParams.grade}
+                onChange={(e) => setSearchParams({ ...searchParams, grade: Number(e.target.value) })}
+                className="block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              >
+                <option value={1}>1학년</option>
+                <option value={2}>2학년</option>
+                <option value={3}>3학년</option>
+                <option value={4}>4학년</option>
+              </select>
+            </div>
+            <div className="flex items-end col-start-4">
+              <Button onClick={handleSearch} className="w-full">
+                검색
+              </Button>
+            </div>
           </div>
         </div>
 
-        <Table headers={["학번", "이름", "학기", "등록금", "장학금", "실납부금액", "상태", "관리"]}>
+        <div className="mb-4 flex justify-between items-center">
+          <div className="text-sm text-slate-500">
+            총 {tuitionList.length}건 검색됨 / 미납: {tuitionList.filter((t) => t.paymentStatus === "UNPAID").length}건 / 선택:{" "}
+            {selectedTuitions.length}건
+          </div>
+          <div className="flex gap-2">
+            <Button variant="danger" onClick={handleBatchDelete} disabled={selectedTuitions.length === 0}>
+              선택 삭제
+            </Button>
+            <Button variant="primary" onClick={() => setIsBatchModalOpen(true)}>
+              과별 일괄 생성
+            </Button>
+          </div>
+        </div>
+
+        <Table headers={["", "학번", "이름", "학기", "등록금", "장학금", "실납부금액", "상태", "비고"]}>
           {tuitionList.map((item) => (
-            <tr key={item.tuitionId}>
+            <tr key={item.tuitionId} className="text-center">
+              <td className="px-6 py-4">
+                <input
+                  type="checkbox"
+                  checked={selectedTuitions.includes(item.tuitionId)}
+                  onChange={() => handleSelectTuition(item.tuitionId)}
+                  disabled={item.paymentStatus === "PAID"}
+                />
+              </td>
               <td className="px-6 py-4 text-sm">{item.studentNo}</td>
               <td className="px-6 py-4 text-sm font-medium">{item.studentName}</td>
               <td className="px-6 py-4 text-sm">
@@ -284,12 +392,11 @@ export const AdminTuitionManagement: React.FC = () => {
               </td>
               <td className="px-6 py-4 text-sm">{getStatusBadge(item.paymentStatus)}</td>
               <td className="px-6 py-4 text-sm">
-                {item.paymentStatus === "UNPAID" ? (
-                  <Button variant="secondary" onClick={() => handleConfirmPayment(item.tuitionId)}>
-                    납부 확인
-                  </Button>
-                ) : (
-                  <span className="text-xs text-slate-400">{item.paidDate}</span>
+                {item.paymentStatus === "PAID" && (
+                  <div className="text-xs text-slate-500">
+                    <p>납부 완료</p>
+                    <p>{item.paidDate}</p>
+                  </div>
                 )}
               </td>
             </tr>
@@ -365,11 +472,11 @@ export const AdminTuitionManagement: React.FC = () => {
               <div className="bg-slate-50 p-4 rounded-lg mb-4">
                 <div className="grid grid-cols-4 gap-4">
                   <div>
-                    <label htmlFor="department-select" className="block text-sm font-medium text-slate-700 mb-1">
+                    <label htmlFor="department-select-batch" className="block text-sm font-medium text-slate-700 mb-1">
                       학과 선택
                     </label>
                     <select
-                      id="department-select"
+                      id="department-select-batch"
                       value={batchFormData.deptCode}
                       onChange={(e) => setBatchFormData({ ...batchFormData, deptCode: e.target.value })}
                       className="block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
@@ -382,19 +489,23 @@ export const AdminTuitionManagement: React.FC = () => {
                       ))}
                     </select>
                   </div>
-                  <Input
-                    label="학년도"
-                    type="number"
-                    value={batchFormData.academicYear}
-                    onChange={(e) => setBatchFormData({ ...batchFormData, academicYear: Number(e.target.value) })}
-                  />
-                  <Input
-                    label="학기"
-                    type="number"
-                    value={batchFormData.semester}
-                    onChange={(e) => setBatchFormData({ ...batchFormData, semester: Number(e.target.value) })}
-                  />
-                  <div className="flex items-end">
+                  <div>
+                    <label htmlFor="batch-grade" className="block text-sm font-medium text-slate-700 mb-1">
+                      학년
+                    </label>
+                    <select
+                      id="batch-grade"
+                      value={batchFormData.grade}
+                      onChange={(e) => setBatchFormData({ ...batchFormData, grade: Number(e.target.value) })}
+                      className="block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    >
+                      <option value={1}>1학년</option>
+                      <option value={2}>2학년</option>
+                      <option value={3}>3학년</option>
+                      <option value={4}>4학년</option>
+                    </select>
+                  </div>
+                  <div className="flex items-end col-start-4">
                     <Button onClick={handleLoadStudents} disabled={isLoadingStudents}>
                       {isLoadingStudents ? "조회 중..." : "학생 조회"}
                     </Button>
