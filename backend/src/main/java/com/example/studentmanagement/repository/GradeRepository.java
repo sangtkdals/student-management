@@ -1,7 +1,7 @@
 package com.example.studentmanagement.repository;
 
-import com.example.studentmanagement.dto.GradeDTO;
 import com.example.studentmanagement.beans.Grade;
+import com.example.studentmanagement.dto.GradeDTO;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -24,8 +24,8 @@ public interface GradeRepository extends JpaRepository<Grade, Integer> {
         JOIN course c ON e.course_code = c.course_code
         JOIN subject s ON c.s_code = s.s_code
         JOIN member m ON e.stu_no = m.m_no 
-        WHERE m.m_id = :userId
+        WHERE m.m_no = :studentId
         ORDER BY c.academic_year DESC, c.semester DESC
     """, nativeQuery = true)
-    List<GradeDTO> findGradesByStudentId(@Param("userId") String userId);
+    List<GradeDTO> findGradesByStudentId(@Param("studentId") String studentId);
 }

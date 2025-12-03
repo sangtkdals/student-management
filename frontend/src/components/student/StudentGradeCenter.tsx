@@ -15,15 +15,31 @@ interface GradeData {
 }
 
 const CurrentSemesterGrades: React.FC<{ grades: GradeData[] }> = ({ grades }) => {
-  const currentYear = 2025;
-  const currentSemester = 2;
+
+  const today = new Date();
+  const currentMonth = today.getMonth() + 1;
+  
+  let currentYear = today.getFullYear();
+  let currentSemester = 1;
+
+  if (currentMonth >= 3 && currentMonth <= 8) {
+    currentSemester = 1;
+  } else {
+    currentSemester = 2;
+    if (currentMonth === 1 || currentMonth === 2) {
+      currentYear -= 1;
+    }
+  }
 
   const currentGrades = grades.filter((g) => g.year === currentYear && g.semester === currentSemester);
 
   return (
     <Card title={`금학기(${currentYear}-${currentSemester}) 성적 상세 조회`}>
       {currentGrades.length === 0 ? (
-        <p className="text-center py-8 text-slate-500">등록된 성적이 없습니다.</p>
+        <p className="text-center py-8 text-slate-500">
+          등록된 성적이 없습니다.<br/>
+          <span className="text-xs text-slate-400">(현재 기준: {currentYear}년 {currentSemester}학기)</span>
+        </p>
       ) : (
         <Table headers={["과목코드", "과목명", "학점", "성적", "평점"]}>
           {currentGrades.map((grade) => (
@@ -31,8 +47,18 @@ const CurrentSemesterGrades: React.FC<{ grades: GradeData[] }> = ({ grades }) =>
               <td className="px-6 py-4 text-sm text-slate-500 w-24 text-center whitespace-nowrap">{grade.courseCode}</td>
               <td className="px-6 py-4 text-sm font-medium text-slate-800">{grade.courseName}</td>
               <td className="px-6 py-4 text-sm text-center w-24 whitespace-nowrap">{grade.credit}</td>
-              <td className="px-6 py-4 text-sm font-bold text-brand-blue text-center w-24 whitespace-nowrap">{grade.gradeLetter}</td>
-              <td className="px-6 py-4 text-sm text-center w-24 whitespace-nowrap">{grade.gradePoint}</td>
+              
+              <td className="px-6 py-4 text-sm font-bold text-center w-24 whitespace-nowrap">
+                {grade.gradeLetter ? (
+                  <span className="text-brand-blue">{grade.gradeLetter}</span>
+                ) : (
+                  <span className="text-slate-400 text-xs bg-slate-100 px-2 py-1 rounded-full">수강중</span>
+                )}
+              </td>
+              
+              <td className="px-6 py-4 text-sm text-center w-24 whitespace-nowrap">
+                {grade.gradePoint !== null ? grade.gradePoint : "-"}
+              </td>
             </tr>
           ))}
         </Table>
@@ -145,17 +171,29 @@ export const StudentGradeCenter: React.FC<{ user: User }> = ({ user }) => {
     }
   }, [location.pathname]);
 
-  useEffect(() => {
-    const studentId = user?.id;
+useEffect(() => {
+    const studentId = user?.memberNo;
 
-    if (studentId) {
-      fetch(`http://localhost:8080/api/grades?studentId=${studentId}`)
+    const token = localStorage.getItem('token'); 
+
+    if (studentId && token) {
+      fetch(`http://localhost:8080/api/grades?studentId=${studentId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      })
         .then((res) => {
           if (!res.ok) throw new Error("성적 조회 실패");
           return res.json();
         })
         .then((data) => {
-          setGrades(data);
+          const mappedData = data.map((item: any) => ({
+            ...item,
+            year: item.academicYear || item.year 
+          }));
+          setGrades(mappedData);
         })
         .catch((err) => {
           console.error(err);
