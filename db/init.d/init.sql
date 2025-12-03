@@ -336,6 +336,7 @@ CREATE TABLE academic_schedule (
     schedule_content  VARCHAR(1000),
     start_date        DATE,
     end_date          DATE,
+    category          VARCHAR(50),
     background_color  VARCHAR(20),
     recurrence_type   VARCHAR(20)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -478,3 +479,15 @@ INSERT INTO member (m_id, m_pwd, m_name, m_type, m_no, m_email, dept_code)
 VALUES ('new_professor', '1234', '최교수', 'PROFESSOR', 'prof005', 'new.professor@deu.ac.kr', 'CS');
 INSERT INTO professor_member (m_id, position, office_room, start_date)
 VALUES ('new_professor', '조교수', '정보관 408호', '2024-03-01');
+
+-- =====================================================
+-- Sample Academic Schedule Data
+-- =====================================================
+INSERT INTO academic_schedule (academic_year, semester, schedule_title, start_date, end_date, category) VALUES
+(2025, 2, '2학기 개강', '2025-09-01', '2025-09-01', 'academic'),
+(2025, 2, '수강신청 정정 기간', '2025-09-01', '2025-09-05', 'academic'),
+(2025, 2, '추석 연휴', '2025-10-05', '2025-10-07', 'holiday'),
+(2025, 2, '중간고사', '2025-10-20', '2025-10-24', 'academic'),
+(2025, 2, '개교기념일', '2025-11-03', '2025-11-03', 'holiday'),
+(2025, 2, '기말고사', '2025-12-15', '2025-12-19', 'academic'),
+(2025, 2, '동계 방학', '2025-12-22', '2026-02-28', 'academic');

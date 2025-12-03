@@ -126,6 +126,8 @@ public class AuthController {
             // Additional fields based on role
             if (member instanceof ProfessorMember) {
                 response.put("major", ((ProfessorMember) member).getMajorField());
+            } else if (member instanceof StudentMember) {
+                response.put("gradeLevel", ((StudentMember) member).getStuGrade());
             }
             
             return ResponseEntity.ok(response);

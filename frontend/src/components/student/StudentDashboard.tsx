@@ -55,11 +55,6 @@ const TodaySchedule: React.FC<{ user: User }> = ({ user }) => {
     fetchTodayCourses();
   }, [user]);
 
-  const todos = [
-    { id: 1, text: "자료구조 과제 제출 (오늘 마감)" },
-    { id: 2, text: "도서 반납하기" },
-  ];
-
   const formatDate = () => {
     const date = new Date();
     const year = date.getFullYear();
@@ -122,17 +117,6 @@ const TodaySchedule: React.FC<{ user: User }> = ({ user }) => {
           <p className="text-sm text-slate-500">오늘은 강의가 없습니다.</p>
         )}
       </div>
-      <div className="mt-4 pt-4 border-t border-slate-100">
-        <h4 className="font-bold text-slate-800 text-sm mb-2">할 일 (To-Do)</h4>
-        <ul className="space-y-2">
-          {todos.map((todo) => (
-            <li key={todo.id} className="flex items-center text-sm text-slate-600">
-              <input type="checkbox" className="mr-2 rounded text-brand-blue" />
-              <span>{todo.text}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
     </div>
   );
 };
@@ -157,14 +141,29 @@ export const DashboardHero: React.FC<{ user: User; navigate: ReturnType<typeof u
                   </div>
                 </div>
                 <div className="space-y-3">
-                  <div className="bg-black/20 rounded p-3 flex justify-between items-center">
-                    <span className="text-blue-100 text-sm">이메일</span>
-                    <span className="font-medium text-sm truncate max-w-[150px]">{user.email}</span>
-                  </div>
-                  <div className="bg-black/20 rounded p-3 flex justify-between items-center">
-                    <span className="text-blue-100 text-sm">{user.role === "student" ? "이번 학기 평점" : "연구실"}</span>
-                    <span className="font-medium text-sm">{user.role === "student" ? "4.0 / 4.5" : user.officeRoom || "미배정"}</span>
-                  </div>
+                  {user.role.toLowerCase() === "student" ? (
+                    <>
+                      <div className="bg-black/20 rounded p-3 flex justify-between items-center">
+                        <span className="text-blue-100 text-sm">학번</span>
+                        <span className="font-medium text-sm">{user.memberNo}</span>
+                      </div>
+                      <div className="bg-black/20 rounded p-3 flex justify-between items-center">
+                        <span className="text-blue-100 text-sm">학년</span>
+                        <span className="font-medium text-sm">{user.gradeLevel}학년</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="bg-black/20 rounded p-3 flex justify-between items-center">
+                        <span className="text-blue-100 text-sm">이메일</span>
+                        <span className="font-medium text-sm truncate max-w-[150px]">{user.email}</span>
+                      </div>
+                      <div className="bg-black/20 rounded p-3 flex justify-between items-center">
+                        <span className="text-blue-100 text-sm">연구실</span>
+                        <span className="font-medium text-sm">{user.officeRoom || "미배정"}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
               <div className="mt-6">
@@ -189,6 +188,25 @@ export const DashboardHero: React.FC<{ user: User; navigate: ReturnType<typeof u
 };
 
 export const DashboardContent: React.FC<{ navigate: ReturnType<typeof useNavigate>; user: User }> = ({ navigate, user }) => {
+  const [schedules, setSchedules] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchSchedules = async () => {
+      try {
+        const response = await fetch("/api/schedules");
+        if (response.ok) {
+          const data = await response.json();
+          setSchedules(data);
+        } else {
+          console.error("Failed to fetch academic schedules");
+        }
+      } catch (error) {
+        console.error("Error fetching academic schedules:", error);
+      }
+    };
+    fetchSchedules();
+  }, []);
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 -mt-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -225,20 +243,24 @@ export const DashboardContent: React.FC<{ navigate: ReturnType<typeof useNavigat
             </button>
           </div>
           <ul className="space-y-3">
-            {MOCK_CALENDAR_EVENTS.slice(0, 3).map((evt) => (
+            {schedules.slice(0, 3).map((evt) => (
               <li key={evt.scheduleId} className="flex items-start">
                 <div className="flex-shrink-0 w-12 text-center bg-slate-100 rounded p-1 mr-3">
                   <p className="text-xs text-slate-500">{evt.startDate.split("-")[1]}월</p>
                   <p className="text-sm font-bold text-slate-800">{evt.startDate.split("-")[2]}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-800">{evt.title}</p>
+                  <p className="text-sm font-medium text-slate-800">{evt.scheduleTitle}</p>
                   <span
                     className={`text-[10px] px-1.5 py-0.5 rounded ${
-                      evt.category === "academic" ? "bg-blue-50 text-blue-600" : "bg-red-50 text-red-600"
+                      evt.category === "academic"
+                        ? "bg-blue-50 text-blue-600"
+                        : evt.category === "holiday"
+                        ? "bg-red-50 text-red-600"
+                        : "bg-slate-100 text-slate-500"
                     }`}
                   >
-                    {evt.category === "academic" ? "학사" : "휴일"}
+                    {evt.category === "academic" ? "학사" : evt.category === "holiday" ? "휴일" : "기타"}
                   </span>
                 </div>
               </li>

@@ -29,7 +29,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = "student" })
   const [emailDomain, setEmailDomain] = useState("");
   const [confirmPwd, setConfirmPwd] = useState("");
   const [idChecked, setIdChecked] = useState(false);
-  
+
   const [regData, setRegData] = useState({
     m_id: "",
     m_pwd: "",
@@ -54,52 +54,52 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = "student" })
     if (view === "register") {
       fetch("http://localhost:8080/api/departments")
         .then((res) => {
-            if (!res.ok) throw new Error("Network response was not ok");
-            return res.json();
+          if (!res.ok) throw new Error("Network response was not ok");
+          return res.json();
         })
         .then((data) => {
-            if (Array.isArray(data)) {
-                setDepartments(data);
-            } else {
-                console.error("Departments data is not an array:", data);
-                setDepartments([]);
-            }
+          if (Array.isArray(data)) {
+            setDepartments(data);
+          } else {
+            console.error("Departments data is not an array:", data);
+            setDepartments([]);
+          }
         })
         .catch((err) => {
-            console.error("Failed to fetch departments", err);
-            setDepartments([]);
+          console.error("Failed to fetch departments", err);
+          setDepartments([]);
         });
     }
   }, [view]);
 
   const handleInputChange = (field: string, value: string) => {
     if (field === "m_id") {
-        setIdChecked(false);
+      setIdChecked(false);
     }
     setRegData((prev) => ({ ...prev, [field]: value }));
   };
 
   const checkIdDuplicate = async () => {
     if (!regData.m_id) {
-        setModalMessage("아이디를 입력해주세요.");
-        setIsModalOpen(true);
-        return;
+      setModalMessage("아이디를 입력해주세요.");
+      setIsModalOpen(true);
+      return;
     }
     try {
-        const response = await fetch(`http://localhost:8080/api/check-id?userId=${regData.m_id}`);
-        const data = await response.json();
-        if (data.exists) {
-            setModalMessage("이미 사용 중인 아이디입니다.");
-            setIdChecked(false);
-        } else {
-            setModalMessage("사용 가능한 아이디입니다.");
-            setIdChecked(true);
-        }
-        setIsModalOpen(true);
+      const response = await fetch(`http://localhost:8080/api/check-id?userId=${regData.m_id}`);
+      const data = await response.json();
+      if (data.exists) {
+        setModalMessage("이미 사용 중인 아이디입니다.");
+        setIdChecked(false);
+      } else {
+        setModalMessage("사용 가능한 아이디입니다.");
+        setIdChecked(true);
+      }
+      setIsModalOpen(true);
     } catch (e) {
-        console.error(e);
-        setModalMessage("중복 확인 중 오류가 발생했습니다.");
-        setIsModalOpen(true);
+      console.error(e);
+      setModalMessage("중복 확인 중 오류가 발생했습니다.");
+      setIsModalOpen(true);
     }
   };
 
@@ -131,6 +131,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = "student" })
           email: data.email,
           deptCode: data.deptCode,
           departmentName: data.departmentName,
+          gradeLevel: data.gradeLevel, // 학년 정보 추가
           avatarUrl: `https://picsum.photos/seed/${data.userId}/100/100`, // 임시 아바타 URL
         };
 
@@ -154,15 +155,15 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = "student" })
     e.preventDefault();
 
     if (!idChecked) {
-        setModalMessage("아이디 중복 확인을 해주세요.");
-        setIsModalOpen(true);
-        return;
+      setModalMessage("아이디 중복 확인을 해주세요.");
+      setIsModalOpen(true);
+      return;
     }
 
     if (regData.m_pwd !== confirmPwd) {
-        setModalMessage("비밀번호가 일치하지 않습니다.");
-        setIsModalOpen(true);
-        return;
+      setModalMessage("비밀번호가 일치하지 않습니다.");
+      setIsModalOpen(true);
+      return;
     }
 
     const payload = {
@@ -204,10 +205,21 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = "student" })
         <div className="w-full max-w-2xl my-8">
           <div className="flex justify-center mb-8 cursor-pointer" onClick={onBack}>
             <div className="flex items-center space-x-3">
-                <svg className="w-10 h-10 text-brand-blue" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.627 48.627 0 0 1 12 20.904a48.627 48.627 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.57 50.57 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5" />
-                </svg>
-                <h1 className="text-3xl font-bold text-brand-blue">학사 관리 시스템</h1>
+              <svg
+                className="w-10 h-10 text-brand-blue"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.627 48.627 0 0 1 12 20.904a48.627 48.627 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.57 50.57 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5"
+                />
+              </svg>
+              <h1 className="text-3xl font-bold text-brand-blue">학사 관리 시스템</h1>
             </div>
           </div>
           <div className="bg-white p-8 rounded-lg border border-brand-gray shadow-sm">
@@ -238,52 +250,58 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = "student" })
                 <div className="md:col-span-2">
                   <h3 className="text-lg font-semibold mb-2 text-gray-700">기본 정보</h3>
                 </div>
-                
+
                 {/* ID with Check Button */}
                 <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">아이디</label>
-                    <div className="flex gap-2">
-                        <input
-                            type="text"
-                            className="flex-1 block w-full px-3 py-2 bg-white border border-slate-300 text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue rounded-md"
-                            value={regData.m_id}
-                            onChange={(e) => handleInputChange("m_id", e.target.value)}
-                            required
-                        />
-                        <Button type="button" onClick={checkIdDuplicate} className="whitespace-nowrap bg-slate-600 hover:bg-slate-700 py-2">
-                            중복확인
-                        </Button>
-                    </div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">아이디</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      className="flex-1 block w-full px-3 py-2 bg-white border border-slate-300 text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue rounded-md"
+                      value={regData.m_id}
+                      onChange={(e) => handleInputChange("m_id", e.target.value)}
+                      required
+                    />
+                    <Button type="button" onClick={checkIdDuplicate} className="whitespace-nowrap bg-slate-600 hover:bg-slate-700 py-2">
+                      중복확인
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Password and Confirm Password */}
                 <div className="md:col-span-2 grid grid-cols-2 gap-4">
-                    <Input label="비밀번호" type="password" value={regData.m_pwd} onChange={(e) => handleInputChange("m_pwd", e.target.value)} required />
-                    <Input label="비밀번호 확인" type="password" value={confirmPwd} onChange={(e) => setConfirmPwd(e.target.value)} required />
+                  <Input
+                    label="비밀번호"
+                    type="password"
+                    value={regData.m_pwd}
+                    onChange={(e) => handleInputChange("m_pwd", e.target.value)}
+                    required
+                  />
+                  <Input label="비밀번호 확인" type="password" value={confirmPwd} onChange={(e) => setConfirmPwd(e.target.value)} required />
                 </div>
 
                 <Input label="이름" value={regData.m_name} onChange={(e) => handleInputChange("m_name", e.target.value)} required />
-                
+
                 {/* Email Split */}
                 <div className="md:col-span-2 space-y-1">
-                    <label className="text-sm font-medium text-slate-700">이메일</label>
-                    <div className="flex items-center gap-2">
-                        <input
-                            type="text"
-                            className="flex-1 w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-blue/50"
-                            value={emailLocal}
-                            onChange={(e) => setEmailLocal(e.target.value)}
-                            required
-                        />
-                        <span className="text-slate-500 font-bold">@</span>
-                        <input
-                            type="text"
-                            className="flex-1 w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-blue/50"
-                            value={emailDomain}
-                            onChange={(e) => setEmailDomain(e.target.value)}
-                            required
-                        />
-                    </div>
+                  <label className="text-sm font-medium text-slate-700">이메일</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      className="flex-1 w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-blue/50"
+                      value={emailLocal}
+                      onChange={(e) => setEmailLocal(e.target.value)}
+                      required
+                    />
+                    <span className="text-slate-500 font-bold">@</span>
+                    <input
+                      type="text"
+                      className="flex-1 w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-blue/50"
+                      value={emailDomain}
+                      onChange={(e) => setEmailDomain(e.target.value)}
+                      required
+                    />
+                  </div>
                 </div>
 
                 <Input
@@ -301,23 +319,24 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = "student" })
                 <div className="md:col-span-2">
                   <Input label="주소" value={regData.m_addr} onChange={(e) => handleInputChange("m_addr", e.target.value)} />
                 </div>
-                
+
                 {/* Department Select */}
                 <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">학과</label>
-                    <select
-                        className="block w-full px-3 py-2 bg-white border border-slate-300 text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue rounded-md"
-                        value={regData.dept_code}
-                        onChange={(e) => handleInputChange("dept_code", e.target.value)}
-                        required
-                    >
-                        <option value="">학과 선택</option>
-                        {Array.isArray(departments) && departments.map((dept) => (
-                            <option key={dept.deptCode} value={dept.deptCode}>
-                                {dept.deptName}
-                            </option>
-                        ))}
-                    </select>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">학과</label>
+                  <select
+                    className="block w-full px-3 py-2 bg-white border border-slate-300 text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue rounded-md"
+                    value={regData.dept_code}
+                    onChange={(e) => handleInputChange("dept_code", e.target.value)}
+                    required
+                  >
+                    <option value="">학과 선택</option>
+                    {Array.isArray(departments) &&
+                      departments.map((dept) => (
+                        <option key={dept.deptCode} value={dept.deptCode}>
+                          {dept.deptName}
+                        </option>
+                      ))}
+                  </select>
                 </div>
 
                 <div className="md:col-span-2 mt-4 pt-4 border-t">
@@ -327,20 +346,20 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = "student" })
                 {regRole === "student" && (
                   <>
                     <Input label="학번" value={regData.m_no} onChange={(e) => handleInputChange("m_no", e.target.value)} required />
-                    
+
                     {/* Student Grade (Default 1) */}
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">학년</label>
-                        <select
-                            className="block w-full px-3 py-2 bg-white border border-slate-300 text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue rounded-md"
-                            value={regData.stu_grade}
-                            onChange={(e) => handleInputChange("stu_grade", e.target.value)}
-                        >
-                            <option value="1">1학년</option>
-                            <option value="2">2학년</option>
-                            <option value="3">3학년</option>
-                            <option value="4">4학년</option>
-                        </select>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">학년</label>
+                      <select
+                        className="block w-full px-3 py-2 bg-white border border-slate-300 text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue rounded-md"
+                        value={regData.stu_grade}
+                        onChange={(e) => handleInputChange("stu_grade", e.target.value)}
+                      >
+                        <option value="1">1학년</option>
+                        <option value="2">2학년</option>
+                        <option value="3">3학년</option>
+                        <option value="4">4학년</option>
+                      </select>
                     </div>
 
                     <div className="md:col-span-2">
@@ -362,19 +381,19 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = "student" })
                 {regRole === "professor" && (
                   <>
                     <Input label="교번/사번" value={regData.m_no} onChange={(e) => handleInputChange("m_no", e.target.value)} required />
-                    
+
                     {/* Professor Position Select */}
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">직위</label>
-                        <select
-                            className="block w-full px-3 py-2 bg-white border border-slate-300 text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue rounded-md"
-                            value={regData.position}
-                            onChange={(e) => handleInputChange("position", e.target.value)}
-                        >
-                            <option value="정교수">정교수</option>
-                            <option value="부교수">부교수</option>
-                            <option value="조교수">조교수</option>
-                        </select>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">직위</label>
+                      <select
+                        className="block w-full px-3 py-2 bg-white border border-slate-300 text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue rounded-md"
+                        value={regData.position}
+                        onChange={(e) => handleInputChange("position", e.target.value)}
+                      >
+                        <option value="정교수">정교수</option>
+                        <option value="부교수">부교수</option>
+                        <option value="조교수">조교수</option>
+                      </select>
                     </div>
 
                     <Input label="연구실 (호실)" value={regData.office_room} onChange={(e) => handleInputChange("office_room", e.target.value)} />
@@ -413,12 +432,23 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = "student" })
     <div className="min-h-screen flex items-center justify-center bg-brand-gray-light p-4">
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-8 cursor-pointer" onClick={onBack}>
-            <div className="flex items-center space-x-3">
-                <svg className="w-10 h-10 text-brand-blue" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.627 48.627 0 0 1 12 20.904a48.627 48.627 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.57 50.57 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5" />
-                </svg>
-                <h1 className="text-3xl font-bold text-brand-blue">학사 관리 시스템</h1>
-            </div>
+          <div className="flex items-center space-x-3">
+            <svg
+              className="w-10 h-10 text-brand-blue"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.627 48.627 0 0 1 12 20.904a48.627 48.627 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.57 50.57 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5"
+              />
+            </svg>
+            <h1 className="text-3xl font-bold text-brand-blue">학사 관리 시스템</h1>
+          </div>
         </div>
         <div className="bg-white p-8 rounded-lg border border-brand-gray shadow-sm">
           <form onSubmit={handleLogin} className="space-y-6">

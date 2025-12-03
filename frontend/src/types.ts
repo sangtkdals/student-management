@@ -257,14 +257,14 @@ export interface CourseEvaluation {
 export interface AcademicSchedule {
   scheduleId: number;
   academicYear: number;
-  semester: number; // 0이면 전체 학기
-  title: string; // schedule_title
-  content?: string;
+  semester: number;
+  scheduleTitle: string;
+  scheduleContent?: string;
   startDate: string;
   endDate: string;
   backgroundColor?: string;
-  category?: "academic" | "holiday" | "event"; // for ProfessorViews.tsx, CommonViews.tsx
-  recurrenceType: "NONE" | "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY";
+  category?: "academic" | "holiday" | "event";
+  recurrenceType?: string;
 }
 
 // =====================================================
