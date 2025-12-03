@@ -78,7 +78,7 @@ export interface Subject {
 // 4. Course (개설 강좌 - 실제 열린 수업)
 // =====================================================
 export interface CourseSchedule {
-  dayOfWeek: number;
+  dayOfWeek: string;
   startTime: string; // "HH:mm:ss"
   endTime: string; // "HH:mm:ss"
 }
@@ -93,6 +93,7 @@ export interface Course {
   maxStudents: number;
   classroom?: string;
   courseSchedules?: CourseSchedule[];
+  courseTime?: string;
 
   // 강의 계획서 관련
   objectives?: string;
@@ -105,6 +106,7 @@ export interface Course {
   subjectName?: string;
   professorName?: string;
   credit?: number; // subject 테이블에서 가져옴
+  deptCode?: string; // 추가: 학과 코드
   subject?: Subject; // For filtering by type
   currentStudents?: number; // From DTO
 }
@@ -255,14 +257,14 @@ export interface CourseEvaluation {
 export interface AcademicSchedule {
   scheduleId: number;
   academicYear: number;
-  semester: number; // 0이면 전체 학기
-  title: string; // schedule_title
-  content?: string;
+  semester: number;
+  scheduleTitle: string;
+  scheduleContent?: string;
   startDate: string;
   endDate: string;
   backgroundColor?: string;
-  category?: "academic" | "holiday" | "event"; // for ProfessorViews.tsx, CommonViews.tsx
-  recurrenceType: "NONE" | "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY";
+  category?: "academic" | "holiday" | "event";
+  recurrenceType?: string;
 }
 
 // =====================================================

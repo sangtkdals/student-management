@@ -1,6 +1,9 @@
 package com.example.studentmanagement.repository;
 
 import com.example.studentmanagement.beans.Enrollment;
+
+import jakarta.transaction.Transactional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -19,4 +22,7 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Integer>
     List<Enrollment> findByStudent_MemberNo(@Param("studentNo") String studentNo);
 
     long countByCourse_CourseCode(String courseCode);
+
+    @Transactional
+    void deleteByCourse_CourseCode(String courseCode);
 }
