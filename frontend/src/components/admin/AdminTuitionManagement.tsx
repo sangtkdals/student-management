@@ -32,6 +32,7 @@ export const AdminTuitionManagement: React.FC = () => {
 
   useEffect(() => {
     fetchTuitionList();
+    fetchDepartments();
   }, []);
 
   const fetchTuitionList = async () => {
