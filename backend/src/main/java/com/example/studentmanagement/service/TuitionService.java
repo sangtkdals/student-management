@@ -292,7 +292,7 @@ public class TuitionService {
     // 학과별 학생 목록 조회 (등록금 생성 여부 포함)
     public List<StudentTuitionStatusDTO> getStudentsByDepartmentWithTuitionStatus(String deptCode, Integer academicYear, Integer semester) {
         // 해당 학과의 모든 학생 조회
-        List<Member> students = memberRepository.findByDepartment_DeptCode(deptCode);
+        List<Member> students = memberRepository.findByDepartment_DeptCodeAndMemberType(deptCode, "STUDENT");
 
         // 각 학생에 대해 등록금 생성 여부 확인
         return students.stream()
@@ -356,7 +356,7 @@ public class TuitionService {
                     .collect(Collectors.toList());
         } else {
             // 학과 전체 학생 조회
-            targetStudents = memberRepository.findByDepartment_DeptCode(request.getDeptCode());
+            targetStudents = memberRepository.findByDepartment_DeptCodeAndMemberType(request.getDeptCode(), "STUDENT");
         }
 
         if (targetStudents.isEmpty()) {

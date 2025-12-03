@@ -2,6 +2,7 @@ package com.example.studentmanagement.controller;
 
 import com.example.studentmanagement.beans.Department;
 import com.example.studentmanagement.service.DepartmentService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,6 +16,7 @@ public class DepartmentController {
 
     private final DepartmentService departmentService;
 
+    @Autowired
     public DepartmentController(DepartmentService departmentService) {
         this.departmentService = departmentService;
     }
