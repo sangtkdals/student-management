@@ -51,7 +51,7 @@ public class Course {
     @Column(name = "classroom", length = 50)
     private String classroom;
 
-    @OneToMany(mappedBy = "course", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "course", fetch = FetchType.EAGER, cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private List<CourseSchedule> courseSchedules;
 
