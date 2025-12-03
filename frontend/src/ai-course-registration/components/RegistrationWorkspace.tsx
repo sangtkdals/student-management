@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { Course } from '../types';
-import SelectedCourses from './SelectedCourses';
-import MyTimetable from './MyTimetable';
-import Wishlist from './Wishlist';
-import { ListBulletIcon, TableCellsIcon, BookmarkIcon } from './icons/Icons';
+import React, { useState } from "react";
+import { Course } from "../types";
+import SelectedCourses from "./SelectedCourses";
+import MyTimetable from "./MyTimetable";
+import Wishlist from "./Wishlist";
+import { ListBulletIcon, TableCellsIcon, BookmarkIcon } from "./icons/Icons";
 
 interface RegistrationWorkspaceProps {
   courses: Course[];
@@ -13,16 +13,22 @@ interface RegistrationWorkspaceProps {
   onRegisterFromWishlist: (course: Course) => void;
 }
 
-type View = 'list' | 'MyTimetable' | 'wishlist';
+type View = "list" | "MyTimetable" | "wishlist";
 
-const RegistrationWorkspace: React.FC<RegistrationWorkspaceProps> = ({ courses, wishlist, onRemoveCourse, onRemoveFromWishlist, onRegisterFromWishlist }) => {
-  const [activeView, setActiveView] = useState<View>('list');
+const RegistrationWorkspace: React.FC<RegistrationWorkspaceProps> = ({
+  courses,
+  wishlist,
+  onRemoveCourse,
+  onRemoveFromWishlist,
+  onRegisterFromWishlist,
+}) => {
+  const [activeView, setActiveView] = useState<View>("list");
 
-  const TabButton: React.FC<{ view: View, label: string, icon: React.ReactNode }> = ({ view, label, icon }) => (
+  const TabButton: React.FC<{ view: View; label: string; icon: React.ReactNode }> = ({ view, label, icon }) => (
     <button
       onClick={() => setActiveView(view)}
       className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-md transition-colors ${
-        activeView === view ? 'bg-blue-600 text-white shadow' : 'text-gray-600 hover:bg-gray-200'
+        activeView === view ? "bg-blue-600 text-white shadow" : "text-gray-600 hover:bg-gray-200"
       }`}
     >
       {icon}
@@ -40,21 +46,13 @@ const RegistrationWorkspace: React.FC<RegistrationWorkspaceProps> = ({ courses, 
           <TabButton view="MyTimetable" label="시간표" icon={<TableCellsIcon className="h-5 w-5" />} />
         </div>
       </div>
-      
+
       <div className="flex-grow overflow-hidden">
-        {activeView === 'list' && (
-          <SelectedCourses courses={courses} onRemoveCourse={onRemoveCourse} />
+        {activeView === "list" && <SelectedCourses courses={courses} onRemoveCourse={onRemoveCourse} />}
+        {activeView === "wishlist" && (
+          <Wishlist courses={wishlist} onRemoveFromWishlist={onRemoveFromWishlist} onRegisterFromWishlist={onRegisterFromWishlist} />
         )}
-        {activeView === 'wishlist' && (
-          <Wishlist 
-            courses={wishlist} 
-            onRemoveFromWishlist={onRemoveFromWishlist}
-            onRegisterFromWishlist={onRegisterFromWishlist}
-          />
-        )}
-        {activeView === 'MyTimetable' && (
-          <MyTimetable courses={courses} onRemoveCourse={onRemoveCourse} />
-        )}
+        {activeView === "MyTimetable" && <MyTimetable courses={courses} />}
       </div>
     </div>
   );

@@ -143,6 +143,29 @@ public class CourseController {
             course.setSubject(subject);
             course.setProfessor(professor);
 
+            // Check for schedule conflicts before saving
+            if (payload.containsKey("courseSchedules")) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> newSchedules = (List<Map<String, Object>>) payload.get("courseSchedules");
+
+                List<Course> existingCourses = courseRepository.findByProfessor_MemberNo(professorNo);
+                for (Map<String, Object> newScheduleMap : newSchedules) {
+                    int dayOfWeek = getInteger(newScheduleMap, "dayOfWeek");
+                    LocalTime startTime = LocalTime.parse((String) newScheduleMap.get("startTime"));
+                    LocalTime endTime = LocalTime.parse((String) newScheduleMap.get("endTime"));
+
+                    for (Course existingCourse : existingCourses) {
+                        for (CourseSchedule existingSchedule : existingCourse.getCourseSchedules()) {
+                            if (existingSchedule.getDayOfWeek() == dayOfWeek) {
+                                if (startTime.isBefore(existingSchedule.getEndTime()) && endTime.isAfter(existingSchedule.getStartTime())) {
+                                    return ResponseEntity.badRequest().body("이미 해당 시간에 할당된 강의가 있습니다.");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             courseRepository.save(course);
 
             // Save course schedules
@@ -186,12 +209,15 @@ public class CourseController {
     // Delete course
     @DeleteMapping("/{courseCode}")
     public ResponseEntity<?> deleteCourse(@PathVariable("courseCode") String courseCode) {
-        if (courseRepository.existsById(courseCode)) {
-            courseRepository.deleteById(courseCode);
+        return courseRepository.findById(courseCode).map(course -> {
+            // Delete related enrollments
+            enrollmentRepository.deleteByCourse_CourseCode(courseCode);
+            
+            // Delete the course
+            courseRepository.delete(course);
+            
             return ResponseEntity.ok("강의가 삭제되었습니다.");
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+        }).orElse(ResponseEntity.notFound().build());
     }
 
     private Integer getInteger(Map<String, Object> payload, String key) {
