@@ -78,7 +78,7 @@ export interface Subject {
 // 4. Course (개설 강좌 - 실제 열린 수업)
 // =====================================================
 export interface CourseSchedule {
-  dayOfWeek: number;
+  dayOfWeek: string;
   startTime: string; // "HH:mm:ss"
   endTime: string; // "HH:mm:ss"
 }

@@ -462,3 +462,19 @@ INSERT INTO course_schedule (course_code, day_of_week, start_time, end_time) VAL
 ('CSE2010_01', 1, '15:00:00', '16:50:00'),
 ('CSE2020_01', 2, '10:00:00', '11:50:00'),
 ('CSE3030_01', 3, '13:00:00', '14:50:00');
+
+-- =====================================================
+-- Additional User Insertion
+-- =====================================================
+
+-- 신규 학생 계정 추가
+INSERT INTO member (m_id, m_pwd, m_name, m_type, m_no, m_email, dept_code)
+VALUES ('new_student', '1234', '박새로이', 'STUDENT', '20240001', 'new.student@deu.ac.kr', 'CS');
+INSERT INTO student_member (m_id, stu_grade, enrollment_status)
+VALUES ('new_student', 1, 'ENROLLED');
+
+-- 신규 교수 계정 추가
+INSERT INTO member (m_id, m_pwd, m_name, m_type, m_no, m_email, dept_code)
+VALUES ('new_professor', '1234', '최교수', 'PROFESSOR', 'prof005', 'new.professor@deu.ac.kr', 'CS');
+INSERT INTO professor_member (m_id, position, office_room, start_date)
+VALUES ('new_professor', '조교수', '정보관 408호', '2024-03-01');
