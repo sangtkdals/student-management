@@ -4,6 +4,7 @@ import com.example.studentmanagement.util.JwtRequestFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -20,6 +21,7 @@ import java.util.Collections;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final JwtRequestFilter jwtRequestFilter;
@@ -33,24 +35,47 @@ public class SecurityConfig {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Allow preflight requests
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // CORS 사전 요청 허용
+
+                // **공개 접근 (인증 불필요)**
                 .requestMatchers(
                         "/api/login",
                         "/api/register",
                         "/api/refreshtoken",
                         "/api/hello",
                         "/error",
-                        "/api/announcements/**",
                         "/actuator/**",
-                        "/api/courses/**",
-                        "/api/materials/**",
-                        "/api/attendance/**",
-                        "/api/enrollments/**",
-                        "/api/departments",
-                        "/api/check-id",
-                        "/api/schedules"
+                        "/api/check-id"
                 ).permitAll()
-                .requestMatchers("/api/admin/**").authenticated()
+                .requestMatchers(HttpMethod.GET,
+                        "/api/announcements/**", // 공지사항 조회
+                        "/api/schedules/**",      // 학사일정 조회
+                        "/api/departments/**",    // 학과 조회
+                        "/api/courses/**"         // 강의 조회
+                ).permitAll()
+
+                // **관리자(ADMIN)만 접근 가능**
+                .requestMatchers("/api/admin/**").hasRole("ADMIN") // AdminLeaveApplicationController, AdminTuitionController 등
+                .requestMatchers(HttpMethod.POST, "/api/announcements/**").hasRole("ADMIN") // 공지사항 작성
+                .requestMatchers(HttpMethod.PUT, "/api/announcements/**").hasRole("ADMIN") // 공지사항 수정
+                .requestMatchers(HttpMethod.DELETE, "/api/announcements/**").hasRole("ADMIN") // 공지사항 삭제
+                .requestMatchers(HttpMethod.POST, "/api/schedules/**").hasRole("ADMIN") // 학사일정 생성
+                .requestMatchers(HttpMethod.PUT, "/api/schedules/**").hasRole("ADMIN") // 학사일정 수정
+                .requestMatchers(HttpMethod.DELETE, "/api/schedules/**").hasRole("ADMIN") // 학사일정 삭제
+
+                // **학생(STUDENT)만 접근 가능**
+                .requestMatchers("/api/student/**").hasRole("STUDENT") // StudentLeaveApplicationController 등
+                .requestMatchers("/api/enrollments/**").hasRole("STUDENT") // 수강신청 관련
+
+                // **교수(PROFESSOR)만 접근 가능**
+                .requestMatchers("/api/professor/**").hasRole("PROFESSOR")
+                .requestMatchers(
+                        "/api/grades/**",       // 성적 관리
+                        "/api/attendance/**",   // 출결 관리
+                        "/api/materials/**"     // 강의자료 관리
+                ).hasRole("PROFESSOR")
+
+                // **나머지 모든 요청은 인증 필요**
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session

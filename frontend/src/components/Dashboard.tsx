@@ -2,19 +2,25 @@ import React from "react";
 import type { User } from "../types";
 import StudentDashboard from "./student/StudentDashboard";
 import { ProfessorHome } from "./professor/ProfessorHome";
+import { AdminDashboard } from "./admin";
 
 const Dashboard: React.FC<{ user: User }> = ({ user }) => {
-  if (user.role.toLowerCase() === "student") {
+  const role = user.role.toLowerCase();
+
+  if (role === "student") {
     return <StudentDashboard user={user} />;
   }
 
-  if (user.role.toLowerCase() === "professor") {
+  if (role === "professor") {
     return <ProfessorHome user={user} />;
   }
 
-  // 기본적으로 학생 대시보드를 보여주거나, 권한에 맞는 다른 페이지로 리디렉션 할 수 있습니다.
-  // 여기서는 학생 대시보드를 기본값으로 설정합니다.
-  return <StudentDashboard user={user} />;
+  if (role === "admin") {
+    return <AdminDashboard />;
+  }
+
+  // Fallback or handle unknown roles
+  return <div>Unknown role. Please contact support.</div>;
 };
 
 export default Dashboard;

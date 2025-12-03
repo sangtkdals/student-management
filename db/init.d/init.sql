@@ -3,7 +3,7 @@
 -- =====================================================
 
 -- Create and select database
-CREATE DATABASE IF NOT EXISTS `deu` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+CREATE DATABASE IF NOT EXISTS `deu` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 USE `deu`;
 
 -- Ensure default engine is InnoDB for FK support

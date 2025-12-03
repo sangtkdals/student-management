@@ -36,14 +36,14 @@ import { ProfessorSyllabus } from "./components/professor/ProfessorSyllabus";
 import { ProfessorCourseMaterials, ProfessorAssignments } from "./components/professor/ProfessorMiscViews";
 
 // Admin Views
-import { 
-  AdminDashboard, 
-  AdminUserManagement, 
+import {
+  AdminDashboard,
+  AdminUserManagement,
   AdminSystemManagement,
   AdminLeaveManagement,
   AdminNoticeManagement,
   AdminScheduleManagement,
-  AdminTuitionManagement, 
+  AdminTuitionManagement,
 } from "./components/admin";
 
 // Loading Bar Component
@@ -274,14 +274,7 @@ const AppRoutes = ({ user, onLogout, enrolledCourses }: { user: User; onLogout: 
           {/* Admin Specific Routes */}
           {user.role === "admin" && (
             <>
-              <Route
-                path="/admin/dashboard"
-                element={
-                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <AdminDashboard />
-                  </div>
-                }
-              />
+              <Route path="/admin/dashboard" element={<Dashboard user={user} />} />
               <Route
                 path="/admin/user-management"
                 element={

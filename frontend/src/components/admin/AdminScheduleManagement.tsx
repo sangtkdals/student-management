@@ -1,165 +1,169 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { Card, Table, Button, Input } from "../ui";
-import type { AcademicSchedule } from "../../types";
+import { AcademicSchedule } from "../../types";
+import { Card, Button, Input, Modal } from "../ui";
 
 export const AdminScheduleManagement: React.FC = () => {
   const [schedules, setSchedules] = useState<AcademicSchedule[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    academicYear: new Date().getFullYear(),
-    semester: 1,
-    title: "",
-    content: "",
-    startDate: "",
-    endDate: "",
-    backgroundColor: "#3B82F6",
-    recurrenceType: "NONE"
-  });
+  const [selectedSchedule, setSelectedSchedule] = useState<Partial<AcademicSchedule> | null>(null);
+
+  const fetchSchedules = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/schedules");
+      if (response.ok) {
+        setSchedules(await response.json());
+      }
+    } catch (error) {
+      console.error("Failed to fetch schedules:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchSchedules();
   }, []);
 
-  const fetchSchedules = async () => {
-    try {
-      const response = await axios.get("/api/schedules");
-      setSchedules(response.data);
-    } catch (error) {
-      console.error("Error fetching schedules:", error);
-    }
-  };
-
-  const handleAdd = () => {
-    setFormData({
-      academicYear: new Date().getFullYear(),
-      semester: 1,
-      title: "",
-      content: "",
-      startDate: "",
-      endDate: "",
-      backgroundColor: "#3B82F6",
-      recurrenceType: "NONE"
-    });
-    setIsModalOpen(true);
-  };
-
   const handleSave = async () => {
+    if (!selectedSchedule) return;
+
+    const method = selectedSchedule.scheduleId ? "PUT" : "POST";
+    const url = selectedSchedule.scheduleId ? `/api/schedules/${selectedSchedule.scheduleId}` : "/api/schedules";
+
     try {
-      const token = localStorage.getItem('token');
-      await axios.post("/api/schedules", formData, {
-        headers: { 'Authorization': `Bearer ${token}` }
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
+        body: JSON.stringify(selectedSchedule),
       });
-      fetchSchedules();
-      setIsModalOpen(false);
-      alert("일정이 추가되었습니다.");
+
+      if (response.ok) {
+        await fetchSchedules();
+        closeModal();
+      } else {
+        console.error("Failed to save schedule");
+      }
     } catch (error) {
       console.error("Error saving schedule:", error);
-      alert("저장 실패");
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (confirm("삭제하시겠습니까?")) {
+    if (window.confirm("정말로 이 일정을 삭제하시겠습니까?")) {
       try {
-        const token = localStorage.getItem('token');
-        await axios.delete(`/api/schedules/${id}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+        const response = await fetch(`/api/schedules/${id}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
-        fetchSchedules();
-        alert("삭제되었습니다.");
+        if (response.ok) {
+          await fetchSchedules();
+        }
       } catch (error) {
-        console.error("Error deleting schedule:", error);
-        alert("삭제 실패");
+        console.error("Failed to delete schedule:", error);
       }
     }
   };
 
+  const openModal = (schedule: Partial<AcademicSchedule> | null = null) => {
+    setSelectedSchedule(schedule ? { ...schedule } : { scheduleTitle: "", startDate: "", endDate: "", category: "academic" });
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedSchedule(null);
+  };
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <Card title="학사일정 관리">
-        <div className="mb-4 flex justify-end">
-          <Button onClick={handleAdd}>일정 추가</Button>
+    <Card title="학사일정 관리">
+      <div className="mb-4">
+        <Button onClick={() => openModal()}>새 일정 추가</Button>
+      </div>
+      {isLoading ? (
+        <p>로딩 중...</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white">
+            <thead className="bg-slate-50">
+              <tr>
+                <th className="py-2 px-4 border-b">제목</th>
+                <th className="py-2 px-4 border-b">시작일</th>
+                <th className="py-2 px-4 border-b">종료일</th>
+                <th className="py-2 px-4 border-b">카테고리</th>
+                <th className="py-2 px-4 border-b">작업</th>
+              </tr>
+            </thead>
+            <tbody>
+              {schedules.map((schedule) => (
+                <tr key={schedule.scheduleId} className="text-center">
+                  <td className="py-2 px-4 border-b">{schedule.scheduleTitle}</td>
+                  <td className="py-2 px-4 border-b">{schedule.startDate}</td>
+                  <td className="py-2 px-4 border-b">{schedule.endDate}</td>
+                  <td className="py-2 px-4 border-b">{schedule.category}</td>
+                  <td className="py-2 px-4 border-b">
+                    <Button variant="secondary" size="sm" onClick={() => openModal(schedule)}>
+                      수정
+                    </Button>
+                    <Button variant="danger" size="sm" className="ml-2" onClick={() => handleDelete(schedule.scheduleId)}>
+                      삭제
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
+      )}
 
-        <Table headers={["학년도", "학기", "제목", "시작일", "종료일", "관리"]}>
-          {schedules.map((schedule) => (
-            <tr key={schedule.scheduleId}>
-              <td className="px-6 py-4 text-sm">{schedule.academicYear}</td>
-              <td className="px-6 py-4 text-sm">{schedule.semester}</td>
-              <td className="px-6 py-4 text-sm font-medium">{schedule.title}</td>
-              <td className="px-6 py-4 text-sm">{schedule.startDate}</td>
-              <td className="px-6 py-4 text-sm">{schedule.endDate}</td>
-              <td className="px-6 py-4 text-sm">
-                <Button variant="secondary" onClick={() => handleDelete(schedule.scheduleId)}>
-                  삭제
-                </Button>
-              </td>
-            </tr>
-          ))}
-        </Table>
-
-        {/* 모달 */}
-        {isModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg w-[500px]">
-              <h3 className="text-xl font-bold mb-4">일정 추가</h3>
-
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <Input
-                  label="학년도"
-                  type="number"
-                  value={formData.academicYear}
-                  onChange={(e) => setFormData({...formData, academicYear: Number(e.target.value)})}
-                />
-                <Input
-                  label="학기"
-                  type="number"
-                  value={formData.semester}
-                  onChange={(e) => setFormData({...formData, semester: Number(e.target.value)})}
-                />
-              </div>
-
-              <Input
-                label="제목"
-                value={formData.title}
-                onChange={(e) => setFormData({...formData, title: e.target.value})}
-              />
-
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-slate-700 mb-2">내용</label>
-                <textarea
-                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-blue"
-                  rows={3}
-                  value={formData.content}
-                  onChange={(e) => setFormData({...formData, content: e.target.value})}
-                  placeholder="일정 내용을 입력하세요"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                <Input
-                  label="시작일"
-                  type="date"
-                  value={formData.startDate}
-                  onChange={(e) => setFormData({...formData, startDate: e.target.value})}
-                />
-                <Input
-                  label="종료일"
-                  type="date"
-                  value={formData.endDate}
-                  onChange={(e) => setFormData({...formData, endDate: e.target.value})}
-                />
-              </div>
-
-              <div className="flex justify-end space-x-2 mt-6">
-                <Button variant="secondary" onClick={() => setIsModalOpen(false)}>취소</Button>
-                <Button onClick={handleSave}>저장</Button>
-              </div>
+      {selectedSchedule && (
+        <Modal isOpen={isModalOpen} onClose={closeModal} title={selectedSchedule.scheduleId ? "일정 수정" : "새 일정 추가"}>
+          <div className="space-y-4 p-4">
+            <Input
+              label="제목"
+              value={selectedSchedule.scheduleTitle || ""}
+              onChange={(e) => setSelectedSchedule({ ...selectedSchedule, scheduleTitle: e.target.value })}
+            />
+            <Input
+              label="시작일"
+              type="date"
+              value={selectedSchedule.startDate || ""}
+              onChange={(e) => setSelectedSchedule({ ...selectedSchedule, startDate: e.target.value })}
+            />
+            <Input
+              label="종료일"
+              type="date"
+              value={selectedSchedule.endDate || ""}
+              onChange={(e) => setSelectedSchedule({ ...selectedSchedule, endDate: e.target.value })}
+            />
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">카테고리</label>
+              <select
+                value={selectedSchedule.category || "academic"}
+                onChange={(e) => setSelectedSchedule({ ...selectedSchedule, category: e.target.value as "academic" | "holiday" | "event" })}
+                className="block w-full px-3 py-2 bg-white border border-slate-300 text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue rounded-md"
+              >
+                <option value="academic">학사</option>
+                <option value="holiday">휴일</option>
+                <option value="event">행사</option>
+              </select>
+            </div>
+            <textarea
+              placeholder="내용"
+              value={selectedSchedule.scheduleContent || ""}
+              onChange={(e) => setSelectedSchedule({ ...selectedSchedule, scheduleContent: e.target.value })}
+              className="block w-full px-3 py-2 bg-white border border-slate-300 text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue rounded-md"
+            />
+            <div className="flex justify-end space-x-2">
+              <Button variant="secondary" onClick={closeModal}>
+                취소
+              </Button>
+              <Button onClick={handleSave}>저장</Button>
             </div>
           </div>
-        )}
-      </Card>
-    </div>
+        </Modal>
+      )}
+    </Card>
   );
 };
