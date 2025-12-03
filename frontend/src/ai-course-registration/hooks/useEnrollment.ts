@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Course, User } from "../types";
 
 // Helper function for time conflict checking
@@ -14,6 +14,10 @@ export const useEnrollment = (
 ) => {
   const [selectedCourses, setSelectedCourses] = useState<Course[]>(initialEnrolledCourses);
   const [wishlist, setWishlist] = useState<Course[]>([]); // Wishlist might be better in its own hook, but let's keep it here for now to simplify.
+
+  useEffect(() => {
+    setSelectedCourses(initialEnrolledCourses);
+  }, [initialEnrolledCourses]);
 
   const currentCredits = useMemo(() => {
     return selectedCourses.reduce((sum, course) => sum + (course.credit || 0), 0);
