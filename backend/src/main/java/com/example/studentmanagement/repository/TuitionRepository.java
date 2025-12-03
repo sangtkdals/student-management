@@ -26,6 +26,8 @@ public interface TuitionRepository extends JpaRepository<Tuition, Integer> {
         @Param("semester") Integer semester
     );
 
+    boolean existsByStudent_MemberNoAndAcademicYearAndSemester(String studentNo, Integer academicYear, Integer semester);
+
     // 미납 등록금 조회 (결제 상태가 '미납'인 경우)
     @Query("SELECT t FROM Tuition t WHERE t.paymentStatus = 'UNPAID' ORDER BY t.dueDate ASC")
     List<Tuition> findUnpaidTuitions();
@@ -33,4 +35,11 @@ public interface TuitionRepository extends JpaRepository<Tuition, Integer> {
     // 마감일이 지난 미납 등록금 조회
     @Query("SELECT t FROM Tuition t WHERE t.paymentStatus = 'UNPAID' AND t.dueDate < CURRENT_DATE ORDER BY t.dueDate ASC")
     List<Tuition> findOverdueTuitions();
+
+    @Query("SELECT t FROM Tuition t JOIN t.student s WHERE s.department.deptCode = :deptCode AND t.academicYear = :academicYear AND t.semester = :semester")
+    List<Tuition> findByDepartmentCodeAndAcademicYearAndSemester(
+            @Param("deptCode") String deptCode,
+            @Param("academicYear") Integer academicYear,
+            @Param("semester") Integer semester
+    );
 }

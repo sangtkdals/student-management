@@ -16,6 +16,7 @@ public class TuitionDTO {
     private String studentName;
     private Integer academicYear;
     private Integer semester;
+    private String semesterLabel; // 학기 레이블 (1학기, 2학기, 여름계절학기, 겨울계절학기)
     private Integer tuitionAmount;
     private Integer scholarshipAmount;
     private Integer paidAmount;
@@ -33,6 +34,7 @@ public class TuitionDTO {
         this.studentName = studentName;
         this.academicYear = tuition.getAcademicYear();
         this.semester = tuition.getSemester();
+        this.semesterLabel = getSemesterLabel(tuition.getSemester());
         this.tuitionAmount = tuition.getTuitionAmount();
         this.scholarshipAmount = tuition.getScholarshipAmount();
         this.paidAmount = tuition.getPaidAmount();
@@ -42,5 +44,24 @@ public class TuitionDTO {
         this.paymentMethod = tuition.getPaymentMethod();
         this.receiptNo = tuition.getReceiptNo();
         this.paymentStatus = tuition.getPaymentStatus();
+    }
+
+    // 학기 번호를 문자열로 변환
+    private String getSemesterLabel(Integer semester) {
+        if (semester == null) {
+            return "";
+        }
+        switch (semester) {
+            case 1:
+                return "1학기";
+            case 2:
+                return "2학기";
+            case 3:
+                return "여름계절학기";
+            case 4:
+                return "겨울계절학기";
+            default:
+                return String.valueOf(semester);
+        }
     }
 }

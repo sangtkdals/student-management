@@ -1,5 +1,7 @@
 package com.example.studentmanagement.controller;
 
+import com.example.studentmanagement.dto.BatchTuitionRequestDTO;
+import com.example.studentmanagement.dto.StudentTuitionStatusDTO;
 import com.example.studentmanagement.dto.TuitionDTO;
 import com.example.studentmanagement.service.TuitionService;
 import org.springframework.http.ResponseEntity;
@@ -151,6 +153,88 @@ public class AdminTuitionController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.badRequest().body("납부 확인 처리 중 오류 발생: " + e.getMessage());
+        }
+    }
+
+    // 학과별 등록금 일괄 생성
+    @PostMapping("/batch-create/department/{deptCode}")
+    public ResponseEntity<String> batchCreateTuitions(
+            @PathVariable String deptCode,
+            @RequestParam int year,
+            @RequestParam int semester) {
+        try {
+            int createdCount = tuitionService.createTuitionBillsForDepartment(deptCode, year, semester);
+            String message = String.format(
+                "학과 코드 %s에 대한 등록금 고지서 %d건이 성공적으로 생성되었습니다.",
+                deptCode,
+                createdCount
+            );
+            return ResponseEntity.ok(message);
+        } catch (Exception e) {
+            // 예외 처리: 서비스 로직에서 발생한 예외를 처리합니다.
+            return ResponseEntity.status(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR)
+                                 .body("고지서 일괄 생성 중 오류가 발생했습니다: " + e.getMessage());
+        }
+    }
+
+    // 학과, 학년도, 학기별 등록금 조회
+    @GetMapping("/department/{deptCode}")
+    public ResponseEntity<List<TuitionDTO>> getTuitionsByDepartmentAndYearAndSemester(
+            @PathVariable String deptCode,
+            @RequestParam Integer academicYear,
+            @RequestParam Integer semester) {
+        try {
+            List<TuitionDTO> tuitions = tuitionService.getTuitionsByDepartmentAndYearAndSemester(deptCode, academicYear, semester);
+            return ResponseEntity.ok(tuitions);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // 학과별 학생 목록 조회 (등록금 생성 여부 포함)
+    @GetMapping("/department/{deptCode}/students")
+    public ResponseEntity<List<StudentTuitionStatusDTO>> getStudentsByDepartmentWithTuitionStatus(
+            @PathVariable String deptCode,
+            @RequestParam Integer academicYear,
+            @RequestParam Integer semester) {
+        try {
+            List<StudentTuitionStatusDTO> students = tuitionService.getStudentsByDepartmentWithTuitionStatus(deptCode, academicYear, semester);
+            return ResponseEntity.ok(students);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // 개선된 일괄 등록금 생성 (선택된 학생들만 또는 전체)
+    @PostMapping("/batch-create")
+    public ResponseEntity<String> batchCreateTuitionsV2(@RequestBody BatchTuitionRequestDTO request) {
+        try {
+            int createdCount = tuitionService.batchCreateTuitions(request);
+
+            String message;
+            if (request.getStudentNumbers() != null && !request.getStudentNumbers().isEmpty()) {
+                message = String.format(
+                    "선택된 학생 %d명에 대한 등록금 고지서 %d건이 성공적으로 생성되었습니다.",
+                    request.getStudentNumbers().size(),
+                    createdCount
+                );
+            } else {
+                message = String.format(
+                    "학과 코드 %s에 대한 등록금 고지서 %d건이 성공적으로 생성되었습니다.",
+                    request.getDeptCode(),
+                    createdCount
+                );
+            }
+
+            return ResponseEntity.ok(message);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("고지서 일괄 생성 중 오류가 발생했습니다: " + e.getMessage());
         }
     }
 }
