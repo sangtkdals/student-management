@@ -526,3 +526,60 @@ INSERT INTO academic_schedule (academic_year, semester, schedule_title, start_da
 (2025, 2, '개교기념일', '2025-11-03', '2025-11-03', 'holiday'),
 (2025, 2, '기말고사', '2025-12-15', '2025-12-19', 'academic'),
 (2025, 2, '동계 방학', '2025-12-22', '2026-02-28', 'academic');
+
+-- 1. 기존 데이터 정리 (중복 에러 방지용)
+SET FOREIGN_KEY_CHECKS = 0;
+TRUNCATE TABLE grade;
+TRUNCATE TABLE enrollment;
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- ==========================================================
+-- 시나리오 A: '김학생(20210001)' - 성적 처리가 완료된 케이스
+-- (학생용 '성적 조회' 및 교수용 '성적 수정' 테스트)
+-- ==========================================================
+
+-- A-1. 수강신청 데이터 넣기
+INSERT INTO enrollment (stu_no, course_code, enrollment_status, enrollment_date) VALUES
+('20210001', 'CSE4001_01', 'ENROLLED', NOW()), -- 소프트웨어 공학
+('20210001', 'CSE4002_01', 'ENROLLED', NOW()), -- 데이터베이스 시스템
+('20210001', 'GED1001_01', 'ENROLLED', NOW()); -- 글쓰기와 의사소통
+
+INSERT INTO grade (enrollment_id, midterm_score, final_score, assignment_score, attendance_score, total_score, grade_letter, grade_point)
+VALUES
+-- 1. 소프트웨어 공학: 총점 91점 (A0)
+(
+    (SELECT enrollment_id FROM enrollment WHERE stu_no='20210001' AND course_code='CSE4001_01'),
+    90, 90, 95, 90, 91.0, 'A0', 4.0
+),
+-- 2. 데이터베이스 시스템: 총점 80점 (B0)
+(
+    (SELECT enrollment_id FROM enrollment WHERE stu_no='20210001' AND course_code='CSE4002_01'),
+    80, 75, 90, 80, 80.0, 'B0', 3.0
+),
+-- 3. 글쓰기: 총점 100점 (A+)
+(
+    (SELECT enrollment_id FROM enrollment WHERE stu_no='20210001' AND course_code='GED1001_01'),
+    100, 100, 100, 100, 100.0, 'A+', 4.5
+);
+
+
+-- ==========================================================
+-- 시나리오 B: '박새로이(20240001)' - 이제 막 수강신청한 케이스
+-- (교수용 '성적 입력' 및 '저장' 버튼 테스트)
+-- ==========================================================
+
+-- B-1. 수강신청 데이터 넣기 (김교수님 강의 신청)
+INSERT INTO enrollment (stu_no, course_code, enrollment_status, enrollment_date) VALUES
+('20240001', 'CSE4002_01', 'ENROLLED', NOW()), -- 데이터베이스 시스템 (김교수 담당)
+('20240001', 'CSE2010_01', 'ENROLLED', NOW()); -- 자료구조 (김교수 담당)
+
+-- B-2. '빈 성적표(0점)' 생성하기
+-- (주의: 백엔드 로직상 이 데이터가 미리 있어야 교수님이 점수를 입력할 수 있음)
+INSERT INTO grade (enrollment_id, midterm_score, final_score, assignment_score, attendance_score, total_score, grade_letter, grade_point)
+SELECT enrollment_id, 0, 0, 0, 0, 0, NULL, 0
+FROM enrollment
+WHERE stu_no = '20240001'
+  AND course_code IN ('CSE4002_01', 'CSE2010_01');
+
+SELECT * FROM enrollment;
+SELECT * FROM grade;
