@@ -22,7 +22,7 @@ export const ProfessorCourseMaterials: React.FC<{ user: User }> = ({ user }) => 
           const data = await response.json();
           const mappedCourses = data.map((c: any) => ({
             ...c,
-            subjectName: c.courseName || c.subject?.sName || c.courseCode,
+            subjectName: c.subjectName || c.courseName || c.subject?.sName || c.courseCode,
           }));
           setMyCourses(mappedCourses);
           if (mappedCourses.length > 0) setCourse(mappedCourses[0]);
@@ -126,7 +126,7 @@ export const ProfessorCourseMaterials: React.FC<{ user: User }> = ({ user }) => 
             >
               {myCourses.map((c) => (
                 <option key={c.courseCode} value={c.courseCode}>
-                  {c.subjectName} ({c.courseCode})
+                  {c.subjectName}
                 </option>
               ))}
             </select>
@@ -237,7 +237,7 @@ export const ProfessorLectureMyTimetable: React.FC<{ user: User }> = ({ user }) 
           const data = await response.json();
           const mappedCourses = data.map((c: any) => ({
             ...c,
-            subjectName: c.courseName || c.subject?.sName || c.courseCode,
+            subjectName: c.subjectName || c.courseName || c.subject?.sName || c.courseCode,
           }));
           setMyCourses(mappedCourses);
         }

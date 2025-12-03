@@ -1,7 +1,7 @@
 package com.example.studentmanagement.controller;
 
 import com.example.studentmanagement.dto.StudentGradeDTO;
-import com.example.studentmanagement.repository.EnrollmentRepository;
+import com.example.studentmanagement.repository.ProfessorGradeRepository; 
 import com.example.studentmanagement.service.GradeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -15,14 +15,14 @@ import java.util.List;
 public class ProfessorController {
 
     @Autowired
-    private EnrollmentRepository enrollmentRepository;
+    private ProfessorGradeRepository professorGradeRepository;
 
     @Autowired
     private GradeService gradeService;
 
     @GetMapping("/courses/{courseCode}/students")
     public ResponseEntity<List<StudentGradeDTO>> getCourseStudents(@PathVariable String courseCode) {
-        List<StudentGradeDTO> students = enrollmentRepository.findStudentsByCourseCode(courseCode);
+        List<StudentGradeDTO> students = professorGradeRepository.findStudentsByCourseCode(courseCode);
         return ResponseEntity.ok(students);
     }
 

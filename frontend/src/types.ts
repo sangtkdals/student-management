@@ -77,6 +77,12 @@ export interface Subject {
 // =====================================================
 // 4. Course (개설 강좌 - 실제 열린 수업)
 // =====================================================
+export interface CourseSchedule {
+  dayOfWeek: string;
+  startTime: string; // "HH:mm:ss"
+  endTime: string; // "HH:mm:ss"
+}
+
 export interface Course {
   courseCode: string; // PK
   academicYear: number;
@@ -85,9 +91,9 @@ export interface Course {
   courseClass: string; // 분반 (01, 02...)
   professorNo: string; // FK -> Member(Professor)
   maxStudents: number;
-  currentStudents: number;
   classroom?: string;
-  courseTime?: string; // 예: "Mon 10:00-12:00"
+  courseSchedules?: CourseSchedule[];
+  courseTime?: string;
 
   // 강의 계획서 관련
   objectives?: string;
@@ -97,10 +103,12 @@ export interface Course {
   status: CourseStatus;
 
   // UI 표시용 (Join된 데이터)
-  courseName?: string; // course_name column
   subjectName?: string;
   professorName?: string;
   credit?: number; // subject 테이블에서 가져옴
+  deptCode?: string; // 추가: 학과 코드
+  subject?: Subject; // For filtering by type
+  currentStudents?: number; // From DTO
 }
 
 // =====================================================
@@ -249,14 +257,14 @@ export interface CourseEvaluation {
 export interface AcademicSchedule {
   scheduleId: number;
   academicYear: number;
-  semester: number; // 0이면 전체 학기
-  title: string; // schedule_title
-  content?: string;
+  semester: number;
+  scheduleTitle: string;
+  scheduleContent?: string;
   startDate: string;
   endDate: string;
   backgroundColor?: string;
-  category?: "academic" | "holiday" | "event"; // for ProfessorViews.tsx, CommonViews.tsx
-  recurrenceType: "NONE" | "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY";
+  category?: "academic" | "holiday" | "event";
+  recurrenceType?: string;
 }
 
 // =====================================================
@@ -275,13 +283,13 @@ export interface CalendarEvent {
   title: string;
   startDate: string;
   endDate: string;
-  category: 'academic' | 'holiday' | 'event';
+  category: "academic" | "holiday" | "event";
 }
 
 export interface StudentRecord {
   id: string;
   name: string;
   department: string;
-  attendance: 'Present' | 'Absent' | 'Late';
+  attendance: "Present" | "Absent" | "Late";
   grade: string | null;
 }

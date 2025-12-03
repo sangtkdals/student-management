@@ -1,23 +1,26 @@
 package com.example.studentmanagement.repository;
 
 import com.example.studentmanagement.beans.Enrollment;
-import com.example.studentmanagement.dto.StudentGradeDTO;
+import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.util.List;
+import java.util.Optional;
 
 public interface EnrollmentRepository extends JpaRepository<Enrollment, Integer> {
     
     List<Enrollment> findByCourse_CourseCode(String courseCode);
 
-    @Query("SELECT new com.example.studentmanagement.dto.StudentGradeDTO(" +
-           "g.gradeId, m.memberNo, m.name, d.deptName, m.email, " + 
-           "g.midtermScore, g.finalScore, g.assignmentScore, g.attendanceScore, g.totalScore) " +
-           "FROM Enrollment e " +
-           "JOIN e.student m " +
-           "LEFT JOIN m.department d " +
-           "LEFT JOIN Grade g ON g.enrollment.enrollmentId = e.enrollmentId " +
-           "WHERE e.course.courseCode = :courseCode")
-    List<StudentGradeDTO> findStudentsByCourseCode(@Param("courseCode") String courseCode);
+    boolean existsByStudent_MemberNoAndCourse_CourseCode(String studentNo, String courseCode);
+
+    Optional<Enrollment> findByStudent_MemberNoAndCourse_CourseCode(String studentNo, String courseCode);
+
+    @Query("SELECT e FROM Enrollment e JOIN FETCH e.course c JOIN FETCH c.subject JOIN FETCH c.professor WHERE e.student.memberNo = :studentNo")
+    List<Enrollment> findByStudent_MemberNo(@Param("studentNo") String studentNo);
+
+    long countByCourse_CourseCode(String courseCode);
+
+    @Transactional
+    void deleteByCourse_CourseCode(String courseCode);
 }
