@@ -26,22 +26,22 @@ CREATE TABLE department (
 -- =====================================================
 DROP TABLE IF EXISTS member;
 CREATE TABLE `member` (
-	`m_id` VARCHAR(50) NOT NULL COLLATE 'utf8mb4_0900_ai_ci',
-	`m_pwd` VARCHAR(255) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
-	`m_name` VARCHAR(100) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
-	`m_type` VARCHAR(20) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci' COMMENT '회원 유형: 학생(S) 또는 교수(P)',
-	`m_no` VARCHAR(20) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci' COMMENT '회원 번호 (학번 또는 교번)',
-	`m_email` VARCHAR(255) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
-	`m_phone` VARCHAR(20) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
-	`m_num` VARCHAR(14) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci' COMMENT '주민등록번호/고유 식별번호',
-	`m_addr` VARCHAR(500) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
-	`dept_code` VARCHAR(20) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci' COMMENT '학과 코드',
+   `m_id` VARCHAR(50) NOT NULL COLLATE 'utf8mb4_0900_ai_ci',
+   `m_pwd` VARCHAR(255) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
+   `m_name` VARCHAR(100) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
+   `m_type` VARCHAR(20) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci' COMMENT '회원 유형: 학생(S) 또는 교수(P)',
+   `m_no` VARCHAR(20) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci' COMMENT '회원 번호 (학번 또는 교번)',
+   `m_email` VARCHAR(255) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
+   `m_phone` VARCHAR(20) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
+   `m_num` VARCHAR(14) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci' COMMENT '주민등록번호/고유 식별번호',
+   `m_addr` VARCHAR(500) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
+   `dept_code` VARCHAR(20) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci' COMMENT '학과 코드',
     
-	PRIMARY KEY (`m_id`) USING BTREE,
-	UNIQUE INDEX `m_no` (`m_no`) USING BTREE, -- 외부 테이블이 참조할 PK와 같은 역할 (Unique Index 필수)
-	UNIQUE INDEX `m_email` (`m_email`) USING BTREE,
-	UNIQUE INDEX `m_num` (`m_num`) USING BTREE,
-	CONSTRAINT `fk_member_dept` FOREIGN KEY (`dept_code`) REFERENCES `department` (`dept_code`) ON UPDATE NO ACTION ON DELETE NO ACTION
+   PRIMARY KEY (`m_id`) USING BTREE,
+   UNIQUE INDEX `m_no` (`m_no`) USING BTREE, -- 외부 테이블이 참조할 PK와 같은 역할 (Unique Index 필수)
+   UNIQUE INDEX `m_email` (`m_email`) USING BTREE,
+   UNIQUE INDEX `m_num` (`m_num`) USING BTREE,
+   CONSTRAINT `fk_member_dept` FOREIGN KEY (`dept_code`) REFERENCES `department` (`dept_code`) ON UPDATE NO ACTION ON DELETE NO ACTION
 )
 COLLATE='utf8mb4_0900_ai_ci' ENGINE=InnoDB;
 
@@ -51,8 +51,8 @@ COLLATE='utf8mb4_0900_ai_ci' ENGINE=InnoDB;
 DROP TABLE IF EXISTS student_member;
 CREATE TABLE `student_member` (
     `m_id` VARCHAR(50) NOT NULL COLLATE 'utf8mb4_0900_ai_ci', 
-	`stu_grade` INT NULL DEFAULT NULL COMMENT '학년',
-	`enrollment_status` VARCHAR(20) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci' COMMENT '재학 상태',
+   `stu_grade` INT NULL DEFAULT NULL COMMENT '학년',
+   `enrollment_status` VARCHAR(20) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci' COMMENT '재학 상태',
     
     PRIMARY KEY (`m_id`) USING BTREE,
     CONSTRAINT `fk_student_member_id` FOREIGN KEY (`m_id`) REFERENCES `member` (`m_id`) 
@@ -66,10 +66,10 @@ COLLATE='utf8mb4_0900_ai_ci' ENGINE=InnoDB;
 DROP TABLE IF EXISTS professor_member;
 CREATE TABLE `professor_member` (
     `m_id` VARCHAR(50) NOT NULL COLLATE 'utf8mb4_0900_ai_ci',
-	`position` VARCHAR(50) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci' COMMENT '직급',
-	`office_room` VARCHAR(50) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci' COMMENT '연구실/사무실',
-	`major_field` VARCHAR(200) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci' COMMENT '전공 분야',
-	`start_date` DATE NULL DEFAULT NULL COMMENT '임용/입학 날짜',
+   `position` VARCHAR(50) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci' COMMENT '직급',
+   `office_room` VARCHAR(50) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci' COMMENT '연구실/사무실',
+   `major_field` VARCHAR(200) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci' COMMENT '전공 분야',
+   `start_date` DATE NULL DEFAULT NULL COMMENT '임용/입학 날짜',
     
     PRIMARY KEY (`m_id`) USING BTREE,
     CONSTRAINT `fk_professor_member_id` FOREIGN KEY (`m_id`) REFERENCES `member` (`m_id`) 
@@ -153,21 +153,21 @@ CREATE TABLE board (
 -- =====================================================
 DROP TABLE IF EXISTS post;
 CREATE TABLE `post` (
-	`post_id` INT NOT NULL AUTO_INCREMENT,
-	`board_id` INT NULL DEFAULT NULL,
-	`post_title` VARCHAR(500) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
-	`post_content` TEXT NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
-	`writer_id` VARCHAR(50) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci', -- 작성자 (학번 또는 교번)
-	`view_count` INT NULL DEFAULT '0',
-	`created_at` TIMESTAMP NULL DEFAULT (CURRENT_TIMESTAMP),
-	`updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-	
-	PRIMARY KEY (`post_id`) USING BTREE,
-	INDEX `idx_post_board` (`board_id`) USING BTREE,
-	INDEX `idx_post_writer` (`writer_id`) USING BTREE,
-	CONSTRAINT `fk_post_board` FOREIGN KEY (`board_id`) REFERENCES `board` (`board_id`) ON UPDATE NO ACTION ON DELETE NO ACTION,
-	-- member 테이블의 m_no를 참조하도록 재연결
-	CONSTRAINT `fk_post_writer` FOREIGN KEY (`writer_id`) REFERENCES `member` (`m_no`) ON UPDATE NO ACTION ON DELETE NO ACTION
+   `post_id` INT NOT NULL AUTO_INCREMENT,
+   `board_id` INT NULL DEFAULT NULL,
+   `post_title` VARCHAR(500) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
+   `post_content` TEXT NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
+   `writer_id` VARCHAR(50) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci', -- 작성자 (학번 또는 교번)
+   `view_count` INT NULL DEFAULT '0',
+   `created_at` TIMESTAMP NULL DEFAULT (CURRENT_TIMESTAMP),
+   `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+   
+   PRIMARY KEY (`post_id`) USING BTREE,
+   INDEX `idx_post_board` (`board_id`) USING BTREE,
+   INDEX `idx_post_writer` (`writer_id`) USING BTREE,
+   CONSTRAINT `fk_post_board` FOREIGN KEY (`board_id`) REFERENCES `board` (`board_id`) ON UPDATE NO ACTION ON DELETE NO ACTION,
+   -- member 테이블의 m_no를 참조하도록 재연결
+   CONSTRAINT `fk_post_writer` FOREIGN KEY (`writer_id`) REFERENCES `member` (`m_no`) ON UPDATE NO ACTION ON DELETE NO ACTION
 )
 COLLATE='utf8mb4_0900_ai_ci' ENGINE=InnoDB;
 
@@ -176,12 +176,12 @@ COLLATE='utf8mb4_0900_ai_ci' ENGINE=InnoDB;
 -- =====================================================
 DROP TABLE IF EXISTS attachment;
 CREATE TABLE `attachment` (
-	`attachment_id` INT NOT NULL AUTO_INCREMENT,
-	`post_id` INT NULL DEFAULT NULL,
-	`filename` VARCHAR(500) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
-	
-	PRIMARY KEY (`attachment_id`) USING BTREE,
-	CONSTRAINT `fk_attach_post` FOREIGN KEY (`post_id`) REFERENCES `post` (`post_id`) ON UPDATE NO ACTION ON DELETE NO ACTION
+   `attachment_id` INT NOT NULL AUTO_INCREMENT,
+   `post_id` INT NULL DEFAULT NULL,
+   `filename` VARCHAR(500) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
+   
+   PRIMARY KEY (`attachment_id`) USING BTREE,
+   CONSTRAINT `fk_attach_post` FOREIGN KEY (`post_id`) REFERENCES `post` (`post_id`) ON UPDATE NO ACTION ON DELETE NO ACTION
 )
 COLLATE='utf8mb4_0900_ai_ci' ENGINE=InnoDB;
 
@@ -361,15 +361,15 @@ CREATE TABLE refresh_tokens (
 -- =====================================================
 DROP TABLE IF EXISTS materials;
 CREATE TABLE `materials` (
-	`material_id` INT NOT NULL AUTO_INCREMENT COMMENT '자료 고유 ID',
-	`course_code` VARCHAR(20) NOT NULL COMMENT '강의 코드',
-	`filename` VARCHAR(500) NULL DEFAULT NULL COMMENT '자료 파일명' COLLATE 'utf8mb4_0900_ai_ci',
-	`filepath` VARCHAR(1000) NULL DEFAULT NULL COMMENT '자료 저장 경로' COLLATE 'utf8mb4_0900_ai_ci',
-	`upload_date` DATETIME NULL DEFAULT CURRENT_TIMESTAMP COMMENT '업로드 일시',
-	PRIMARY KEY (`material_id`) USING BTREE,
-	INDEX `fk_material_course` (`course_code`) USING BTREE,
-	-- course 테이블의 course_code를 참조하는 외래 키 설정
-	CONSTRAINT `fk_material_course` FOREIGN KEY (`course_code`) REFERENCES `course` (`course_code`) ON UPDATE CASCADE ON DELETE RESTRICT
+   `material_id` INT NOT NULL AUTO_INCREMENT COMMENT '자료 고유 ID',
+   `course_code` VARCHAR(20) NOT NULL COMMENT '강의 코드',
+   `filename` VARCHAR(500) NULL DEFAULT NULL COMMENT '자료 파일명' COLLATE 'utf8mb4_0900_ai_ci',
+   `filepath` VARCHAR(1000) NULL DEFAULT NULL COMMENT '자료 저장 경로' COLLATE 'utf8mb4_0900_ai_ci',
+   `upload_date` DATETIME NULL DEFAULT CURRENT_TIMESTAMP COMMENT '업로드 일시',
+   PRIMARY KEY (`material_id`) USING BTREE,
+   INDEX `fk_material_course` (`course_code`) USING BTREE,
+   -- course 테이블의 course_code를 참조하는 외래 키 설정
+   CONSTRAINT `fk_material_course` FOREIGN KEY (`course_code`) REFERENCES `course` (`course_code`) ON UPDATE CASCADE ON DELETE RESTRICT
 )
 COLLATE='utf8mb4_0900_ai_ci'
 ENGINE=InnoDB

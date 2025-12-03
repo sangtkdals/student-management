@@ -30,26 +30,18 @@ public class EnrollmentController {
     }
 
     @PostMapping
-    public ResponseEntity<?> enrollCourse(@RequestBody Map<String, String> payload) {
-        try {
-            String studentId = payload.get("studentId");
-            String courseCode = payload.get("courseCode");
-            enrollmentService.enrollCourse(studentId, courseCode);
-            return ResponseEntity.ok().body("Successfully enrolled.");
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<String> enrollCourse(@RequestBody Map<String, String> payload) {
+        String studentId = payload.get("studentId");
+        String courseCode = payload.get("courseCode");
+        enrollmentService.enrollCourse(studentId, courseCode);
+        return ResponseEntity.ok("Successfully enrolled.");
     }
 
     @DeleteMapping
-    public ResponseEntity<?> cancelEnrollment(@RequestBody Map<String, String> payload) {
-        try {
-            String studentId = payload.get("studentId");
-            String courseCode = payload.get("courseCode");
-            enrollmentService.cancelEnrollment(studentId, courseCode);
-            return ResponseEntity.ok().body("Successfully canceled enrollment.");
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<String> cancelEnrollment(@RequestBody Map<String, String> payload) {
+        String studentId = payload.get("studentId");
+        String courseCode = payload.get("courseCode");
+        enrollmentService.cancelEnrollment(studentId, courseCode);
+        return ResponseEntity.ok("Successfully canceled enrollment.");
     }
 }
