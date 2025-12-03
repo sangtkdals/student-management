@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import type { User, Course } from "../../types";
+import type { User, Course, Department } from "../../types";
 import { Card, Button, Modal, Input } from "../ui";
 import { useNavigate } from "react-router-dom";
 import { ProfessorVisualTimetable } from "./ProfessorVisualTimetable";
@@ -9,18 +9,21 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
   const [localCourses, setLocalCourses] = useState<Course[]>([]);
   const [markedForDeletion, setMarkedForDeletion] = useState<Set<string>>(new Set());
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [newCourse, setNewCourse] = useState({
     courseName: "소프트웨어공학",
     subjectName: "소프트웨어공학", // Keep for compatibility or remove if not needed
-    courseCode: "CS303",
+    deptCode: "", // Selected Department
+    courseCode: "", // Auto-generated
     courseTime: "월 10:00-12:00",
     classroom: "공학관 305호",
-    subjectCode: "CS303",
+    subjectCode: "", // Auto-generated
+    subjectType: "1", // Default: 전공선택
     courseClass: "01",
     maxStudents: 50,
-    credit: 3,
-    academicYear: 2024,
-    semester: 1,
+    credit: 0,
+    academicYear: new Date().getFullYear(),
+    semester: new Date().getMonth() + 1 >= 7 ? 2 : 1,
   });
   const [addedCourses, setAddedCourses] = useState<Set<string>>(new Set());
   const [selectedCourseDetail, setSelectedCourseDetail] = useState<Course | null>(null);
@@ -28,6 +31,16 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
   // Time Slot State
   const [timeSlots, setTimeSlots] = useState<{ day: string; start: string; end: string }[]>([{ day: "월", start: "10:00", end: "12:00" }]);
   const [currentSlot, setCurrentSlot] = useState({ day: "월", start: "09:00", end: "10:00" });
+
+  useEffect(() => {
+    // Fetch departments
+    fetch("http://localhost:8080/api/departments")
+      .then((res) => res.ok ? res.json() : [])
+      .then((data) => {
+          if (Array.isArray(data)) setDepartments(data);
+      })
+      .catch((err) => console.error("Failed to fetch departments", err));
+  }, []);
 
   const fetchCourses = async () => {
     try {
@@ -37,14 +50,30 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
       });
       if (response.ok) {
         const data = await response.json();
-        // Map backend response to Course type if needed, or assuming it matches
-        // Need to ensure subjectName is present (join in backend or provided)
-        // The backend Course entity has 'subject' object. Frontend Course has 'subjectName'.
-        const mappedCourses = data.map((c: any) => ({
-          ...c,
-          subjectName: c.courseName || c.subject?.sName || c.courseCode, // Prioritize courseName
-          subjectCode: c.subject?.sCode,
-        }));
+        // Map backend response to Course type
+        const mappedCourses = data.map((c: any) => {
+          // Construct courseTime from courseSchedules if available
+          let timeStr = c.courseTime || "";
+          const schedules = c.schedules || c.courseSchedules;
+          if (!timeStr && schedules && schedules.length > 0) {
+             const dayMap: { [key: number]: string } = { 1: "월", 2: "화", 3: "수", 4: "목", 5: "금", 6: "토", 7: "일" };
+             timeStr = schedules.map((s: any) => {
+                 const day = dayMap[s.dayOfWeek] || "";
+                 const start = s.startTime ? s.startTime.substring(0, 5) : "";
+                 const end = s.endTime ? s.endTime.substring(0, 5) : "";
+                 return `${day} ${start}-${end}`;
+             }).join(", ");
+          }
+
+          return {
+            ...c,
+            subjectName: c.subjectName || c.courseName || c.subject?.sName || c.courseCode, 
+            subjectCode: c.subject?.sCode,
+            deptCode: c.deptCode || c.subject?.department?.deptCode, // Ensure deptCode is mapped
+            courseSchedules: c.schedules || [], // Map backend 'schedules' to frontend 'courseSchedules'
+            courseTime: timeStr
+          };
+        });
         setLocalCourses(mappedCourses);
       } else {
         console.error("Failed to fetch courses");
@@ -59,6 +88,28 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
   }, [user.memberNo]);
 
   const addTimeSlot = () => {
+    // Validate overlapping
+    const newStart = parseInt(currentSlot.start.replace(":", ""));
+    const newEnd = parseInt(currentSlot.end.replace(":", ""));
+
+    if (newStart >= newEnd) {
+        alert("종료 시간은 시작 시간보다 늦어야 합니다.");
+        return;
+    }
+
+    const hasOverlap = timeSlots.some(slot => {
+        if (slot.day !== currentSlot.day) return false;
+        const oldStart = parseInt(slot.start.replace(":", ""));
+        const oldEnd = parseInt(slot.end.replace(":", ""));
+        // Overlap condition: (StartA < EndB) and (EndA > StartB)
+        return (newStart < oldEnd && newEnd > oldStart);
+    });
+
+    if (hasOverlap) {
+        alert("시간대가 겹치는 강의가 이미 존재합니다.");
+        return;
+    }
+
     setTimeSlots([...timeSlots, currentSlot]);
   };
 
@@ -67,10 +118,22 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
   };
 
   useEffect(() => {
-    // Sync timeSlots to newCourse.courseTime string
-    // Format: "월 10:00-12:00, 수 10:00-11:00"
+    // Sync timeSlots to newCourse.courseTime string and calculate credits
     const timeString = timeSlots.map((slot) => `${slot.day} ${slot.start}-${slot.end}`).join(", ");
-    setNewCourse((prev) => ({ ...prev, courseTime: timeString }));
+    
+    // Calculate credits (1 hour = 1 credit)
+    let totalHours = 0;
+    timeSlots.forEach((slot) => {
+      const [startH, startM] = slot.start.split(":").map(Number);
+      const [endH, endM] = slot.end.split(":").map(Number);
+      const duration = (endH - startH) + (endM - startM) / 60;
+      totalHours += duration;
+    });
+    
+    // If no slots, credit 0. Otherwise round.
+    const calculatedCredit = timeSlots.length > 0 ? Math.round(totalHours) : 0;
+
+    setNewCourse((prev) => ({ ...prev, courseTime: timeString, credit: calculatedCredit }));
   }, [timeSlots]);
 
   const hasChanges = markedForDeletion.size > 0; // Only delete is batched in this UI logic, or we can make delete immediate
@@ -113,9 +176,19 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
 
   const handleRegisterCourse = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Transform timeSlots to backend courseSchedules format
+    const dayMap: { [key: string]: number } = { "월": 1, "화": 2, "수": 3, "목": 4, "금": 5, "토": 6, "일": 7 };
+    const courseSchedules = timeSlots.map(slot => ({
+        dayOfWeek: dayMap[slot.day],
+        startTime: slot.start + ":00", // "HH:mm" -> "HH:mm:00"
+        endTime: slot.end + ":00"
+    }));
+
     const courseToAdd = {
       ...newCourse,
       professorNo: user.memberNo,
+      courseSchedules: courseSchedules
     };
 
     try {
@@ -132,20 +205,24 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
       if (response.ok) {
         setIsRegisterModalOpen(false);
         // Reset to dummy data for next entry (debugging convenience)
+        // Recalculate year/semester for reset
+        const now = new Date();
         setNewCourse({
           courseName: "데이터베이스",
           subjectName: "데이터베이스",
-          courseCode: "CS304",
-          courseTime: "수 13:00-15:00",
+          deptCode: "", // Add deptCode to reset state
+          courseCode: "",
+          courseTime: "",
           classroom: "정보관 202호",
-          subjectCode: "CS304",
-          courseClass: "02",
+          subjectCode: "",
+          subjectType: "1",
+          courseClass: "002",
           maxStudents: 45,
-          credit: 3,
-          academicYear: 2024,
-          semester: 1,
+          credit: 0,
+          academicYear: now.getFullYear(),
+          semester: now.getMonth() + 1 >= 7 ? 2 : 1,
         });
-        setTimeSlots([{ day: "수", start: "13:00", end: "15:00" }]);
+        setTimeSlots([]);
         await fetchCourses(); // Refresh list
         alert("강의가 등록되었습니다.");
       } else {
@@ -196,7 +273,7 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
                         </div>
                         <h4 className={`font-bold ${isMarked ? "text-slate-500 line-through" : "text-brand-blue"}`}>{course.subjectName}</h4>
                         <p className="text-sm text-slate-500 mt-1">
-                          {course.courseCode} | <span className="font-semibold">{course.currentStudents}</span>명
+                          {course.deptCode} | <span className="font-semibold">{course.currentStudents || 0}</span>명
                         </p>
                         <p className="text-xs text-slate-400 mt-1">{course.courseTime}</p>
                       </div>
@@ -267,43 +344,71 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
             required
             className="rounded-none border-slate-400 focus:border-slate-900 focus:ring-slate-900"
           />
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="강의 코드"
-              value={newCourse.courseCode}
-              onChange={(e) => setNewCourse({ ...newCourse, courseCode: e.target.value })}
-              required
-              className="rounded-none border-slate-400 focus:border-slate-900 focus:ring-slate-900"
-            />
-            <Input
-              label="과목 코드"
-              value={newCourse.subjectCode}
-              onChange={(e) => setNewCourse({ ...newCourse, subjectCode: e.target.value })}
-              required
-              className="rounded-none border-slate-400 focus:border-slate-900 focus:ring-slate-900"
-            />
+          
+          {/* Department Selection */}
+          <div>
+            <label className="block text-sm font-bold text-slate-900 mb-1">학과</label>
+            <select
+                className="block w-full px-3 py-2 bg-white border border-slate-400 text-sm shadow-sm focus:outline-none focus:border-slate-900 focus:ring-slate-900 rounded-none"
+                value={newCourse.deptCode}
+                onChange={(e) => setNewCourse({ ...newCourse, deptCode: e.target.value })}
+                required
+            >
+                <option value="">학과 선택</option>
+                {departments.map((dept) => (
+                    <option key={dept.deptCode} value={dept.deptCode}>
+                        {dept.deptName}
+                    </option>
+                ))}
+            </select>
           </div>
+
+          {/* Subject Type Selection */}
+          <div>
+            <label className="block text-sm font-bold text-slate-900 mb-1">이수 구분</label>
+            <select
+                className="block w-full px-3 py-2 bg-white border border-slate-400 text-sm shadow-sm focus:outline-none focus:border-slate-900 focus:ring-slate-900 rounded-none"
+                value={newCourse.subjectType}
+                onChange={(e) => setNewCourse({ ...newCourse, subjectType: e.target.value })}
+                required
+            >
+                <option value="1">전공선택</option>
+                <option value="2">전공필수</option>
+                <option value="3">균형교양</option>
+                <option value="4">자율교양</option>
+            </select>
+          </div>
+
+          {/* 강의 코드, 과목 코드는 자동 생성이므로 입력란 제거됨 */}
           <div className="grid grid-cols-3 gap-4">
             <Input
               label="학년도"
-              type="number"
+              type="text"
               value={String(newCourse.academicYear)}
-              onChange={(e) => setNewCourse({ ...newCourse, academicYear: parseInt(e.target.value) })}
-              required
-              className="rounded-none border-slate-400 focus:border-slate-900 focus:ring-slate-900"
+              readOnly
+              className="rounded-none border-slate-200 bg-slate-100 text-slate-500 cursor-not-allowed focus:ring-0"
             />
             <Input
               label="학기"
-              type="number"
+              type="text"
               value={String(newCourse.semester)}
-              onChange={(e) => setNewCourse({ ...newCourse, semester: parseInt(e.target.value) })}
-              required
-              className="rounded-none border-slate-400 focus:border-slate-900 focus:ring-slate-900"
+              readOnly
+              className="rounded-none border-slate-200 bg-slate-100 text-slate-500 cursor-not-allowed focus:ring-0"
             />
             <Input
               label="분반"
               value={newCourse.courseClass}
-              onChange={(e) => setNewCourse({ ...newCourse, courseClass: e.target.value })}
+              onChange={(e) => {
+                  const val = e.target.value.replace(/[^0-9]/g, '');
+                  setNewCourse({ ...newCourse, courseClass: val });
+              }}
+              onBlur={(e) => {
+                  const val = e.target.value;
+                  if (val) {
+                      const padded = val.padStart(3, '0');
+                      setNewCourse({ ...newCourse, courseClass: padded });
+                  }
+              }}
               required
               className="rounded-none border-slate-400 focus:border-slate-900 focus:ring-slate-900"
             />
@@ -312,6 +417,7 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
             <Input
               label="수강정원"
               type="number"
+              step="10"
               value={String(newCourse.maxStudents)}
               onChange={(e) => setNewCourse({ ...newCourse, maxStudents: parseInt(e.target.value) })}
               required
@@ -321,9 +427,8 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
               label="학점"
               type="number"
               value={String(newCourse.credit)}
-              onChange={(e) => setNewCourse({ ...newCourse, credit: parseInt(e.target.value) })}
-              required
-              className="rounded-none border-slate-400 focus:border-slate-900 focus:ring-slate-900"
+              readOnly
+              className="rounded-none border-slate-200 bg-slate-100 text-slate-500 cursor-not-allowed focus:ring-0"
             />
           </div>
           <Input

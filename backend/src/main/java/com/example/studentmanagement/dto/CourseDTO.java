@@ -26,15 +26,39 @@ public class CourseDTO {
     private List<CourseSchedule> schedules;
     private String courseStatus;
     private int credit;
+    private String deptCode; // 학과 코드 추가
+    
+    // Additional fields to match DB structure
+    private String courseObjectives;
+    private String courseContent;
+    private String evaluationMethod;
+    private String textbookInfo;
 
     public CourseDTO(Course course, int currentStu, String professorName, List<CourseSchedule> schedules, int credit) {
         this.courseCode = course.getCourseCode();
         this.academicYear = course.getAcademicYear();
         this.semester = course.getSemester();
-        this.sCode = course.getSubject().getSCode();
-        this.subjectName = course.getSubject().getSName();
+        
+        if (course.getSubject() != null) {
+            this.sCode = course.getSubject().getSCode();
+            this.subjectName = course.getSubject().getSName();
+            if (course.getSubject().getDepartment() != null) {
+                this.deptCode = course.getSubject().getDepartment().getDeptCode();
+            }
+        } else {
+            this.sCode = null;
+            this.subjectName = "Unknown";
+            this.deptCode = "Unknown";
+        }
+        
         this.courseClass = course.getCourseClass();
-        this.professorNo = course.getProfessor().getMemberNo();
+        
+        if (course.getProfessor() != null) {
+            this.professorNo = course.getProfessor().getMemberNo();
+        } else {
+            this.professorNo = null;
+        }
+
         this.professorName = professorName;
         this.maxStu = course.getMaxStu();
         this.currentStu = currentStu;
@@ -42,5 +66,10 @@ public class CourseDTO {
         this.schedules = schedules;
         this.courseStatus = course.getCourseStatus();
         this.credit = credit;
+        
+        this.courseObjectives = course.getCourseObjectives();
+        this.courseContent = course.getCourseContent();
+        this.evaluationMethod = course.getEvaluationMethod();
+        this.textbookInfo = course.getTextbookInfo();
     }
 }
