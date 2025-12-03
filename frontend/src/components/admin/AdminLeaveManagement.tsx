@@ -4,7 +4,7 @@ import { Card, Table, Button } from "../ui";
 import type { LeaveApplication } from "../../types";
 
 export const AdminLeaveManagement: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<"applications" | "onLeave">("applications");
+  const [activeTab, setActiveTab] = useState<"pending" | "all" | "onLeave">("pending");
   const [applications, setApplications] = useState<LeaveApplication[]>([]);
   const [studentsOnLeave, setStudentsOnLeave] = useState<any[]>([]);
 
@@ -91,15 +91,27 @@ export const AdminLeaveManagement: React.FC = () => {
     const badges = {
       PENDING: "bg-yellow-100 text-yellow-800",
       APPROVED: "bg-green-100 text-green-800",
-      REJECTED: "bg-red-100 text-red-800"
+      REJECTED: "bg-red-100 text-red-800",
+      RETURNED: "bg-blue-100 text-blue-800"
     };
     const labels = {
-      PENDING: "대기중",
-      APPROVED: "승인",
-      REJECTED: "거부"
+      PENDING: "심사 중",
+      APPROVED: "승인됨",
+      REJECTED: "거부됨",
+      RETURNED: "복학 완료"
     };
     // @ts-ignore
     return <span className={`px-2 py-1 rounded-full text-xs font-semibold ${badges[status] || ""}`}>{labels[status] || status}</span>;
+  };
+
+  const getLeaveTypeLabel = (type: string) => {
+    const types: { [key: string]: string } = {
+      "일반휴학": "일반휴학",
+      "군입대": "군입대",
+      "질병휴학": "질병휴학",
+      "창업휴학": "창업휴학",
+    };
+    return types[type] || type;
   };
 
   return (
@@ -108,14 +120,24 @@ export const AdminLeaveManagement: React.FC = () => {
         <div className="mb-6 border-b border-slate-200">
           <div className="flex space-x-4">
             <button
-              onClick={() => setActiveTab("applications")}
+              onClick={() => setActiveTab("pending")}
               className={`pb-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === "applications"
+                activeTab === "pending"
                   ? "border-brand-blue text-brand-blue"
                   : "border-transparent text-slate-500 hover:text-slate-700"
               }`}
             >
-              휴학 신청 관리 ({applications.filter(a => a.approvalStatus === "PENDING").length})
+              심사 대기 ({applications.filter(a => a.approvalStatus === "PENDING").length})
+            </button>
+            <button
+              onClick={() => setActiveTab("all")}
+              className={`pb-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === "all"
+                  ? "border-brand-blue text-brand-blue"
+                  : "border-transparent text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              전체 신청 내역 ({applications.length})
             </button>
             <button
               onClick={() => setActiveTab("onLeave")}
@@ -130,22 +152,24 @@ export const AdminLeaveManagement: React.FC = () => {
           </div>
         </div>
 
-        {activeTab === "applications" && (
-          <Table headers={["학번", "학생명", "유형", "기간", "신청일", "상태", "관리"]}>
+        {activeTab === "pending" && (
+          <Table headers={["학번", "학생명", "유형", "기간", "사유", "신청일", "관리"]}>
             {applications
               .filter(app => app.approvalStatus === "PENDING")
               .map((app) => (
                 <tr key={app.applicationId}>
                   <td className="px-6 py-4 text-sm">{app.studentNo}</td>
                   <td className="px-6 py-4 text-sm font-medium">{app.studentName}</td>
-                  <td className="px-6 py-4 text-sm">{app.leaveType}</td>
+                  <td className="px-6 py-4 text-sm">{getLeaveTypeLabel(app.leaveType)}</td>
                   <td className="px-6 py-4 text-sm">
-                    {app.startYear}-{app.startSemester} ~ {app.endYear}-{app.endSemester}
+                    {app.startYear}-{app.startSemester}학기<br />~ {app.endYear}-{app.endSemester}학기
+                  </td>
+                  <td className="px-6 py-4 text-sm max-w-xs truncate" title={app.applicationReason}>
+                    {app.applicationReason}
                   </td>
                   <td className="px-6 py-4 text-sm">
                     {new Date(app.applicationDate).toLocaleDateString()}
                   </td>
-                  <td className="px-6 py-4 text-sm">{getStatusBadge(app.approvalStatus)}</td>
                   <td className="px-6 py-4 text-sm">
                     <div className="flex space-x-2">
                       <Button onClick={() => handleApprove(app.applicationId)}>승인</Button>
@@ -156,6 +180,41 @@ export const AdminLeaveManagement: React.FC = () => {
                   </td>
                 </tr>
               ))}
+          </Table>
+        )}
+
+        {activeTab === "all" && (
+          <Table headers={["학번", "학생명", "유형", "기간", "신청일", "상태", "처리일/사유"]}>
+            {applications.map((app) => (
+              <tr key={app.applicationId}>
+                <td className="px-6 py-4 text-sm">{app.studentNo}</td>
+                <td className="px-6 py-4 text-sm font-medium">{app.studentName}</td>
+                <td className="px-6 py-4 text-sm">{getLeaveTypeLabel(app.leaveType)}</td>
+                <td className="px-6 py-4 text-sm">
+                  {app.startYear}-{app.startSemester}학기<br />~ {app.endYear}-{app.endSemester}학기
+                </td>
+                <td className="px-6 py-4 text-sm">
+                  {new Date(app.applicationDate).toLocaleDateString()}
+                </td>
+                <td className="px-6 py-4 text-sm">{getStatusBadge(app.approvalStatus)}</td>
+                <td className="px-6 py-4 text-sm">
+                  {app.approvalStatus === "REJECTED" && app.rejectReason ? (
+                    <button
+                      onClick={() => alert(`거부 사유: ${app.rejectReason}`)}
+                      className="text-red-600 hover:text-red-800 text-xs underline"
+                    >
+                      사유 확인
+                    </button>
+                  ) : app.approvalDate ? (
+                    <span className="text-xs text-slate-500">
+                      {new Date(app.approvalDate).toLocaleDateString()}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-slate-400">-</span>
+                  )}
+                </td>
+              </tr>
+            ))}
           </Table>
         )}
 

@@ -118,6 +118,15 @@ public class LeaveApplicationService {
         application.setApprover(approver);
         application.setRejectReason(null);
 
+        // 학생의 재적 상태를 휴학으로 변경
+        Member student = application.getStudent();
+        if (student instanceof com.example.studentmanagement.beans.StudentMember) {
+            com.example.studentmanagement.beans.StudentMember studentMember =
+                (com.example.studentmanagement.beans.StudentMember) student;
+            studentMember.setEnrollmentStatus("LEAVE_OF_ABSENCE");
+            memberRepository.save(studentMember);
+        }
+
         LeaveApplication updatedApplication = leaveApplicationRepository.save(application);
         return new LeaveApplicationDTO(updatedApplication, getStudentName(updatedApplication), getApproverName(updatedApplication));
     }
@@ -224,6 +233,17 @@ public class LeaveApplicationService {
 
         // 복학 처리를 위해 상태를 RETURNED로 변경
         latestApproved.setApprovalStatus("RETURNED");
+
+        // 학생의 재적 상태를 재학으로 변경
+        Member student = memberRepository.findByMemberNo(studentNo)
+                .orElseThrow(() -> new EntityNotFoundException("Student not found with number: " + studentNo));
+
+        if (student instanceof com.example.studentmanagement.beans.StudentMember) {
+            com.example.studentmanagement.beans.StudentMember studentMember =
+                (com.example.studentmanagement.beans.StudentMember) student;
+            studentMember.setEnrollmentStatus("ENROLLED");
+            memberRepository.save(studentMember);
+        }
 
         LeaveApplication updatedApplication = leaveApplicationRepository.save(latestApproved);
         return new LeaveApplicationDTO(updatedApplication, getStudentName(updatedApplication), getApproverName(updatedApplication));
