@@ -4,13 +4,15 @@ import { Card, Table, Button } from "../ui";
 import type { LeaveApplication } from "../../types";
 
 export const AdminLeaveManagement: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<"pending" | "all" | "onLeave">("pending");
+  const [activeTab, setActiveTab] = useState<"pending" | "returnPending" | "all" | "onLeave">("pending");
   const [applications, setApplications] = useState<LeaveApplication[]>([]);
   const [studentsOnLeave, setStudentsOnLeave] = useState<any[]>([]);
+  const [returnPendingApplications, setReturnPendingApplications] = useState<LeaveApplication[]>([]);
 
   useEffect(() => {
     fetchApplications();
     fetchStudentsOnLeave();
+    fetchReturnPendingApplications();
   }, []);
 
   const fetchApplications = async () => {
@@ -34,6 +36,18 @@ export const AdminLeaveManagement: React.FC = () => {
       setStudentsOnLeave(response.data);
     } catch (error) {
       console.error("Error fetching students on leave:", error);
+    }
+  };
+
+  const fetchReturnPendingApplications = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get("/api/admin/leave-applications/return-pending", {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setReturnPendingApplications(response.data);
+    } catch (error) {
+      console.error("Error fetching return pending applications:", error);
     }
   };
 
@@ -87,18 +101,38 @@ export const AdminLeaveManagement: React.FC = () => {
     }
   };
 
+  const handleApproveReturn = async (id: number, studentName: string) => {
+    if (confirm(`${studentName} 학생의 복학 신청을 승인하시겠습니까?`)) {
+      try {
+        const token = localStorage.getItem('token');
+        await axios.post(`/api/admin/leave-applications/${id}/approve-return`, {}, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        fetchReturnPendingApplications();
+        fetchStudentsOnLeave();
+        fetchApplications();
+        alert("복학 신청이 승인되었습니다.");
+      } catch (error) {
+        console.error("Error approving return:", error);
+        alert("복학 승인 실패");
+      }
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const badges = {
       PENDING: "bg-yellow-100 text-yellow-800",
       APPROVED: "bg-green-100 text-green-800",
       REJECTED: "bg-red-100 text-red-800",
-      RETURNED: "bg-blue-100 text-blue-800"
+      RETURNED: "bg-blue-100 text-blue-800",
+      RETURN_PENDING: "bg-purple-100 text-purple-800"
     };
     const labels = {
       PENDING: "심사 중",
       APPROVED: "승인됨",
       REJECTED: "거부됨",
-      RETURNED: "복학 완료"
+      RETURNED: "복학 완료",
+      RETURN_PENDING: "복학 신청 대기"
     };
     // @ts-ignore
     return <span className={`px-2 py-1 rounded-full text-xs font-semibold ${badges[status] || ""}`}>{labels[status] || status}</span>;
@@ -127,7 +161,17 @@ export const AdminLeaveManagement: React.FC = () => {
                   : "border-transparent text-slate-500 hover:text-slate-700"
               }`}
             >
-              심사 대기 ({applications.filter(a => a.approvalStatus === "PENDING").length})
+              휴학 심사 대기 ({applications.filter(a => a.approvalStatus === "PENDING").length})
+            </button>
+            <button
+              onClick={() => setActiveTab("returnPending")}
+              className={`pb-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === "returnPending"
+                  ? "border-brand-blue text-brand-blue"
+                  : "border-transparent text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              복학 신청 대기 ({returnPendingApplications.length})
             </button>
             <button
               onClick={() => setActiveTab("all")}
@@ -180,6 +224,28 @@ export const AdminLeaveManagement: React.FC = () => {
                   </td>
                 </tr>
               ))}
+          </Table>
+        )}
+
+        {activeTab === "returnPending" && (
+          <Table headers={["학번", "학생명", "신청 사유", "신청일", "관리"]}>
+            {returnPendingApplications.map((app) => (
+              <tr key={app.applicationId}>
+                <td className="px-6 py-4 text-sm">{app.studentNo}</td>
+                <td className="px-6 py-4 text-sm font-medium">{app.studentName}</td>
+                <td className="px-6 py-4 text-sm max-w-xs truncate" title={app.applicationReason}>
+                  {app.applicationReason || '-'}
+                </td>
+                <td className="px-6 py-4 text-sm">
+                  {new Date(app.applicationDate).toLocaleDateString()}
+                </td>
+                <td className="px-6 py-4 text-sm">
+                  <Button onClick={() => handleApproveReturn(app.applicationId, app.studentName)}>
+                    복학 승인
+                  </Button>
+                </td>
+              </tr>
+            ))}
           </Table>
         )}
 

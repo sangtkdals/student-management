@@ -150,4 +150,46 @@ public class StudentLeaveApplicationController {
             return ResponseEntity.badRequest().body("신청 삭제 중 오류 발생: " + e.getMessage());
         }
     }
+
+    // 복학 신청 생성 (학생이 복학 신청 요청)
+    @PostMapping("/return-request")
+    public ResponseEntity<?> requestReturn(@RequestBody LeaveApplicationDTO dto, HttpServletRequest request) {
+        try {
+            String studentNo = getMemberNoFromRequest(request);
+            if (studentNo == null) {
+                return ResponseEntity.status(401).build();
+            }
+
+            // 본인의 학번으로만 신청 가능
+            if (dto.getStudentNo() != null && !studentNo.equals(dto.getStudentNo())) {
+                return ResponseEntity.status(403).body("본인의 학번으로만 신청할 수 있습니다.");
+            }
+
+            dto.setStudentNo(studentNo);
+            LeaveApplicationDTO returnRequest = leaveApplicationService.createReturnRequest(dto);
+            return ResponseEntity.ok(returnRequest);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body("복학 신청 중 오류 발생: " + e.getMessage());
+        }
+    }
+
+    // 본인의 현재 휴학 정보 조회
+    @GetMapping("/my-leave-status")
+    public ResponseEntity<?> getMyLeaveStatus(HttpServletRequest request) {
+        try {
+            String studentNo = getMemberNoFromRequest(request);
+            if (studentNo == null) {
+                return ResponseEntity.status(401).build();
+            }
+
+            LeaveApplicationDTO currentLeave = leaveApplicationService.getCurrentLeaveByStudent(studentNo);
+            return ResponseEntity.ok(currentLeave);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.notFound().build();
+        }
+    }
 }
