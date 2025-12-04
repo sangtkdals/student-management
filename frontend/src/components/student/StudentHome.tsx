@@ -1,10 +1,31 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import type { User } from "../../types";
-import { ICONS, MOCK_ANNOUNCEMENTS, MOCK_CALENDAR_EVENTS } from "../../constants";
+import type { User, Post, AcademicSchedule } from "../../types";
+import { ICONS } from "../../constants";
+import axios from "axios";
 
 export const StudentHome: React.FC<{ user: User }> = ({ user }) => {
   const navigate = useNavigate();
+  const [announcements, setAnnouncements] = useState<Post[]>([]);
+  const [calendarEvents, setCalendarEvents] = useState<AcademicSchedule[]>([]);
+
+  useEffect(() => {
+    // Fetch announcements
+    axios
+      .get("/api/announcements?sort=createdAt,desc&size=4")
+      .then((response) => {
+        setAnnouncements(response.data.content);
+      })
+      .catch((error) => console.error("Error fetching announcements:", error));
+
+    // Fetch calendar events
+    axios
+      .get("/api/schedules?sort=startDate,asc&size=3")
+      .then((response) => {
+        setCalendarEvents(response.data);
+      })
+      .catch((error) => console.error("Error fetching calendar events:", error));
+  }, []);
 
   return (
     // -mt-6 제거: 상단/하단 마진 균형 맞춤
@@ -70,17 +91,17 @@ export const StudentHome: React.FC<{ user: User }> = ({ user }) => {
             </button>
           </div>
           <ul className="space-y-3">
-            {MOCK_ANNOUNCEMENTS.slice(0, 4).map((ann) => (
+            {announcements.map((ann) => (
               <li
                 key={ann.postId}
-                onClick={() => navigate("/announcements")}
+                onClick={() => navigate(`/announcements/${ann.postId}`)}
                 className="cursor-pointer group flex justify-between items-center border-b border-slate-50 pb-2 last:border-0 last:pb-0"
               >
                 <div className="flex items-center min-w-0">
                   <span className="w-1.5 h-1.5 rounded-full bg-slate-300 group-hover:bg-brand-blue mr-2 flex-shrink-0"></span>
-                  <p className="text-sm text-slate-700 group-hover:text-brand-blue font-medium truncate">{ann.title}</p>
+                  <p className="text-sm text-slate-700 group-hover:text-brand-blue font-medium truncate">{ann.postTitle}</p>
                 </div>
-                <span className="text-xs text-slate-400 ml-4 whitespace-nowrap">{ann.createdAt.slice(0, 10)}</span>
+                <span className="text-xs text-slate-400 ml-4 whitespace-nowrap">{new Date(ann.createdAt).toLocaleDateString()}</span>
               </li>
             ))}
           </ul>
@@ -98,28 +119,34 @@ export const StudentHome: React.FC<{ user: User }> = ({ user }) => {
             </button>
           </div>
           <ul className="space-y-4">
-            {MOCK_CALENDAR_EVENTS.slice(0, 3).map((evt) => (
-              <li key={evt.scheduleId} className="flex items-start group">
-                <div
-                  className={`flex-shrink-0 w-10 h-10 flex flex-col items-center justify-center rounded-lg border ${
-                    evt.category === "academic" ? "bg-blue-50 border-blue-100 text-brand-blue" : "bg-red-50 border-red-100 text-red-500"
-                  } mr-3`}
-                >
-                  <span className="text-[10px] font-bold leading-none uppercase opacity-70">{evt.startDate.split("-")[1]}월</span>
-                  <span className="text-sm font-extrabold leading-none mt-0.5">{evt.startDate.split("-")[2]}</span>
-                </div>
-                <div className="min-w-0 pt-0.5">
-                  <p className="text-sm font-bold text-slate-800 truncate group-hover:text-brand-blue transition-colors">{evt.title}</p>
-                  <span
-                    className={`text-[10px] px-1.5 py-0.5 rounded inline-block mt-1 ${
-                      evt.category === "academic" ? "bg-slate-100 text-slate-500" : "bg-red-50 text-red-500"
-                    }`}
+            {calendarEvents.map((evt) => {
+              const date = new Date(evt.startDate);
+              const month = date.toLocaleString("ko-KR", { month: "long" });
+              const day = date.getDate();
+
+              return (
+                <li key={evt.scheduleId} className="flex items-start group">
+                  <div
+                    className={`flex-shrink-0 w-10 h-10 flex flex-col items-center justify-center rounded-lg border ${
+                      evt.category === "academic" ? "bg-blue-50 border-blue-100 text-brand-blue" : "bg-red-50 border-red-100 text-red-500"
+                    } mr-3`}
                   >
-                    {evt.category === "academic" ? "학사 일정" : "휴일"}
-                  </span>
-                </div>
-              </li>
-            ))}
+                    <span className="text-[10px] font-bold leading-none uppercase opacity-70">{month}</span>
+                    <span className="text-sm font-extrabold leading-none mt-0.5">{day}</span>
+                  </div>
+                  <div className="min-w-0 pt-0.5">
+                    <p className="text-sm font-bold text-slate-800 truncate group-hover:text-brand-blue transition-colors">{evt.scheduleTitle}</p>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.5 rounded inline-block mt-1 ${
+                        evt.category === "academic" ? "bg-slate-100 text-slate-500" : "bg-red-50 text-red-500"
+                      }`}
+                    >
+                      {evt.category === "academic" ? "학사 일정" : "휴일"}
+                    </span>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </div>
       </div>

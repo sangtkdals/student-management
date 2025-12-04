@@ -124,16 +124,16 @@ export interface Board {
 export interface Post {
   postId: number;
   boardId: number;
-  title: string; // post_title
-  content: string; // post_content
-  writerId: string; // member.m_no
+  postTitle: string;
+  postContent: string;
+  writerId: string;
   viewCount: number;
-  createdAt: string; // timestamp string
+  createdAt: string;
   updatedAt?: string;
 
   // UI용
   writerName?: string;
-  author?: string; // for CommonViews.tsx compatibility
+  author?: string;
   attachments?: Attachment[];
 }
 
@@ -270,21 +270,6 @@ export interface AcademicSchedule {
 // =====================================================
 // Mock Data Types (Not in DB)
 // =====================================================
-export interface Announcement {
-  id: string;
-  title: string;
-  content: string;
-  author: string;
-  date: string;
-}
-
-export interface CalendarEvent {
-  id: string;
-  title: string;
-  startDate: string;
-  endDate: string;
-  category: "academic" | "holiday" | "event";
-}
 
 export interface StudentRecord {
   id: string;
