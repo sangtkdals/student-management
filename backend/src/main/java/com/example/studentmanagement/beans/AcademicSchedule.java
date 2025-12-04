@@ -41,6 +41,6 @@ public class AcademicSchedule {
     @Column(name = "recurrence_type", length = 20)
     private String recurrenceType;
 
-    @Column(name = "category", length = 50)
-    private String category;
+    // @Column(name = "category", length = 50)
+    // private String category;
 }

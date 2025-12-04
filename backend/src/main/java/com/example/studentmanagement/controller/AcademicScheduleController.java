@@ -38,7 +38,7 @@ public class AcademicScheduleController {
                     schedule.setScheduleTitle(scheduleDetails.getScheduleTitle());
                     schedule.setStartDate(scheduleDetails.getStartDate());
                     schedule.setEndDate(scheduleDetails.getEndDate());
-                    schedule.setCategory(scheduleDetails.getCategory());
+                    // schedule.setCategory(scheduleDetails.getCategory());
                     schedule.setScheduleContent(scheduleDetails.getScheduleContent());
                     AcademicSchedule updatedSchedule = academicScheduleRepository.save(schedule);
                     return ResponseEntity.ok(updatedSchedule);
