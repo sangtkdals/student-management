@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import type { User, Course } from "../../types";
 import { Card, Table, Button, Modal, Input } from "../ui";
 import { ProfessorVisualTimetable } from "./ProfessorVisualTimetable";
@@ -178,6 +179,7 @@ export const ProfessorCourseMaterials: React.FC<{ user: User }> = ({ user }) => 
 };
 
 export const ProfessorAssignments: React.FC<{ user: User }> = ({ user }) => {
+  const navigate = useNavigate();
   const [course, setCourse] = useState<Course | null>(null);
   const [myCourses, setMyCourses] = useState<Course[]>([]);
   const [assignments, setAssignments] = useState<any[]>([]);
@@ -187,11 +189,12 @@ export const ProfessorAssignments: React.FC<{ user: User }> = ({ user }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [currentAssignment, setCurrentAssignment] = useState({
     assignmentId: 0,
-    title: "",
-    content: "",
-    deadline: "",
-    maxScore: 100
+    assignmentTitle: "",
+    assignmentDesc: "",
+    dueDate: "",
+    attachmentPath: "",
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -240,11 +243,12 @@ export const ProfessorAssignments: React.FC<{ user: User }> = ({ user }) => {
     setIsEditing(false);
     setCurrentAssignment({
         assignmentId: 0,
-        title: "",
-        content: "",
-        deadline: new Date().toISOString().split('T')[0],
-        maxScore: 100
+        assignmentTitle: "",
+        assignmentDesc: "",
+        dueDate: new Date().toISOString().split('T')[0],
+        attachmentPath: "",
     });
+    setSelectedFile(null);
     setIsModalOpen(true);
   };
 
@@ -252,11 +256,12 @@ export const ProfessorAssignments: React.FC<{ user: User }> = ({ user }) => {
     setIsEditing(true);
     setCurrentAssignment({
         assignmentId: assign.assignmentId,
-        title: assign.title,
-        content: assign.content || "",
-        deadline: assign.deadline ? new Date(assign.deadline).toISOString().split('T')[0] : "",
-        maxScore: assign.maxScore || 100
+        assignmentTitle: assign.assignmentTitle,
+        assignmentDesc: assign.assignmentDesc || "",
+        dueDate: assign.dueDate ? new Date(assign.dueDate).toISOString().split('T')[0] : "",
+        attachmentPath: assign.attachmentPath || "",
     });
+    setSelectedFile(null);
     setIsModalOpen(true);
   };
 
@@ -266,12 +271,32 @@ export const ProfessorAssignments: React.FC<{ user: User }> = ({ user }) => {
 
     try {
       const token = localStorage.getItem("token");
+      
+      let attachmentPath = currentAssignment.attachmentPath;
+
+      if (selectedFile) {
+          const formData = new FormData();
+          formData.append("file", selectedFile);
+          const uploadRes = await fetch("/api/assignments/upload", {
+              method: "POST",
+              headers: { Authorization: `Bearer ${token}` },
+              body: formData
+          });
+          if (uploadRes.ok) {
+              const data = await uploadRes.json();
+              attachmentPath = data.filename;
+          } else {
+              alert("파일 업로드 실패");
+              return;
+          }
+      }
+
       const payload = {
         courseCode: course.courseCode,
-        title: currentAssignment.title,
-        content: currentAssignment.content,
-        deadline: new Date(currentAssignment.deadline),
-        maxScore: currentAssignment.maxScore
+        assignmentTitle: currentAssignment.assignmentTitle,
+        assignmentDesc: currentAssignment.assignmentDesc,
+        dueDate: new Date(currentAssignment.dueDate),
+        attachmentPath: attachmentPath
       };
       
       let response;
@@ -358,23 +383,37 @@ export const ProfessorAssignments: React.FC<{ user: User }> = ({ user }) => {
       </div>
 
       {assignments.length > 0 ? (
-        <Table headers={["과제명", "마감일", "배점", "관리"]}>
-          {assignments.map((a) => (
-            <tr key={a.assignmentId}>
-              <td className="px-6 py-4 text-sm font-medium text-slate-800">{a.title}</td>
-              <td className="px-6 py-4 text-sm text-slate-500">{a.deadline ? new Date(a.deadline).toLocaleDateString() : "-"}</td>
-              <td className="px-6 py-4 text-sm text-brand-blue font-bold">
-                {a.maxScore}점
-              </td>
-              <td className="px-6 py-4 text-sm">
-                <button className="text-brand-blue hover:underline mr-3" onClick={() => handleOpenEdit(a)}>수정</button>
-                <button className="text-red-600 hover:text-red-800" onClick={() => handleDelete(a.assignmentId)}>
-                  삭제
-                </button>
-              </td>
-            </tr>
-          ))}
-        </Table>
+        <div className="overflow-x-auto border border-brand-gray rounded-lg">
+          <table className="min-w-full w-full divide-y divide-brand-gray">
+            <thead className="bg-brand-gray-light">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-brand-gray-dark uppercase tracking-wider">
+                  제목
+                </th>
+                <th scope="col" className="px-6 py-3 text-center text-xs font-bold text-brand-gray-dark uppercase tracking-wider">
+                  과제 기간
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-brand-gray">
+              {assignments.map((a) => (
+                <tr key={a.assignmentId}>
+                  <td className="px-6 py-3 text-sm font-medium text-slate-800 align-middle text-left">
+                    <button 
+                        onClick={() => navigate(`/professor/assignments/${a.assignmentId}`)}
+                        className="hover:text-brand-blue hover:underline text-left"
+                    >
+                        {a.assignmentTitle}
+                    </button>
+                  </td>
+                  <td className="px-6 py-3 text-sm text-slate-500 align-middle text-center w-64">
+                    {a.registrationDate ? new Date(a.registrationDate).toLocaleDateString() : "-"} ~ {a.dueDate ? new Date(a.dueDate).toLocaleDateString() : "-"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
         <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-lg bg-slate-50">
           <p className="text-slate-500 mb-4">등록된 과제가 없습니다.</p>
@@ -385,34 +424,52 @@ export const ProfessorAssignments: React.FC<{ user: User }> = ({ user }) => {
     <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditing ? "과제 수정" : "과제 등록"}>
         <form onSubmit={handleSave} className="space-y-4">
             <Input 
-                label="과제 제목" 
-                value={currentAssignment.title} 
-                onChange={(e) => setCurrentAssignment({...currentAssignment, title: e.target.value})}
+                label="주제" 
+                value={currentAssignment.assignmentTitle} 
+                onChange={(e) => setCurrentAssignment({...currentAssignment, assignmentTitle: e.target.value})}
                 required
             />
             <div className="space-y-1">
                 <label className="block text-sm font-medium text-slate-700">내용</label>
                 <textarea 
                     className="w-full border border-slate-300 p-2 rounded-md text-sm h-32 focus:ring-brand-blue focus:border-brand-blue"
-                    value={currentAssignment.content}
-                    onChange={(e) => setCurrentAssignment({...currentAssignment, content: e.target.value})}
+                    value={currentAssignment.assignmentDesc}
+                    onChange={(e) => setCurrentAssignment({...currentAssignment, assignmentDesc: e.target.value})}
                 />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-                <Input 
-                    label="마감일" 
-                    type="date"
-                    value={currentAssignment.deadline} 
-                    onChange={(e) => setCurrentAssignment({...currentAssignment, deadline: e.target.value})}
-                    required
+            <div className="space-y-1">
+                <label className="block text-sm font-medium text-slate-700">과제 기간</label>
+                <div className="flex items-center space-x-2">
+                    <div className="flex-1">
+                        <input 
+                            type="date" 
+                            className="w-full border border-slate-300 p-2 rounded-md text-sm bg-slate-100 text-slate-500"
+                            value={new Date().toISOString().split('T')[0]} 
+                            disabled 
+                        />
+                    </div>
+                    <span className="text-slate-500">~</span>
+                    <div className="flex-1">
+                        <input 
+                            type="date"
+                            className="w-full border border-slate-300 p-2 rounded-md text-sm focus:ring-brand-blue focus:border-brand-blue"
+                            value={currentAssignment.dueDate} 
+                            onChange={(e) => setCurrentAssignment({...currentAssignment, dueDate: e.target.value})}
+                            required
+                        />
+                    </div>
+                </div>
+            </div>
+            <div className="space-y-1">
+                <label className="block text-sm font-medium text-slate-700">첨부파일</label>
+                <input 
+                    type="file" 
+                    className="w-full border border-slate-300 p-2 rounded-md text-sm"
+                    onChange={(e) => setSelectedFile(e.target.files ? e.target.files[0] : null)}
                 />
-                <Input 
-                    label="배점" 
-                    type="number"
-                    value={String(currentAssignment.maxScore)} 
-                    onChange={(e) => setCurrentAssignment({...currentAssignment, maxScore: parseInt(e.target.value)})}
-                    required
-                />
+                {currentAssignment.attachmentPath && !selectedFile && (
+                    <p className="text-xs text-slate-500">현재 파일: {currentAssignment.attachmentPath}</p>
+                )}
             </div>
             <div className="flex justify-end pt-4">
                 <Button type="submit">{isEditing ? "수정" : "등록"}</Button>

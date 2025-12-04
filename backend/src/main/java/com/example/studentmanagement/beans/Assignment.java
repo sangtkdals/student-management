@@ -18,18 +18,22 @@ public class Assignment {
     @Column(name = "course_code", nullable = false)
     private String courseCode;
 
-    @Column(name = "title", nullable = false)
-    private String title;
+    @Column(name = "assignment_title", nullable = false)
+    private String assignmentTitle;
 
-    @Column(name = "content", length = 2000)
-    private String content;
+    @Column(name = "assignment_desc", columnDefinition = "TEXT")
+    private String assignmentDesc;
 
-    @Column(name = "deadline")
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date deadline;
+    @Column(name = "attachment_path")
+    private String attachmentPath;
 
-    @Column(name = "max_score")
-    private Integer maxScore;
+    @Column(name = "registration_date", nullable = false)
+    @Temporal(TemporalType.DATE)
+    private Date registrationDate;
+
+    @Column(name = "due_date", nullable = false)
+    @Temporal(TemporalType.DATE)
+    private Date dueDate;
     
     // We might want to link to Course entity directly, but courseCode string is sufficient for simple mapping
     // If we want join fetch, we need ManyToOne. For now, keep it simple as user didn't ask for complex joins yet.

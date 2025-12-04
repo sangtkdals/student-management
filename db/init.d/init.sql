@@ -377,6 +377,26 @@ COMMENT='강의 자료 테이블'
 ;
 
 -- =====================================================
+-- 17) assignment
+-- =====================================================
+CREATE TABLE assignment (
+    assignment_id INT PRIMARY KEY AUTO_INCREMENT,  -- 과제ID
+    course_code VARCHAR(20) NOT NULL,              -- 참조할 강의 코드 필드 추가
+    assignment_title VARCHAR(255) NOT NULL,                   -- 주제
+    assignment_desc TEXT,                          -- 과제설명
+    attachment_path VARCHAR(255),                  -- 첨부파일
+    registration_date DATE NOT NULL,               -- 등록일
+    due_date DATE NOT NULL,                        -- 제출일
+    
+    -- 외래 키 정의 (Foreign Key Definition)
+    CONSTRAINT fk_assignment_course
+        FOREIGN KEY (course_code)
+        REFERENCES course (course_code)
+        ON UPDATE CASCADE  -- 부모(course) 코드가 변경되면 자식(assignment)도 함께 갱신
+        ON DELETE CASCADE  -- 부모(course)가 삭제되면 자식(assignment)도 함께 삭제
+);
+
+-- =====================================================
 -- Sample Data Insertion
 -- =====================================================
 
