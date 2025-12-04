@@ -73,7 +73,7 @@ public class EnrollmentService {
         saveEnrollmentAsync(studentNo, course);
     }
 
-    @Async
+    @Async("enrollmentExecutor")
     @Transactional
     public void saveEnrollmentAsync(String studentNo, Course course) {
         Member student = memberRepository.findByMemberNo(studentNo)
