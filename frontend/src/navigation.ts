@@ -13,6 +13,7 @@ export const STUDENT_MENU: MenuNode[] = [
     children: [
       { label: "수강신청", path: "/student/course-registration" },
       { label: "시간표 조회", path: "/student/Mytimetable" },
+      { label: "출결 조회", path: "/student/attendance" },
     ],
   },
   {

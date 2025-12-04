@@ -27,6 +27,7 @@ import {
   StudentReturnHistory,
 } from "./components/student/StudentAcademicStatusViews";
 import { StudentGraduationCheck, StudentCertificateIssuance } from "./components/student/StudentMiscViews";
+import { StudentAttendance } from "./components/student/StudentAttendance";
 
 // Professor Views
 import { ProfessorHome } from "./components/professor/ProfessorHome";
@@ -202,6 +203,14 @@ const AppRoutes = ({ user, onLogout, enrolledCourses }: { user: User; onLogout: 
                 element={
                   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <StudentGradeCenter user={user} />
+                  </div>
+                }
+              />
+              <Route
+                path="/student/attendance"
+                element={
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <StudentAttendance user={user} />
                   </div>
                 }
               />

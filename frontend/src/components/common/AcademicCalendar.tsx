@@ -132,11 +132,11 @@ export const AcademicCalendar: React.FC = () => {
   return (
     <Card title="학사일정">
       <div className="flex items-center justify-center space-x-4 mb-6 border-b pb-4">
-        <Button onClick={goToPreviousMonth}>&larr; 이전 달</Button>
+        <Button onClick={goToPreviousMonth}>◀</Button>
         <h2 className="text-2xl font-bold text-slate-800">
           {year}년 {month + 1}월
         </h2>
-        <Button onClick={goToNextMonth}>다음 달 &rarr;</Button>
+        <Button onClick={goToNextMonth}>▶</Button>
       </div>
       <MonthCalendar year={year} month={month} events={eventsForMonth} />
     </Card>
