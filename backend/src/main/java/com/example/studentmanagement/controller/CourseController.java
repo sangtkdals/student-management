@@ -15,6 +15,9 @@ import com.example.studentmanagement.repository.EnrollmentRepository;
 import com.example.studentmanagement.repository.MemberRepository;
 import com.example.studentmanagement.repository.SubjectRepository;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalTime;
@@ -104,6 +107,40 @@ public class CourseController {
                 })
                 .collect(Collectors.toList());
         return ResponseEntity.ok(courseDTOs);
+    }
+
+    // Get courses for the currently logged-in student
+    @GetMapping("/my")
+    public ResponseEntity<List<CourseDTO>> getMyCourses() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String studentId = authentication.getName();
+
+        List<Course> courses = enrollmentRepository.findCoursesByStudentId(studentId);
+        List<CourseDTO> courseDTOs = courses.stream()
+                .map(course -> {
+                    int currentStudents = (int) enrollmentRepository.countByCourse_CourseCode(course.getCourseCode());
+                    String professorName = course.getProfessor() != null ? course.getProfessor().getName() : "N/A";
+                    List<CourseSchedule> schedules = course.getCourseSchedules();
+                    int credit = course.getSubject() != null ? course.getSubject().getCredit() : 0;
+                    return new CourseDTO(course, currentStudents, professorName, schedules, credit);
+                })
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(courseDTOs);
+    }
+
+    // Get a single course by courseCode
+    @GetMapping("/{courseCode}")
+    public ResponseEntity<CourseDTO> getCourseByCode(@PathVariable String courseCode) {
+        return courseRepository.findById(courseCode)
+                .map(course -> {
+                    int currentStudents = (int) enrollmentRepository.countByCourse_CourseCode(course.getCourseCode());
+                    String professorName = course.getProfessor() != null ? course.getProfessor().getName() : "N/A";
+                    List<CourseSchedule> schedules = course.getCourseSchedules();
+                    int credit = course.getSubject() != null ? course.getSubject().getCredit() : 0;
+                    CourseDTO courseDTO = new CourseDTO(course, currentStudents, professorName, schedules, credit);
+                    return ResponseEntity.ok(courseDTO);
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 
     // Get courses for a specific professor

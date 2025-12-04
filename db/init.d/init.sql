@@ -452,6 +452,21 @@ INSERT INTO course (course_code, academic_year, semester, s_code, course_class, 
 ('CSE2020_01', 2025, 2, 'CSE2020', '01', 'prof004', 50, 'IT-402', 'OPEN'),
 ('CSE3030_01', 2025, 2, 'CSE3030', '01', 'prof001', 45, 'IT-503', 'OPEN');
 
+-- 강의 계획서 샘플 데이터 추가
+UPDATE course SET
+    course_objectives = '본 강의는 소프트웨어 개발의 전체 생명주기를 이해하고, 각 단계에서 필요한 기술과 도구를 습득하는 것을 목표로 합니다. 학생들은 요구사항 분석, 설계, 구현, 테스트, 유지보수 과정을 체계적으로 학습하게 됩니다.',
+    course_content = '1주차: 소프트웨어 공학 소개\n2주차: 소프트웨어 프로세스 모델\n3주차: 요구사항 공학\n4주차: 시스템 모델링\n5주차: 아키텍처 설계\n6주차: 객체지향 설계\n7주차: 중간고사\n8주차: 구현 및 테스트 전략\n9주차: 소프트웨어 품질 보증\n10주차: 프로젝트 관리',
+    evaluation_method = '{"midterm": 30, "final": 40, "assignments": 20, "attendance": 10}',
+    textbook_info = '주교재: Software Engineering, 10th Edition by Ian Sommerville (Pearson, 2015)\n부교재: Head First Design Patterns (O''Reilly, 2004)'
+WHERE course_code = 'CSE4001_01';
+
+UPDATE course SET
+    course_objectives = '데이터베이스 시스템의 기본 개념과 원리를 이해하고, 관계형 데이터베이스 모델을 중심으로 데이터베이스를 설계, 구축, 활용하는 능력을 배양합니다.',
+    course_content = '1주차: 데이터베이스 시스템 개요\n2주차: 관계형 데이터 모델\n3주차: SQL 기초\n4주차: 고급 SQL\n5주차: 데이터베이스 설계와 ER 모델\n6주차: 정규화\n7주차: 중간고사\n8주차: 트랜잭션 관리\n9주차: 동시성 제어\n10주차: 회복 시스템',
+    evaluation_method = '{"midterm": 35, "final": 45, "assignments": 20, "attendance": 0}',
+    textbook_info = '주교재: Database System Concepts, 7th Edition by Silberschatz, Korth, and Sudarshan (McGraw-Hill, 2019)'
+WHERE course_code = 'CSE4002_01';
+
 -- Course Schedule 데이터
 INSERT INTO course_schedule (course_code, day_of_week, start_time, end_time) VALUES
 ('CSE4001_01', 1, '10:00:00', '11:50:00'),

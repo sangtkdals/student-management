@@ -16,6 +16,8 @@ import { AcademicCalendar } from "./components/common/AcademicCalendar";
 
 // Student Views
 import { StudentHome } from "./components/student/StudentHome";
+import StudentMyClassroom from "./components/student/StudentMyClassroom";
+import StudentCourseDetail from "./components/student/StudentCourseDetail";
 import { StudentCourseRegistration } from "./components/student/StudentCourseRegistration";
 import { StudentGradeCenter } from "./components/student/StudentGradeCenter";
 import { StudentMyTimetable } from "./components/student/StudentMyTimetable";
@@ -210,6 +212,22 @@ const AppRoutes = ({ user, onLogout, enrolledCourses }: { user: User; onLogout: 
                 element={
                   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <StudentAttendance user={user} />
+                  </div>
+                }
+              />
+              <Route
+                path="/student/my-classroom"
+                element={
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <StudentMyClassroom />
+                  </div>
+                }
+              />
+              <Route
+                path="/student/my-classroom/:courseCode"
+                element={
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <StudentCourseDetail />
                   </div>
                 }
               />

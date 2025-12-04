@@ -11,6 +11,7 @@ export const STUDENT_MENU: MenuNode[] = [
     label: "수강",
     path: "",
     children: [
+      { label: "내 강의실", path: "/student/my-classroom" },
       { label: "수강신청", path: "/student/course-registration" },
       { label: "시간표 조회", path: "/student/Mytimetable" },
       { label: "출결 조회", path: "/student/attendance" },

@@ -47,13 +47,14 @@ public class SecurityConfig {
                         "/actuator/**",
                         "/api/check-id"
                 ).permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/courses/my").hasRole("STUDENT")
                 .requestMatchers(HttpMethod.GET,
                         "/api/announcements/**", // 공지사항 조회
                         "/api/schedules/**",      // 학사일정 조회
                         "/api/departments/**",    // 학과 조회
                         "/api/courses/**"         // 강의 조회
                 ).permitAll()
-
+                
                 // **관리자(ADMIN)만 접근 가능**
                 .requestMatchers("/api/admin/**").hasRole("ADMIN") // AdminLeaveApplicationController, AdminTuitionController 등
                 .requestMatchers(HttpMethod.POST, "/api/announcements/**").hasRole("ADMIN") // 공지사항 작성

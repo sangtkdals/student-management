@@ -96,9 +96,9 @@ export interface Course {
   courseTime?: string;
 
   // 강의 계획서 관련
-  objectives?: string;
-  content?: string;
-  evaluationMethod?: string;
+  courseObjectives?: string;
+  courseContent?: string;
+  evaluationMethod?: Record<string, number>;
   textbookInfo?: string;
   status: CourseStatus;
 

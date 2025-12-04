@@ -19,6 +19,9 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Integer>
     @Query("SELECT e FROM Enrollment e JOIN FETCH e.course c JOIN FETCH c.subject JOIN FETCH c.professor WHERE e.student.memberNo = :studentNo")
     List<Enrollment> findByStudent_MemberNo(@Param("studentNo") String studentNo);
 
+    @Query("SELECT e.course FROM Enrollment e WHERE e.student.memberId = :studentId")
+    List<com.example.studentmanagement.beans.Course> findCoursesByStudentId(@Param("studentId") String studentId);
+    
     long countByCourse_CourseCode(String courseCode);
 
     @Transactional
