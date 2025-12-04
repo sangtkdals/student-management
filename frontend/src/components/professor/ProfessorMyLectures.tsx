@@ -34,7 +34,7 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
 
   useEffect(() => {
     // Fetch departments
-    fetch("http://localhost:8080/api/departments")
+    fetch("/api/departments")
       .then((res) => res.ok ? res.json() : [])
       .then((data) => {
           if (Array.isArray(data)) setDepartments(data);
@@ -45,7 +45,7 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
   const fetchCourses = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:8080/api/courses/professor/${user.memberNo}`, {
+      const response = await fetch(`/api/courses/professor/${user.memberNo}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -160,7 +160,7 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
       const token = localStorage.getItem("token");
       for (const courseCode of markedForDeletion) {
         try {
-          await fetch(`http://localhost:8080/api/courses/${courseCode}`, {
+          await fetch(`/api/courses/${courseCode}`, {
             method: "DELETE",
             headers: { Authorization: `Bearer ${token}` },
           });
@@ -193,7 +193,7 @@ export const ProfessorMyLectures: React.FC<{ user: User }> = ({ user }) => {
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:8080/api/courses", {
+      const response = await fetch("/api/courses", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -177,7 +177,7 @@ useEffect(() => {
     const token = localStorage.getItem('token'); 
 
     if (studentId && token) {
-      fetch(`http://localhost:8080/api/grades?studentId=${studentId}`, {
+      fetch(`/api/grades?studentId=${studentId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

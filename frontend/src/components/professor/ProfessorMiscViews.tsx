@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import type { User, Course } from "../../types";
-import { Card, Table, Button } from "../ui";
+import { Card, Table, Button, Modal, Input } from "../ui";
 import { ProfessorVisualTimetable } from "./ProfessorVisualTimetable";
 
 export const ProfessorCourseMaterials: React.FC<{ user: User }> = ({ user }) => {
@@ -15,7 +15,7 @@ export const ProfessorCourseMaterials: React.FC<{ user: User }> = ({ user }) => 
       if (!user?.memberNo) return;
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`http://localhost:8080/api/courses/professor/${user.memberNo}`, {
+        const response = await fetch(`/api/courses/professor/${user.memberNo}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response.ok) {
@@ -40,7 +40,7 @@ export const ProfessorCourseMaterials: React.FC<{ user: User }> = ({ user }) => 
       if (!course) return;
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`http://localhost:8080/api/materials/course/${course.courseCode}`, {
+        const response = await fetch(`/api/materials/course/${course.courseCode}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response.ok) {
@@ -65,7 +65,7 @@ export const ProfessorCourseMaterials: React.FC<{ user: User }> = ({ user }) => 
     setUploading(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:8080/api/materials/upload`, {
+      const response = await fetch(`/api/materials/upload`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -74,7 +74,7 @@ export const ProfessorCourseMaterials: React.FC<{ user: User }> = ({ user }) => 
       if (response.ok) {
         alert("업로드 완료");
         // Refresh list
-        const res = await fetch(`http://localhost:8080/api/materials/course/${course.courseCode}`, {
+        const res = await fetch(`/api/materials/course/${course.courseCode}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) setMaterials(await res.json());
@@ -95,7 +95,7 @@ export const ProfessorCourseMaterials: React.FC<{ user: User }> = ({ user }) => 
     if (!confirm("정말 삭제하시겠습니까?")) return;
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:8080/api/materials/${id}`, {
+      const response = await fetch(`/api/materials/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -150,7 +150,7 @@ export const ProfessorCourseMaterials: React.FC<{ user: User }> = ({ user }) => 
               <tr key={m.materialId}>
                 <td className="px-6 py-4 text-sm font-medium text-slate-800">
                   <a
-                    href={`http://localhost:8080/api/materials/download/${m.filepath}`}
+                    href={`/api/materials/download/${m.filepath}`}
                     target="_blank"
                     rel="noreferrer"
                     className="hover:text-brand-blue hover:underline"
@@ -177,37 +177,198 @@ export const ProfessorCourseMaterials: React.FC<{ user: User }> = ({ user }) => 
   );
 };
 
-export const ProfessorAssignments: React.FC = () => {
-  const [assignments, setAssignments] = useState([{ id: 1, title: "중간고사 대체 과제", deadline: "2024-04-20", submitted: 25, total: 30 }]);
+export const ProfessorAssignments: React.FC<{ user: User }> = ({ user }) => {
+  const [course, setCourse] = useState<Course | null>(null);
+  const [myCourses, setMyCourses] = useState<Course[]>([]);
+  const [assignments, setAssignments] = useState<any[]>([]);
+  
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentAssignment, setCurrentAssignment] = useState({
+    assignmentId: 0,
+    title: "",
+    content: "",
+    deadline: "",
+    maxScore: 100
+  });
 
-  const handleCreate = () => {
-    const title = prompt("과제 제목을 입력하세요:");
-    if (title) {
-      setAssignments([...assignments, { id: Date.now(), title, deadline: "2024-05-01", submitted: 0, total: 30 }]);
+  useEffect(() => {
+    const fetchCourses = async () => {
+      if (!user?.memberNo) return;
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(`/api/professor-new/courses/${user.memberNo}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const mappedCourses = data.map((c: any) => ({
+            ...c,
+            subjectName: c.subjectName || c.courseName || c.subject?.sName || c.courseCode,
+          }));
+          setMyCourses(mappedCourses);
+          if (mappedCourses.length > 0) setCourse(mappedCourses[0]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch courses", error);
+      }
+    };
+    fetchCourses();
+  }, [user.memberNo]);
+
+  useEffect(() => {
+    const fetchAssignments = async () => {
+      if (!course) return;
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(`/api/assignments?courseCode=${course.courseCode}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setAssignments(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch assignments", error);
+      }
+    };
+    fetchAssignments();
+  }, [course]);
+
+  const handleOpenCreate = () => {
+    setIsEditing(false);
+    setCurrentAssignment({
+        assignmentId: 0,
+        title: "",
+        content: "",
+        deadline: new Date().toISOString().split('T')[0],
+        maxScore: 100
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (assign: any) => {
+    setIsEditing(true);
+    setCurrentAssignment({
+        assignmentId: assign.assignmentId,
+        title: assign.title,
+        content: assign.content || "",
+        deadline: assign.deadline ? new Date(assign.deadline).toISOString().split('T')[0] : "",
+        maxScore: assign.maxScore || 100
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!course) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      const payload = {
+        courseCode: course.courseCode,
+        title: currentAssignment.title,
+        content: currentAssignment.content,
+        deadline: new Date(currentAssignment.deadline),
+        maxScore: currentAssignment.maxScore
+      };
+      
+      let response;
+      if (isEditing) {
+        response = await fetch(`/api/assignments/${currentAssignment.assignmentId}`, {
+            method: "PUT",
+            headers: { 
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}` 
+            },
+            body: JSON.stringify(payload)
+        });
+      } else {
+        response = await fetch(`/api/assignments`, {
+            method: "POST",
+            headers: { 
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}` 
+            },
+            body: JSON.stringify(payload)
+        });
+      }
+
+      if (response.ok) {
+        alert(isEditing ? "수정되었습니다." : "등록되었습니다.");
+        setIsModalOpen(false);
+        // Refresh
+        const res = await fetch(`/api/assignments?courseCode=${course.courseCode}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) setAssignments(await res.json());
+      } else {
+        alert("저장 실패");
+      }
+    } catch (error) {
+      console.error("Save error", error);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("삭제하시겠습니까?")) return;
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`/api/assignments/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        setAssignments(assignments.filter((a) => a.assignmentId !== id));
+      } else {
+        alert("삭제 실패");
+      }
+    } catch (error) {
+      console.error("Delete error", error);
     }
   };
 
   return (
+    <div className="space-y-4">
     <Card
       title="과제 관리"
       titleAction={
-        <Button size="sm" onClick={handleCreate}>
+        <Button size="sm" onClick={handleOpenCreate}>
           + 과제 등록
         </Button>
       }
     >
+      <div className="mb-6 pb-4 border-b border-slate-200 flex items-center space-x-4">
+        <label className="font-bold text-slate-700">강의 선택:</label>
+        <select
+          className="p-2 border border-slate-300 rounded-md text-sm"
+          value={course?.courseCode || ""}
+          onChange={(e) => {
+            const selected = myCourses.find((c) => c.courseCode === e.target.value);
+            if (selected) setCourse(selected);
+          }}
+        >
+          {myCourses.map((c) => (
+            <option key={c.courseCode} value={c.courseCode}>
+              {c.subjectName}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {assignments.length > 0 ? (
-        <Table headers={["과제명", "마감일", "제출 현황", "관리"]}>
+        <Table headers={["과제명", "마감일", "배점", "관리"]}>
           {assignments.map((a) => (
-            <tr key={a.id}>
+            <tr key={a.assignmentId}>
               <td className="px-6 py-4 text-sm font-medium text-slate-800">{a.title}</td>
-              <td className="px-6 py-4 text-sm text-slate-500">{a.deadline}</td>
+              <td className="px-6 py-4 text-sm text-slate-500">{a.deadline ? new Date(a.deadline).toLocaleDateString() : "-"}</td>
               <td className="px-6 py-4 text-sm text-brand-blue font-bold">
-                {a.submitted} / {a.total}
+                {a.maxScore}점
               </td>
               <td className="px-6 py-4 text-sm">
-                <button className="text-brand-blue hover:underline mr-3">채점하기</button>
-                <button className="text-red-600 hover:text-red-800" onClick={() => setAssignments(assignments.filter((item) => item.id !== a.id))}>
+                <button className="text-brand-blue hover:underline mr-3" onClick={() => handleOpenEdit(a)}>수정</button>
+                <button className="text-red-600 hover:text-red-800" onClick={() => handleDelete(a.assignmentId)}>
                   삭제
                 </button>
               </td>
@@ -216,10 +377,49 @@ export const ProfessorAssignments: React.FC = () => {
         </Table>
       ) : (
         <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-lg bg-slate-50">
-          <p className="text-slate-500 mb-4">진행 중인 과제가 없습니다.</p>
+          <p className="text-slate-500 mb-4">등록된 과제가 없습니다.</p>
         </div>
       )}
     </Card>
+
+    <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditing ? "과제 수정" : "과제 등록"}>
+        <form onSubmit={handleSave} className="space-y-4">
+            <Input 
+                label="과제 제목" 
+                value={currentAssignment.title} 
+                onChange={(e) => setCurrentAssignment({...currentAssignment, title: e.target.value})}
+                required
+            />
+            <div className="space-y-1">
+                <label className="block text-sm font-medium text-slate-700">내용</label>
+                <textarea 
+                    className="w-full border border-slate-300 p-2 rounded-md text-sm h-32 focus:ring-brand-blue focus:border-brand-blue"
+                    value={currentAssignment.content}
+                    onChange={(e) => setCurrentAssignment({...currentAssignment, content: e.target.value})}
+                />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+                <Input 
+                    label="마감일" 
+                    type="date"
+                    value={currentAssignment.deadline} 
+                    onChange={(e) => setCurrentAssignment({...currentAssignment, deadline: e.target.value})}
+                    required
+                />
+                <Input 
+                    label="배점" 
+                    type="number"
+                    value={String(currentAssignment.maxScore)} 
+                    onChange={(e) => setCurrentAssignment({...currentAssignment, maxScore: parseInt(e.target.value)})}
+                    required
+                />
+            </div>
+            <div className="flex justify-end pt-4">
+                <Button type="submit">{isEditing ? "수정" : "등록"}</Button>
+            </div>
+        </form>
+    </Modal>
+    </div>
   );
 };
 
@@ -230,7 +430,7 @@ export const ProfessorLectureMyTimetable: React.FC<{ user: User }> = ({ user }) 
     const fetchCourses = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`http://localhost:8080/api/courses/professor/${user.memberNo}`, {
+        const response = await fetch(`/api/courses/professor/${user.memberNo}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response.ok) {

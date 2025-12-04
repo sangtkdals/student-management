@@ -77,7 +77,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/attendance/student").authenticated() // Allow authenticated students
                 .requestMatchers(
                         "/api/attendance/**",   // 출결 관리 (Professor fallback)
-                        "/api/materials/**"     // 강의자료 관리
+                        "/api/materials/**",    // 강의자료 관리
+                        "/api/assignments/**"   // 과제 관리
                 ).authenticated() // Allow authenticated users (Relaxed for 403 fix)
 
                 // **나머지 모든 요청은 인증 필요**

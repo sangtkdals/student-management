@@ -54,7 +54,7 @@ const AttendanceAndGradesView: React.FC<{ selectedCourse: Course; mode: "attenda
     if (mode === "attendance") {
       const fetchAttendance = async () => {
         try {
-          const response = await fetch(`http://localhost:8080/api/attendance?courseCode=${selectedCourse.courseCode}&week=${selectedWeek}`, {
+          const response = await fetch(`/api/attendance?courseCode=${selectedCourse.courseCode}&week=${selectedWeek}`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (response.ok) {
@@ -71,7 +71,7 @@ const AttendanceAndGradesView: React.FC<{ selectedCourse: Course; mode: "attenda
       const fetchGrades = async () => {
         try {
 
-          const response = await fetch(`http://localhost:8080/api/professor/courses/${selectedCourse.courseCode}/students`, {
+          const response = await fetch(`/api/professor/courses/${selectedCourse.courseCode}/students`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (response.ok) {
@@ -103,7 +103,7 @@ const AttendanceAndGradesView: React.FC<{ selectedCourse: Course; mode: "attenda
   const handleSaveAttendance = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:8080/api/attendance?week=${selectedWeek}`, {
+      const response = await fetch(`/api/attendance?week=${selectedWeek}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -139,7 +139,7 @@ const AttendanceAndGradesView: React.FC<{ selectedCourse: Course; mode: "attenda
   const handleSaveGrades = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:8080/api/professor/grades", {
+      const response = await fetch("/api/professor/grades", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -315,7 +315,7 @@ export const ProfessorStudentManagement: React.FC<{ user: User; viewType?: "atte
       if (!user?.memberNo) return;
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`http://localhost:8080/api/professor-new/courses/${user.memberNo}`, {
+        const response = await fetch(`/api/professor-new/courses/${user.memberNo}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response.ok) {
@@ -340,7 +340,7 @@ export const ProfessorStudentManagement: React.FC<{ user: User; viewType?: "atte
   useEffect(() => {
     if (activeTab === "list" && selectedCourse) {
        const token = localStorage.getItem("token");
-       fetch(`http://localhost:8080/api/professor/courses/${selectedCourse.courseCode}/students`, {
+       fetch(`/api/professor/courses/${selectedCourse.courseCode}/students`, {
             headers: { Authorization: `Bearer ${token}` },
        })
        .then(res => res.json())

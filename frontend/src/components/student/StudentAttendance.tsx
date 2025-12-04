@@ -25,7 +25,7 @@ export const StudentAttendance: React.FC<{ user: User }> = ({ user }) => {
       try {
         const token = localStorage.getItem("token");
         // Using user.memberNo as studentId.
-        const response = await fetch(`http://localhost:8080/api/attendance/student?studentId=${user.memberNo}`, {
+        const response = await fetch(`/api/attendance/student?studentId=${user.memberNo}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
