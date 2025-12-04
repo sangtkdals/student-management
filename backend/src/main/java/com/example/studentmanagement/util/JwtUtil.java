@@ -44,7 +44,7 @@ public class JwtUtil {
         return claimsResolver.apply(claims);
     }
 
-    private Claims extractAllClaims(String token) {
+    public Claims extractAllClaims(String token) {
         return Jwts.parserBuilder().setSigningKey(SECRET_KEY).build().parseClaimsJws(token).getBody();
     }
 
@@ -87,5 +87,9 @@ public class JwtUtil {
 
     public String getRefreshToken(String memberId) {
         return (String) redisTemplate.opsForValue().get(memberId);
+    }
+
+    public String getMemberNoFromToken(String token) {
+        return extractClaim(token, claims -> claims.get("memberNo", String.class));
     }
 }

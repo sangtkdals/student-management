@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
-import type { User } from "./types";
+import type { User, Course } from "./types";
+import DEUCourseRegistrationApp from "./DEUCourseRegistrationApp";
 
 // Components
 import TopNavigation from "./components/TopNavigation";
 import Footer from "./components/Footer";
-import { DashboardHero, DashboardContent } from "./components/Dashboard";
+import Dashboard from "./components/Dashboard";
 import AnnouncementDetail from "./components/AnnouncementDetail";
 
 // Common Views
@@ -35,7 +36,15 @@ import { ProfessorSyllabus } from "./components/professor/ProfessorSyllabus";
 import { ProfessorCourseMaterials, ProfessorAssignments } from "./components/professor/ProfessorMiscViews";
 
 // Admin Views
-import { AdminDashboard, AdminUserManagement, AdminSystemManagement } from "./components/AdminViews";
+import {
+  AdminDashboard,
+  AdminUserManagement,
+  AdminSystemManagement,
+  AdminLeaveManagement,
+  AdminNoticeManagement,
+  AdminScheduleManagement,
+  AdminTuitionManagement,
+} from "./components/admin";
 
 // Loading Bar Component
 const LoadingBar = () => (
@@ -45,36 +54,20 @@ const LoadingBar = () => (
 );
 
 // Authenticated Application Wrapper
-const AppRoutes = ({ user, onLogout }: { user: User; onLogout: () => void }) => {
-  const navigate = useNavigate();
-  const location = useLocation();
+const AppRoutes = ({ user, onLogout, enrolledCourses }: { user: User; onLogout: () => void; enrolledCourses: Course[] }) => {
   const [isLoading, setIsLoading] = useState(false);
-
-  const isDashboard = ["/", "/student", "/professor", "/admin/dashboard"].includes(location.pathname);
 
   return (
     <div className="min-h-screen bg-brand-gray-light flex flex-col font-sans">
       {isLoading && <LoadingBar />}
       <TopNavigation user={user} onLogout={onLogout} />
 
-      {isDashboard && <DashboardHero user={user} navigate={navigate} />}
       <main className="flex-1">
         <Routes>
           {/* Main Role Dashboards */}
-          <Route
-            path="/"
-            element={
-              user.role === "student" ? (
-                <StudentHome user={user} />
-              ) : user.role === "professor" ? (
-                <ProfessorHome user={user} />
-              ) : (
-                <DashboardContent user={user} navigate={navigate} />
-              )
-            }
-          />
-          <Route path="/student" element={<StudentHome user={user} />} />
-          <Route path="/professor" element={<ProfessorHome user={user} />} />
+          <Route path="/" element={<Dashboard user={user} />} />
+          <Route path="/student" element={<Dashboard user={user} />} />
+          <Route path="/professor" element={<Dashboard user={user} />} />
 
           {/* Common Routes */}
           <Route
@@ -117,7 +110,7 @@ const AppRoutes = ({ user, onLogout }: { user: User; onLogout: () => void }) => 
                 path="/student/course-registration"
                 element={
                   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <StudentCourseRegistration />
+                    <DEUCourseRegistrationApp user={user} initialEnrolledCourses={enrolledCourses as any[]} />
                   </div>
                 }
               />
@@ -199,7 +192,7 @@ const AppRoutes = ({ user, onLogout }: { user: User; onLogout: () => void }) => 
                 path="/student/Mytimetable"
                 element={
                   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <StudentMyTimetable />
+                    <StudentMyTimetable user={user} />
                   </div>
                 }
               />
@@ -281,14 +274,7 @@ const AppRoutes = ({ user, onLogout }: { user: User; onLogout: () => void }) => 
           {/* Admin Specific Routes */}
           {user.role === "admin" && (
             <>
-              <Route
-                path="/admin/dashboard"
-                element={
-                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <AdminDashboard />
-                  </div>
-                }
-              />
+              <Route path="/admin/dashboard" element={<Dashboard user={user} />} />
               <Route
                 path="/admin/user-management"
                 element={
@@ -302,6 +288,38 @@ const AppRoutes = ({ user, onLogout }: { user: User; onLogout: () => void }) => 
                 element={
                   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <AdminSystemManagement />
+                  </div>
+                }
+              />
+              <Route
+                path="/admin/leave-management"
+                element={
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <AdminLeaveManagement />
+                  </div>
+                }
+              />
+              <Route
+                path="/admin/notice-management"
+                element={
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <AdminNoticeManagement />
+                  </div>
+                }
+              />
+              <Route
+                path="/admin/schedule-management"
+                element={
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <AdminScheduleManagement />
+                  </div>
+                }
+              />
+              <Route
+                path="/admin/tuition-management"
+                element={
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <AdminTuitionManagement />
                   </div>
                 }
               />

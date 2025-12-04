@@ -1,21 +1,48 @@
-import React from 'react';
-import { Course } from '../types';
-import { SearchIcon, PlusCircleIcon, StarIcon, BrainIcon } from './icons/Icons';
+import React from "react";
+import { Course, CourseSchedule } from "../../types"; // Corrected import path
+import { SearchIcon, PlusCircleIcon, StarIcon, BrainIcon } from "./icons/Icons";
 
 interface CourseSearchProps {
   courses: Course[];
   onAddCourse: (course: Course) => void;
   onAddInterestedCourse: (course: Course) => void;
   onAnalyzeCourse: (course: Course) => void;
-  selectedCourseIds: Set<number>;
-  wishlistCourseIds: Set<number>;
+  selectedCourseIds: Set<string | number>;
+  wishlistCourseIds: Set<string | number>;
   searchTerm: string;
   setSearchTerm: (term: string) => void;
   filterType: string;
   setFilterType: (type: string) => void;
 }
 
-const CourseSearch: React.FC<CourseSearchProps> = ({ courses, onAddCourse, onAddInterestedCourse, onAnalyzeCourse, selectedCourseIds, wishlistCourseIds, searchTerm, setSearchTerm, filterType, setFilterType }) => {
+const CourseSearch: React.FC<CourseSearchProps> = ({
+  courses,
+  onAddCourse,
+  onAddInterestedCourse,
+  onAnalyzeCourse,
+  selectedCourseIds,
+  wishlistCourseIds,
+  searchTerm,
+  setSearchTerm,
+  filterType,
+  setFilterType,
+}) => {
+  const formatSchedule = (schedules?: CourseSchedule[]): string => {
+    if (!schedules || schedules.length === 0) {
+      return "시간 정보 없음";
+    }
+    const dayMap: { [key: number]: string } = { 1: "월", 2: "화", 3: "수", 4: "목", 5: "금", 6: "토", 7: "일" };
+
+    return schedules
+      .map((s) => {
+        const day = dayMap[s.dayOfWeek] || "N/A";
+        const startTime = s.startTime.slice(0, 5);
+        const endTime = s.endTime.slice(0, 5);
+        return `${day} ${startTime}~${endTime}`;
+      })
+      .join(", ");
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col h-[75vh]">
       <div className="p-4 border-b border-gray-200 bg-gray-50">
@@ -55,27 +82,37 @@ const CourseSearch: React.FC<CourseSearchProps> = ({ courses, onAddCourse, onAdd
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {courses.length > 0 ? courses.map(course => {
-              const isSelected = selectedCourseIds.has(course.id);
-              const isInWishlist = wishlistCourseIds.has(course.id);
-              const isFull = course.enrolled >= course.capacity;
-              const registrationDisabled = isSelected || isFull;
-              const wishlistDisabled = isSelected || isInWishlist;
+            {courses.length > 0 ? (
+              courses.map((course, index) => {
+                const isSelected = selectedCourseIds.has(course.courseCode);
+                const isInWishlist = wishlistCourseIds.has(course.courseCode);
+                const isFull = course.currentStudents >= course.maxStudents;
+                const registrationDisabled = isSelected || isFull;
+                const wishlistDisabled = isSelected || isInWishlist;
 
-              return (
-                <tr key={course.id} className={`hover:bg-blue-50 transition-colors duration-200 ${isSelected ? 'bg-gray-100 text-gray-400' : ''}`}>
-                  <td className="px-4 py-4 whitespace-nowrap">
-                    <div className="flex flex-col">
-                        <p className="text-sm font-semibold text-blue-700">{course.name} <span className="text-xs text-gray-500">({course.code})</span></p>
-                        <p className="text-xs text-gray-600 mt-1">{course.professor} | {course.credits}학점 | {course.type}</p>
-                        <p className="text-xs text-gray-600 mt-1">{course.time} | {course.location}</p>
-                         <p className={`text-xs mt-1 font-medium ${isFull ? 'text-red-500' : 'text-green-600'}`}>
-                            인원: {course.enrolled}/{course.capacity}
+                return (
+                  <tr
+                    key={`${course.courseCode}-${index}`}
+                    className={`hover:bg-blue-50 transition-colors duration-200 ${isSelected ? "bg-gray-100 text-gray-400" : ""}`}
+                  >
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="flex flex-col">
+                        <p className="text-sm font-semibold text-blue-700">
+                          {course.subjectName} <span className="text-xs text-gray-500">({course.courseCode})</span>
                         </p>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap text-center">
-                    <div className="flex items-center justify-center gap-2">
+                        <p className="text-xs text-gray-600 mt-1">
+                          {course.professorName} | {course.credit}학점
+                        </p>
+                        <p className="text-xs text-gray-600 mt-1">
+                          {formatSchedule(course.courseSchedules)} | {course.classroom}
+                        </p>
+                        <p className={`text-xs mt-1 font-medium ${isFull ? "text-red-500" : "text-green-600"}`}>
+                          인원: {course.currentStudents}/{course.maxStudents}
+                        </p>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-center">
+                      <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() => onAnalyzeCourse(course)}
                           title="AI 강의 분석"
@@ -88,7 +125,7 @@ const CourseSearch: React.FC<CourseSearchProps> = ({ courses, onAddCourse, onAdd
                           disabled={wishlistDisabled}
                           title="관심강의 추가"
                           className={`p-2 rounded-full transition-transform transform hover:scale-110 ${
-                            wishlistDisabled ? 'cursor-not-allowed opacity-40' : 'text-yellow-500 hover:bg-yellow-100'
+                            wishlistDisabled ? "cursor-not-allowed opacity-40" : "text-yellow-500 hover:bg-yellow-100"
                           }`}
                         >
                           <StarIcon className="h-6 w-6" />
@@ -98,16 +135,17 @@ const CourseSearch: React.FC<CourseSearchProps> = ({ courses, onAddCourse, onAdd
                           disabled={registrationDisabled}
                           title="수강신청"
                           className={`p-2 rounded-full transition-transform transform hover:scale-110 ${
-                            registrationDisabled ? 'cursor-not-allowed opacity-40' : 'text-green-500 hover:bg-green-100'
+                            registrationDisabled ? "cursor-not-allowed opacity-40" : "text-green-500 hover:bg-green-100"
                           }`}
                         >
                           <PlusCircleIcon className="h-7 w-7" />
                         </button>
-                    </div>
-                  </td>
-                </tr>
-              )
-            }) : (
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
               <tr>
                 <td colSpan={2} className="text-center py-10 text-gray-500">
                   검색 결과가 없습니다.

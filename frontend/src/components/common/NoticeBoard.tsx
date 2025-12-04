@@ -31,6 +31,87 @@ export const NoticeBoard: React.FC = () => {
     setCurrentPage(page);
   };
 
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+
+    const pageNumbers = [];
+    const maxPagesToShow = 5;
+    const halfMaxPages = Math.floor(maxPagesToShow / 2);
+
+    let startPage = Math.max(0, currentPage - halfMaxPages);
+    let endPage = Math.min(totalPages - 1, currentPage + halfMaxPages);
+
+    if (currentPage < halfMaxPages) {
+      endPage = Math.min(totalPages - 1, maxPagesToShow - 1);
+    }
+
+    if (currentPage > totalPages - 1 - halfMaxPages) {
+      startPage = Math.max(0, totalPages - maxPagesToShow);
+    }
+
+    // Previous Button
+    pageNumbers.push(
+      <Button key="prev" onClick={() => handlePageChange(Math.max(0, currentPage - 1))} disabled={currentPage === 0} className="mx-1">
+        {"<"}
+      </Button>
+    );
+
+    // First Page and Ellipsis
+    if (startPage > 0) {
+      pageNumbers.push(
+        <Button key={0} variant="secondary" onClick={() => handlePageChange(0)} className="mx-1">
+          {1}
+        </Button>
+      );
+      if (startPage > 1) {
+        pageNumbers.push(
+          <span key="start-ellipsis" className="self-end px-1">
+            ...
+          </span>
+        );
+      }
+    }
+
+    // Page numbers
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(
+        <Button key={i} variant={currentPage === i ? "primary" : "secondary"} onClick={() => handlePageChange(i)} className="mx-1">
+          {i + 1}
+        </Button>
+      );
+    }
+
+    // Last Page and Ellipsis
+    if (endPage < totalPages - 1) {
+      if (endPage < totalPages - 2) {
+        pageNumbers.push(
+          <span key="end-ellipsis" className="self-end px-1">
+            ...
+          </span>
+        );
+      }
+      pageNumbers.push(
+        <Button key={totalPages - 1} variant="secondary" onClick={() => handlePageChange(totalPages - 1)} className="mx-1">
+          {totalPages}
+        </Button>
+      );
+    }
+
+    // Next Button
+    pageNumbers.push(
+      <Button
+        key="next"
+        onClick={() => handlePageChange(Math.min(totalPages - 1, currentPage + 1))}
+        disabled={currentPage === totalPages - 1}
+        className="mx-1"
+      >
+        {">"}
+      </Button>
+    );
+
+    return pageNumbers;
+  };
+
   return (
     <Card title="공지사항">
       <div className="overflow-x-auto">
@@ -67,15 +148,7 @@ export const NoticeBoard: React.FC = () => {
           </tbody>
         </table>
       </div>
-      {totalPages > 1 && (
-        <div className="flex justify-center mt-4">
-          {Array.from({ length: totalPages }, (_, i) => i).map((page) => (
-            <Button key={page} variant={currentPage === page ? "primary" : "secondary"} onClick={() => handlePageChange(page)} className="mx-1">
-              {page + 1}
-            </Button>
-          ))}
-        </div>
-      )}
+      <div className="flex justify-center mt-4">{renderPagination()}</div>
     </Card>
   );
 };
