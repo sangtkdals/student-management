@@ -59,6 +59,7 @@ export const ProfessorCourseNotices: React.FC<{ user: User }> = ({ user }) => {
       {selectedCourse ? (
         <CourseNoticeBoard 
           courseCode={selectedCourse.courseCode} 
+          courseName={selectedCourse.subjectName}
           userRole="PROFESSOR"
           writerId={user.memberNo} 
         />

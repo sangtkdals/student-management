@@ -14,11 +14,12 @@ interface CourseNotice {
 // 부모에게서 받아올 정보
 interface Props {
   courseCode: string;       // "CSE4002_01" 같은 강의 코드
+  courseName: string;
   userRole: string;         // "PROFESSOR" or "STUDENT"
   writerId?: string;        // 글쓴이 ID (교수님일 때만 필요)
 }
 
-export const CourseNoticeBoard: React.FC<Props> = ({ courseCode, userRole, writerId }) => {
+export const CourseNoticeBoard: React.FC<Props> = ({ courseCode, courseName, userRole, writerId }) => {
   const [notices, setNotices] = useState<CourseNotice[]>([]);
   const [mode, setMode] = useState<"list" | "write">("list"); // 목록보기 vs 글쓰기 모드
 
@@ -93,7 +94,7 @@ export const CourseNoticeBoard: React.FC<Props> = ({ courseCode, userRole, write
   return (
     <div className="mt-6">
       {mode === "list" ? (
-        <Card title={`강의 공지사항 (${courseCode})`}>
+        <Card title={`강의 공지사항 (${courseName || courseCode})`}>
           {/* 교수님에게만 글쓰기 버튼 노출 */}
           {userRole === "PROFESSOR" && (
             <div className="flex justify-end mb-4">

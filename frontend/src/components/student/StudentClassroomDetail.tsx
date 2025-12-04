@@ -32,6 +32,7 @@ export const StudentClassroomDetail: React.FC = () => {
       {courseCode && (
         <CourseNoticeBoard 
           courseCode={courseCode} 
+          courseName={course?.subjectName || course?.courseName || courseCode}
           userRole="STUDENT" 
           // writerId는 필요 없음 (학생은 글쓰기 불가)
         />
