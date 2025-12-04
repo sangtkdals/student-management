@@ -1,11 +1,13 @@
 package com.example.studentmanagement.controller;
 
 import com.example.studentmanagement.beans.Course;
+import com.example.studentmanagement.beans.CourseSchedule;
 import com.example.studentmanagement.dto.ProfessorCourseResponse;
 import com.example.studentmanagement.repository.ProfessorMainRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -36,13 +38,32 @@ public class ProfessorMainController {
                 // 수강인원 조회
                 int studentCount = professorMainRepository.countStudents(c.getCourseCode());
 
+                // 강의 시간 포맷팅
+                String courseTime = c.getCourseSchedules().stream()
+                    .map(s -> {
+                        String day = "";
+                        switch (s.getDayOfWeek()) {
+                            case 1: day = "월"; break;
+                            case 2: day = "화"; break;
+                            case 3: day = "수"; break;
+                            case 4: day = "목"; break;
+                            case 5: day = "금"; break;
+                            case 6: day = "토"; break;
+                            case 7: day = "일"; break;
+                        }
+                        return day + " " + s.getStartTime().format(DateTimeFormatter.ofPattern("HH:mm")) + 
+                               "-" + s.getEndTime().format(DateTimeFormatter.ofPattern("HH:mm"));
+                    })
+                    .collect(Collectors.joining(", "));
+
                 return new ProfessorCourseResponse(
                     c.getCourseCode(),
                     subjectName,
                     c.getCourseClass(),
                     c.getClassroom(),
                     studentCount,
-                    credit
+                    credit,
+                    courseTime
                 );
             }).collect(Collectors.toList());
 

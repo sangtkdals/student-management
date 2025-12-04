@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface ProfessorMainRepository extends JpaRepository<Course, String> {
 
-    @Query("SELECT c FROM Course c LEFT JOIN FETCH c.subject WHERE c.professor.memberNo = :professorId ORDER BY c.courseCode DESC")
+    @Query("SELECT DISTINCT c FROM Course c LEFT JOIN FETCH c.subject LEFT JOIN FETCH c.courseSchedules WHERE c.professor.memberNo = :professorId ORDER BY c.courseCode DESC")
     List<Course> findMyCourses(@Param("professorId") String professorId);
 
     @Query("SELECT COUNT(e) FROM Enrollment e WHERE e.course.courseCode = :courseCode")

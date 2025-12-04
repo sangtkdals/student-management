@@ -39,7 +39,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const fetchEnrollments = async () => {
-      if (user?.memberNo) {
+      if (user?.memberNo && user.role === 'student') {
         const token = localStorage.getItem("token");
         try {
           const response = await fetch(`/api/enrollments/${user.memberNo}`, {
