@@ -8,4 +8,5 @@ import java.util.Optional;
 public interface AttendanceRepository extends JpaRepository<Attendance, Integer> {
     List<Attendance> findByEnrollment_Course_CourseCodeAndPeriod(String courseCode, Integer period);
     Optional<Attendance> findByEnrollment_EnrollmentIdAndPeriod(Integer enrollmentId, Integer period);
+    List<Attendance> findByEnrollment_Student_MemberNo(String memberNo);
 }

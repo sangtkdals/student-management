@@ -158,15 +158,6 @@ const AttendanceAndGradesView: React.FC<{ selectedCourse: Course; mode: "attenda
 
   return (
     <div>
-      <div className="mb-4 flex space-x-2">
-        <Button size="sm" variant={mode === "attendance" ? "primary" : "secondary"} onClick={() => setMode("attendance")}>
-          출석 관리
-        </Button>
-        <Button size="sm" variant={mode === "grades" ? "primary" : "secondary"} onClick={() => setMode("grades")}>
-          성적 입력
-        </Button>
-      </div>
-
       {mode === "attendance" ? (
         <>
           <div className="mb-4 flex items-center space-x-3">
@@ -399,7 +390,7 @@ export const ProfessorStudentManagement: React.FC<{ user: User; viewType?: "atte
         >
           {myCourses.map((course) => (
             <option key={course.courseCode} value={course.courseCode}>
-              {course.subjectName} ({course.courseCode})
+              {course.subjectName}
             </option>
           ))}
         </select>
@@ -417,7 +408,7 @@ export const ProfessorStudentManagement: React.FC<{ user: User; viewType?: "atte
                     : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
                 }`}
               >
-                성적/출결 관리
+                {managementMode === "attendance" ? "출결 관리" : "성적 관리"}
               </button>
               <button
                 onClick={() => setActiveTab("list")}

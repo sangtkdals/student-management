@@ -72,6 +72,9 @@ public class SecurityConfig {
 
                 // **교수(PROFESSOR)만 접근 가능**
                 .requestMatchers("/api/professor/**").hasRole("PROFESSOR")
+                .requestMatchers("/api/professor-new/**").authenticated() // Allow authenticated professors
+                
+                .requestMatchers("/api/attendance/student").authenticated() // Allow authenticated students
                 .requestMatchers(
                         "/api/attendance/**",   // 출결 관리
                         "/api/materials/**"     // 강의자료 관리

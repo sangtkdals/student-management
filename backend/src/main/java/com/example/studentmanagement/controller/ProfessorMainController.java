@@ -20,7 +20,7 @@ public class ProfessorMainController {
     }
 
     @GetMapping("/courses/{professorId}")
-    public ResponseEntity<?> getProfessorCourses(@PathVariable String professorId) {
+    public ResponseEntity<?> getProfessorCourses(@PathVariable("professorId") String professorId) {
         try {
             System.out.println("새로운 교수 컨트롤러 작동: " + professorId);
 

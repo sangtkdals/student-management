@@ -23,7 +23,7 @@ public class AttendanceController {
     }
 
     @GetMapping
-    public ResponseEntity<?> getAttendance(@RequestParam String courseCode, @RequestParam Integer week) {
+    public ResponseEntity<?> getAttendance(@RequestParam("courseCode") String courseCode, @RequestParam("week") Integer week) {
         // 1. Get all enrollments for the course
         List<Enrollment> enrollments = enrollmentRepository.findByCourse_CourseCode(courseCode);
 
@@ -60,7 +60,7 @@ public class AttendanceController {
 
     @PostMapping
     public ResponseEntity<?> saveAttendance(@RequestBody List<Map<String, Object>> attendanceData, 
-                                            @RequestParam Integer week) {
+                                            @RequestParam("week") Integer week) {
         try {
             List<Attendance> toSave = new ArrayList<>();
             for (Map<String, Object> data : attendanceData) {
@@ -95,5 +95,49 @@ public class AttendanceController {
             e.printStackTrace();
             return ResponseEntity.internalServerError().body("Error saving attendance: " + e.getMessage());
         }
+    }
+
+    @GetMapping("/student")
+    public ResponseEntity<?> getStudentAttendance(@RequestParam("studentId") String studentId) {
+        List<Attendance> attendanceList = attendanceRepository.findByEnrollment_Student_MemberNo(studentId);
+        
+        // Group by Course
+        Map<String, List<Attendance>> groupedByCourse = attendanceList.stream()
+                .collect(Collectors.groupingBy(a -> a.getEnrollment().getCourse().getSubject().getSName())); 
+
+        // Need to return also course details, so maybe grouping by Course Object or just mapping to DTO
+        List<Map<String, Object>> result = new ArrayList<>();
+        
+        // We might want to list all enrolled courses even if no attendance recorded yet?
+        // But for now, let's just show what we have in attendance table or fetch enrollments first.
+        // Fetching enrollments first is better to show courses with 0 attendance records.
+        
+        List<Enrollment> enrollments = enrollmentRepository.findByStudent_MemberNo(studentId); // Assuming this method exists or similar
+        
+        for (Enrollment enrollment : enrollments) {
+            Map<String, Object> courseData = new HashMap<>();
+            courseData.put("courseName", enrollment.getCourse().getSubject().getSName());
+            courseData.put("courseCode", enrollment.getCourse().getCourseCode());
+            
+            List<Attendance> courseAttendance = attendanceList.stream()
+                    .filter(a -> a.getEnrollment().getEnrollmentId().equals(enrollment.getEnrollmentId()))
+                    .sorted(Comparator.comparing(Attendance::getPeriod))
+                    .collect(Collectors.toList());
+            
+            List<Map<String, Object>> records = courseAttendance.stream().map(a -> {
+                Map<String, Object> rec = new HashMap<>();
+                rec.put("attendanceId", a.getAttendanceId());
+                rec.put("period", a.getPeriod());
+                rec.put("status", a.getAttendanceStatus());
+                rec.put("date", a.getAttendanceDate());
+                rec.put("remark", a.getRemark());
+                return rec;
+            }).collect(Collectors.toList());
+            
+            courseData.put("attendance", records);
+            result.add(courseData);
+        }
+
+        return ResponseEntity.ok(result);
     }
 }
