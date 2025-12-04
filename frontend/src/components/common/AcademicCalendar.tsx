@@ -49,7 +49,7 @@ const MonthCalendar: React.FC<{ year: number; month: number; events: AcademicSch
         ))}
       </div>
       {weeks.map((week, weekIndex) => (
-        <div key={weekIndex} className="grid grid-cols-7 relative h-28">
+        <div key={weekIndex} className="grid grid-cols-7 relative h-20">
           {week.map((date, dayIndex) => (
             <div key={dayIndex} className="border-r border-b border-slate-200 p-1 relative">
               {date.getTime() !== 0 && (
@@ -113,32 +113,42 @@ export const AcademicCalendar: React.FC = () => {
     fetchSchedules();
   }, []);
 
-  const goToPreviousMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+  const goToPreviousYear = () => {
+    setCurrentDate(new Date(currentDate.getFullYear() - 1, 0, 1));
   };
 
-  const goToNextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+  const goToNextYear = () => {
+    setCurrentDate(new Date(currentDate.getFullYear() + 1, 0, 1));
   };
 
   const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
-  const eventsForMonth = events.filter((event) => {
-    const eventYear = new Date(event.startDate).getFullYear();
-    const eventMonth = new Date(event.startDate).getMonth();
-    return eventYear === year && eventMonth === month;
-  });
 
   return (
     <Card title="학사일정">
       <div className="flex items-center justify-center space-x-4 mb-6 border-b pb-4">
-        <Button onClick={goToPreviousMonth}>◀</Button>
+        <Button onClick={goToPreviousYear}>◀</Button>
         <h2 className="text-2xl font-bold text-slate-800">
-          {year}년 {month + 1}월
+          {year}년
         </h2>
-        <Button onClick={goToNextMonth}>▶</Button>
+        <Button onClick={goToNextYear}>▶</Button>
       </div>
-      <MonthCalendar year={year} month={month} events={eventsForMonth} />
+      
+      <div className="space-y-4 h-[calc(100vh-350px)] min-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+        {Array.from({ length: 12 }, (_, i) => i).map(month => {
+            const eventsForMonth = events.filter((event) => {
+                const eventYear = new Date(event.startDate).getFullYear();
+                const eventMonth = new Date(event.startDate).getMonth();
+                return eventYear === year && eventMonth === month;
+            });
+            
+            return (
+                <div key={month} className="mb-6">
+                    <h3 className="text-lg font-bold text-slate-700 mb-2 pl-2 border-l-4 border-brand-blue">{month + 1}월</h3>
+                    <MonthCalendar year={year} month={month} events={eventsForMonth} />
+                </div>
+            );
+        })}
+      </div>
     </Card>
   );
 };
