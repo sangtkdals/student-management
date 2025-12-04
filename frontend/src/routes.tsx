@@ -28,6 +28,7 @@ import {
 } from "./components/student/StudentAcademicStatusViews";
 import { StudentGraduationCheck, StudentCertificateIssuance } from "./components/student/StudentMiscViews";
 import { StudentAttendance } from "./components/student/StudentAttendance";
+import { StudentCertificateRequest } from "./components/student/StudentCertificateRequest";
 
 // Professor Views
 import { ProfessorHome } from "./components/professor/ProfessorHome";
@@ -180,11 +181,7 @@ const AppRoutes = ({ user, onLogout, enrolledCourses }: { user: User; onLogout: 
               />
               <Route
                 path="/student/certificate-issuance"
-                element={
-                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <StudentCertificateIssuance />
-                  </div>
-                }
+                element={<StudentCertificateRequest />}
               />
 
               {/* [수정] Navigation.ts의 경로(/student/Mytimetable)와 일치시킴 */}
