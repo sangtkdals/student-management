@@ -17,6 +17,10 @@ export const STUDENT_MENU: MenuNode[] = [
     ],
   },
   {
+    label: "강의실",
+    path: "/student/classroom",
+  },
+  {
     label: "성적",
     path: "",
     children: [
@@ -55,6 +59,7 @@ export const PROFESSOR_MENU: MenuNode[] = [
       { label: "강의계획서", path: "/professor/syllabus" },
       { label: "강의 자료", path: "/professor/course-materials" },
       { label: "과제 관리", path: "/professor/assignments" },
+      { label: "강의 공지사항", path: "/professor/course-notices" },
     ],
   },
   {

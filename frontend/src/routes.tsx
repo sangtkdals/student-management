@@ -29,6 +29,11 @@ import {
 import { StudentGraduationCheck, StudentCertificateIssuance } from "./components/student/StudentMiscViews";
 import { StudentAttendance } from "./components/student/StudentAttendance";
 
+import { ProfessorCourseNotices } from "./components/professor/ProfessorCourseNotices";
+
+import { StudentClassroom } from "./components/student/StudentClassroom";
+import { StudentClassroomDetail } from "./components/student/StudentClassroomDetail";
+
 // Professor Views
 import { ProfessorHome } from "./components/professor/ProfessorHome";
 import { ProfessorMyLectures } from "./components/professor/ProfessorMyLectures";
@@ -213,6 +218,22 @@ const AppRoutes = ({ user, onLogout, enrolledCourses }: { user: User; onLogout: 
                   </div>
                 }
               />
+              <Route
+                path="/student/classroom"
+                element={
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <StudentClassroom user={user} />
+                  </div>
+                }
+              />
+              <Route
+                path="/student/classroom/:courseCode"
+                element={
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <StudentClassroomDetail />
+                  </div>
+                }
+              />
             </>
           )}
 
@@ -273,6 +294,14 @@ const AppRoutes = ({ user, onLogout, enrolledCourses }: { user: User; onLogout: 
                 element={
                   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <div className="text-center py-12 text-slate-500">준비 중인 기능입니다.</div>
+                  </div>
+                }
+              />
+              <Route
+                path="/professor/course-notices"
+                element={
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <ProfessorCourseNotices user={user} />
                   </div>
                 }
               />
