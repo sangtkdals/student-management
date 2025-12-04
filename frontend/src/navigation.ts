@@ -71,8 +71,7 @@ export const PROFESSOR_MENU: MenuNode[] = [
 ];
 
 export const ADMIN_MENU: MenuNode[] = [
-  { label: "사용자 관리", path: "/admin/user-management" },
-  { label: "강의 관리", path: "/admin/system-management" },
+  { label: "사용자 조회", path: "/admin/user-management" },
   {label: "휴학/복학 관리",path: "/admin/leave-management"},
   {label: "공지사항 관리",path: "/admin/notice-management"},
   { label: "학사일정 관리", path: "/admin/schedule-management" },
