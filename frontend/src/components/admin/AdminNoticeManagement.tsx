@@ -19,12 +19,18 @@ export const AdminNoticeManagement: React.FC = () => {
   const fetchPosts = async () => {
     try {
       const response = await axios.get("/api/announcements");
-      const mappedPosts = response.data.map((post: any) => ({
+      const mappedPosts = response.data.content ? response.data.content.map((post: any) => ({
         postId: post.postId,
         title: post.postTitle,
         content: post.postContent,
         createdAt: post.createdAt,
-        writerName: post.writer.mName,
+        writerName: post.writerName || '알 수 없음',
+      })) : response.data.map((post: any) => ({
+        postId: post.postId,
+        title: post.postTitle,
+        content: post.postContent,
+        createdAt: post.createdAt,
+        writerName: post.writerName || '알 수 없음',
       }));
       setPosts(mappedPosts);
     } catch (error) {
@@ -60,17 +66,18 @@ export const AdminNoticeManagement: React.FC = () => {
       const token = localStorage.getItem('token');
 
       if (editingId) {
-        await axios.put(`/api/announcements/${editingId}`, {
-          title: formData.title,
-          content: formData.content
+        await axios.put(`/api/admin/posts/${editingId}`, {
+          postTitle: formData.title,
+          postContent: formData.content
         }, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         alert("공지사항이 수정되었습니다.");
       } else {
-        await axios.post("/api/announcements", {
-          title: formData.title,
-          content: formData.content
+        await axios.post("/api/admin/posts", {
+          postTitle: formData.title,
+          postContent: formData.content,
+          boardCode: "announcements"
         }, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -79,9 +86,9 @@ export const AdminNoticeManagement: React.FC = () => {
       fetchPosts();
       setIsModalOpen(false);
       setEditingId(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving post:", error);
-      alert("저장 실패");
+      alert(error.response?.data || "저장 실패");
     }
   };
 
@@ -89,14 +96,14 @@ export const AdminNoticeManagement: React.FC = () => {
     if (confirm("삭제하시겠습니까?")) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`/api/announcements/${id}`, {
+        await axios.delete(`/api/admin/posts/${id}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         fetchPosts();
         alert("삭제되었습니다.");
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error deleting post:", error);
-        alert("삭제 실패");
+        alert(error.response?.data || "삭제 실패");
       }
     }
   };

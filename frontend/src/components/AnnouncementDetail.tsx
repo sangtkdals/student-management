@@ -32,9 +32,9 @@ const AnnouncementDetail: React.FC<AnnouncementDetailProps> = ({ setIsLoading })
             title: post.postTitle,
             content: post.postContent,
             createdAt: post.createdAt,
-            writerName: post.writer.mName,
-            boardId: post.board.boardId,
-            writerId: post.writer.mNo,
+            writerName: post.writerName || '알 수 없음',
+            boardId: 0, // boardId is not returned from backend
+            writerId: post.writerNo,
             viewCount: post.viewCount,
           };
           setAnnouncement(fetchedPost);
@@ -60,9 +60,9 @@ const AnnouncementDetail: React.FC<AnnouncementDetailProps> = ({ setIsLoading })
             title: post.postTitle,
             content: post.postContent,
             createdAt: post.createdAt,
-            writerName: post.writer.mName,
-            boardId: post.board.boardId,
-            writerId: post.writer.mNo,
+            writerName: post.writerName || '알 수 없음',
+            boardId: 0, // boardId is not returned from backend
+            writerId: post.writerNo,
             viewCount: post.viewCount,
           })
         );

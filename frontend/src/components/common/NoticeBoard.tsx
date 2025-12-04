@@ -19,7 +19,7 @@ export const NoticeBoard: React.FC = () => {
           title: post.postTitle,
           content: post.postContent,
           createdAt: post.createdAt,
-          writerName: post.writer.mName,
+          writerName: post.writerName || '알 수 없음',
         }));
         setAnnouncements(posts);
         setTotalPages(response.data.totalPages || 1);
