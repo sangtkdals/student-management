@@ -2,7 +2,8 @@ package com.example.studentmanagement.beans;
 
 import jakarta.persistence.*;
 import lombok.*;
-import java.util.Date;
+// import java.util.Date;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "tuition")
@@ -15,7 +16,7 @@ public class Tuition {
     @Column(name = "tuition_id")
     private Integer tuitionId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "stu_no", referencedColumnName = "m_no")
     private Member student;
 
@@ -35,16 +36,16 @@ public class Tuition {
     private Integer paidAmount;
 
     @Column(name = "bill_date")
-    @Temporal(TemporalType.DATE)
-    private Date billDate;
+    // @Temporal(TemporalType.DATE)
+    private LocalDate billDate;
 
     @Column(name = "due_date")
-    @Temporal(TemporalType.DATE)
-    private Date dueDate;
+    // @Temporal(TemporalType.DATE)
+    private LocalDate dueDate;
 
     @Column(name = "paid_date")
-    @Temporal(TemporalType.DATE)
-    private Date paidDate;
+    // @Temporal(TemporalType.DATE)
+    private LocalDate paidDate;
 
     @Column(name = "payment_method", length = 50)
     private String paymentMethod;
