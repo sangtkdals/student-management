@@ -39,7 +39,6 @@ import { ProfessorCourseMaterials, ProfessorAssignments } from "./components/pro
 import {
   AdminDashboard,
   AdminUserManagement,
-  AdminSystemManagement,
   AdminLeaveManagement,
   AdminNoticeManagement,
   AdminScheduleManagement,
@@ -280,14 +279,6 @@ const AppRoutes = ({ user, onLogout, enrolledCourses }: { user: User; onLogout: 
                 element={
                   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <AdminUserManagement />
-                  </div>
-                }
-              />
-              <Route
-                path="/admin/system-management"
-                element={
-                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <AdminSystemManagement />
                   </div>
                 }
               />
