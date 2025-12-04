@@ -45,6 +45,51 @@ public class CourseController {
         this.departmentRepository = departmentRepository;
     }
 
+    // Get all courses for student registration or search courses
+    @GetMapping("/search")
+    public ResponseEntity<List<CourseDTO>> searchCourses(
+            @RequestParam(required = false) String department,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String keyword) {
+        
+        List<Course> courses;
+
+        if (department != null && !department.isEmpty()) {
+            if (keyword != null && !keyword.isEmpty()) {
+                if ("courseName".equals(type)) {
+                    courses = courseRepository.findBySubject_Department_DeptNameAndSubject_sNameContaining(department, keyword);
+                } else if ("courseCode".equals(type)) {
+                    courses = courseRepository.findBySubject_Department_DeptNameAndCourseCodeContaining(department, keyword);
+                } else {
+                    courses = courseRepository.findBySubject_Department_DeptName(department);
+                }
+            } else {
+                courses = courseRepository.findBySubject_Department_DeptName(department);
+            }
+        } else if (keyword != null && !keyword.isEmpty()) {
+            if ("courseName".equals(type)) {
+                courses = courseRepository.findBySubject_sNameContaining(keyword);
+            } else if ("courseCode".equals(type)) {
+                courses = courseRepository.findByCourseCodeContaining(keyword);
+            } else {
+                courses = courseRepository.findAll();
+            }
+        } else {
+            courses = courseRepository.findAll();
+        }
+
+        List<CourseDTO> courseDTOs = courses.stream()
+                .map(course -> {
+                    int currentStudents = (int) enrollmentRepository.countByCourse_CourseCode(course.getCourseCode());
+                    String professorName = course.getProfessor() != null ? course.getProfessor().getName() : "N/A";
+                    List<CourseSchedule> schedules = course.getCourseSchedules();
+                    int credit = course.getSubject() != null ? course.getSubject().getCredit() : 0;
+                    return new CourseDTO(course, currentStudents, professorName, schedules, credit);
+                })
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(courseDTOs);
+    }
+
     // Get all courses for student registration
     @GetMapping
     public ResponseEntity<List<CourseDTO>> getAllCourses() {
