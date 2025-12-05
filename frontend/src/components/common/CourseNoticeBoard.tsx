@@ -7,6 +7,7 @@ interface CourseNotice {
   title: string;
   content: string;
   writerId: string;
+  writerName: string;
   createdAt: string;
   viewCount: number;
 }
@@ -55,6 +56,19 @@ export const CourseNoticeBoard: React.FC<Props> = ({ courseCode, courseName, use
   useEffect(() => {
     fetchNotices();
   }, [courseCode]);
+
+  const increaseViewCount = async (noticeId: number) => {
+    try {
+      const token = localStorage.getItem("token");
+      await fetch(`http://localhost:8080/api/course-notices/${noticeId}/view`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchNotices(); 
+    } catch (error) {
+      console.error("조회수 증가 실패", error);
+    }
+  };
 
   // 2. 공지사항 등록하기 (교수님 전용)
   const handleWrite = async () => {
@@ -113,13 +127,16 @@ export const CourseNoticeBoard: React.FC<Props> = ({ courseCode, courseName, use
                   className="hover:bg-slate-50 cursor-pointer"
                   
                   onClick={() => {
+                    increaseViewCount(n.noticeId);
                     setSelectedNotice(n);
                     setMode("detail");
                   }}
                 >
                   <td className="px-4 py-3 text-center text-sm text-slate-500">{idx + 1}</td>
                   <td className="px-4 py-3 text-sm font-bold text-slate-800">{n.title}</td>
-                  <td className="px-4 py-3 text-center text-sm text-slate-600">{n.writerId}</td>
+                  <td className="px-4 py-3 text-center text-sm text-slate-600">
+                    {n.writerName || n.writerId}
+                  </td>
                   <td className="px-4 py-3 text-center text-sm text-slate-500">
                     {n.createdAt ? new Date(n.createdAt).toLocaleDateString() : "-"}
                   </td>
