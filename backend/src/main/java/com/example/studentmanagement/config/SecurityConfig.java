@@ -69,6 +69,7 @@ public class SecurityConfig {
                 
                 // 학생,교수 접근 가능
                 .requestMatchers("/api/grades/**").hasAnyRole("STUDENT", "PROFESSOR", "ADMIN")
+                .requestMatchers("/api/course-notices/**").hasAnyRole("STUDENT", "PROFESSOR", "ADMIN")
 
                 // **교수(PROFESSOR)만 접근 가능**
                 .requestMatchers("/api/professor/**").hasRole("PROFESSOR")
