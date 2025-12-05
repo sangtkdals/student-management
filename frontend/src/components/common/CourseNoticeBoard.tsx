@@ -21,7 +21,8 @@ interface Props {
 
 export const CourseNoticeBoard: React.FC<Props> = ({ courseCode, courseName, userRole, writerId }) => {
   const [notices, setNotices] = useState<CourseNotice[]>([]);
-  const [mode, setMode] = useState<"list" | "write">("list"); // 목록보기 vs 글쓰기 모드
+  const [mode, setMode] = useState<"list" | "write" | "detail">("list");
+  const [selectedNotice, setSelectedNotice] = useState<CourseNotice | null>(null);
 
   // 글쓰기 폼 입력값
   const [title, setTitle] = useState("");
@@ -107,12 +108,19 @@ export const CourseNoticeBoard: React.FC<Props> = ({ courseCode, courseName, use
           <Table headers={["번호", "제목", "작성자", "작성일", "조회"]}>
             {notices.length > 0 ? (
               notices.map((n, idx) => (
-                <tr key={n.noticeId} className="hover:bg-slate-50 cursor-pointer">
+                <tr 
+                  key={n.noticeId} 
+                  className="hover:bg-slate-50 cursor-pointer"
+                  
+                  onClick={() => {
+                    setSelectedNotice(n);
+                    setMode("detail");
+                  }}
+                >
                   <td className="px-4 py-3 text-center text-sm text-slate-500">{idx + 1}</td>
                   <td className="px-4 py-3 text-sm font-bold text-slate-800">{n.title}</td>
                   <td className="px-4 py-3 text-center text-sm text-slate-600">{n.writerId}</td>
                   <td className="px-4 py-3 text-center text-sm text-slate-500">
-                    {/* 날짜 포맷팅 */}
                     {n.createdAt ? new Date(n.createdAt).toLocaleDateString() : "-"}
                   </td>
                   <td className="px-4 py-3 text-center text-sm text-slate-500">{n.viewCount}</td>
@@ -126,6 +134,29 @@ export const CourseNoticeBoard: React.FC<Props> = ({ courseCode, courseName, use
               </tr>
             )}
           </Table>
+        </Card>
+        ) : mode === "detail" && selectedNotice ? (
+        <Card title="공지사항 상세">
+          <div className="p-4">
+            <div className="border-b border-slate-200 pb-4 mb-6">
+              <h3 className="text-xl font-bold text-slate-800 mb-2">{selectedNotice.title}</h3>
+              <div className="flex justify-between text-sm text-slate-500">
+                <div className="flex space-x-4">
+                  <span> 작성자: {selectedNotice.writerId}</span>
+                  <span> 작성일: {selectedNotice.createdAt ? new Date(selectedNotice.createdAt).toLocaleDateString() : "-"}</span>
+                </div>
+                <span>조회수: {selectedNotice.viewCount}</span>
+              </div>
+            </div>
+            <div className="min-h-[200px] text-slate-700 leading-relaxed whitespace-pre-wrap">
+              {selectedNotice.content}
+            </div>
+            <div className="flex justify-end mt-8 pt-4 border-t border-slate-200">
+              <Button variant="secondary" onClick={() => setMode("list")}>
+                목록으로
+              </Button>
+            </div>
+          </div>
         </Card>
       ) : (
         <Card title="새 공지사항 작성">
