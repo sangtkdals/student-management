@@ -377,6 +377,25 @@ COMMENT='강의 자료 테이블'
 ;
 
 -- =====================================================
+-- 17) course_announcement (NEW!)
+-- =====================================================
+DROP TABLE IF EXISTS course_announcement;
+CREATE TABLE course_announcement (
+    notice_id      INT AUTO_INCREMENT PRIMARY KEY,
+    course_code    VARCHAR(20) NOT NULL, 
+    writer_id      VARCHAR(20) NOT NULL, 
+    title          VARCHAR(200) NOT NULL,
+    content        TEXT NOT NULL,
+    view_count     INT DEFAULT 0,
+    created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at     TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_c_notice_course FOREIGN KEY (course_code) REFERENCES course (course_code) ON DELETE CASCADE,
+    CONSTRAINT fk_c_notice_writer FOREIGN KEY (writer_id) REFERENCES member (m_no) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+-- =====================================================
 -- Sample Data Insertion
 -- =====================================================
 
@@ -465,6 +484,72 @@ INSERT INTO course_schedule (course_code, day_of_week, start_time, end_time) VAL
 ('CSE3030_01', 3, '13:00:00', '14:50:00');
 
 -- =====================================================
+-- Update Course Syllabus Data
+-- =====================================================
+UPDATE course SET 
+    course_objectives = '소프트웨어 개발 생명주기의 각 단계를 이해하고, 실제 프로젝트에 적용할 수 있는 공학적 방법론을 학습합니다.',
+    course_content = '1주차: 소프트웨어 공학 개론\n2주차: 요구사항 분석 및 명세\n3주차: 구조적 및 객체지향 분석\n4주차: 소프트웨어 설계\n...',
+    evaluation_method = '{"중간고사": 30, "기말고사": 30, "과제": 20, "팀 프로젝트": 15, "출석": 5}',
+    textbook_info = '주교재: 소프트웨어 공학(10판), Ian Sommerville, 2018'
+WHERE course_code = 'CSE4001_01';
+
+UPDATE course SET 
+    course_objectives = '데이터베이스의 기본 개념을 이해하고, SQL을 사용하여 데이터를 관리하며, 관계형 데이터베이스를 설계하는 능력을 배양합니다.',
+    course_content = '1주차: 데이터베이스 시스템 소개\n2주차: 관계형 모델\n3주차: SQL 기본\n4주차: 고급 SQL\n...',
+    evaluation_method = '{"중간고사": 35, "기말고사": 35, "실습": 20, "출석": 10}',
+    textbook_info = '주교재: 데이터베이스 시스템(7판), Ramez Elmasri, 2021'
+WHERE course_code = 'CSE4002_01';
+
+UPDATE course SET 
+    course_objectives = '다양한 알고리즘 설계 기법을 배우고, 알고리즘의 효율성을 분석하는 방법을 익힙니다.',
+    course_content = '1주차: 알고리즘의 기초 및 복잡도 분석\n2주차: 분할 정복\n3주차: 동적 프로그래밍\n4주차: 탐욕 알고리즘\n...',
+    evaluation_method = '{"중간고사": 30, "기말고사": 40, "알고리즘 과제": 25, "출석": 5}',
+    textbook_info = '주교재: Introduction to Algorithms(4판), CLRS, 2022'
+WHERE course_code = 'CSE3010_01';
+
+UPDATE course SET 
+    course_objectives = '운영체제의 핵심 개념인 프로세스, 메모리, 파일 시스템, 입출력 등을 이해하고, 현대 운영체제의 동작 원리를 학습합니다.',
+    course_content = '1주차: 운영체제 개요\n2주차: 프로세스와 스레드\n3주차: CPU 스케줄링\n4주차: 프로세스 동기화\n...',
+    evaluation_method = '{"중간고사": 30, "기말고사": 30, "과제": 30, "출석": 10}',
+    textbook_info = '주교재: 운영체제(10판), Silberschatz, Galvin, Gagne, 2021'
+WHERE course_code = 'CSE3021_01';
+
+UPDATE course SET 
+    course_objectives = '인공지능의 기본 원리를 이해하고, 탐색, 지식 표현, 기계 학습 등의 핵심 기술을 습득합니다.',
+    course_content = '1주차: 인공지능 소개\n2주차: 문제 해결과 탐색\n3주차: 제약 만족 문제\n4주차: 논리와 지식 표현\n...',
+    evaluation_method = '{"중간고사": 30, "기말고사": 30, "프로젝트": 30, "퀴즈": 10}',
+    textbook_info = '주교재: Artificial Intelligence: A Modern Approach(4판), Russell, Norvig, 2020'
+WHERE course_code = 'CSE4033_01';
+
+UPDATE course SET 
+    course_objectives = '학술적 글쓰기의 기초를 다지고, 비판적 사고를 통해 논리적이고 설득력 있는 의사소통 능력을 함양합니다.',
+    course_content = '1주차: 글쓰기의 중요성\n2주차: 비판적 읽기와 사고\n3주차: 개요 작성 및 구조화\n4주차: 논증과 설득\n...',
+    evaluation_method = '{"과제1": 20, "과제2": 20, "중간 보고서": 25, "기말 보고서": 35}',
+    textbook_info = '교재 없음 (유인물 제공)'
+WHERE course_code = 'GED1001_01';
+
+UPDATE course SET 
+    course_objectives = '배열, 스택, 큐, 리스트, 트리, 그래프 등 주요 자료구조의 개념을 이해하고 이를 프로그램으로 구현하는 능력을 기릅니다.',
+    course_content = '1주차: 자료구조와 알고리즘\n2주차: 배열과 리스트\n3주차: 스택과 큐\n4주차: 트리와 이진 탐색 트리\n...',
+    evaluation_method = '{"중간고사": 30, "기말고사": 40, "프로그래밍 과제": 25, "출석": 5}',
+    textbook_info = '주교재: C로 배우는 쉬운 자료구조, 이지영, 2020'
+WHERE course_code = 'CSE2010_01';
+
+UPDATE course SET 
+    course_objectives = '객체지향 프로그래밍의 핵심 개념인 캡슐화, 상속, 다형성을 이해하고, Java 언어를 사용하여 객체지향 설계를 적용하는 방법을 학습합니다.',
+    course_content = '1주차: 객체지향 개념 소개\n2주차: 클래스와 객체\n3주차: 상속과 다형성\n4주차: 인터페이스와 추상 클래스\n...',
+    evaluation_method = '{"중간고사": 30, "기말고사": 30, "프로그래밍 과제": 30, "출석": 10}',
+    textbook_info = '주교재: 이것이 자바다, 신용권, 2022'
+WHERE course_code = 'CSE2020_01';
+
+UPDATE course SET 
+    course_objectives = '컴퓨터 네트워크의 계층별 프로토콜과 동작 원리를 이해하고, TCP/IP 기반의 인터넷 기술을 학습합니다.',
+    course_content = '1주차: 네트워크 개론\n2주차: 물리 계층\n3주차: 데이터 링크 계층\n4주차: 네트워크 계층\n...',
+    evaluation_method = '{"중간고사": 30, "기말고사": 40, "과제": 20, "출석": 10}',
+    textbook_info = '주교재: Computer Networking: A Top-Down Approach(8판), Kurose, Ross, 2021'
+WHERE course_code = 'CSE3030_01';
+
+-- =====================================================
 -- Additional User Insertion
 -- =====================================================
 
@@ -527,6 +612,20 @@ INSERT INTO academic_schedule (academic_year, semester, schedule_title, start_da
 (2025, 2, '기말고사', '2025-12-15', '2025-12-19', 'academic'),
 (2025, 2, '동계 방학', '2025-12-22', '2026-02-28', 'academic');
 
+-- =====================================================
+-- Sample Course Announcement Data (NEW!)
+-- =====================================================
+-- 김영희 교수(prof003)가 '데이터베이스 시스템'에 올린 공지사항
+INSERT INTO course_announcement (course_code, writer_id, title, content, view_count, created_at)
+VALUES 
+('CSE4002_01', 'prof003', '중간고사 범위 안내', '중간고사는 1장부터 5장까지입니다. 열심히 공부하세요!', 15, NOW()),
+('CSE4002_01', 'prof003', '팀 프로젝트 조편성 결과', '팀 프로젝트 조편성 결과를 첨부파일로 확인하세요.', 22, NOW());
+
+-- 김영희 교수(prof003)가 '자료구조'에 올린 공지사항
+INSERT INTO course_announcement (course_code, writer_id, title, content, view_count, created_at)
+VALUES 
+('CSE2010_01', 'prof003', '과제 제출 기한 연장', '과제 제출 기한을 이번 주 금요일까지 연장합니다.', 45, NOW());
+
 -- 1. 기존 데이터 정리 (중복 에러 방지용)
 SET FOREIGN_KEY_CHECKS = 0;
 TRUNCATE TABLE grade;
@@ -580,6 +679,3 @@ SELECT enrollment_id, 0, 0, 0, 0, 0, NULL, 0
 FROM enrollment
 WHERE stu_no = '20240001'
   AND course_code IN ('CSE4002_01', 'CSE2010_01');
-
-SELECT * FROM enrollment;
-SELECT * FROM grade;

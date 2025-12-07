@@ -2,8 +2,12 @@ package com.example.studentmanagement.dto;
 
 import com.example.studentmanagement.beans.Course;
 import com.example.studentmanagement.beans.CourseSchedule;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class CourseDTO {
@@ -16,7 +20,7 @@ public class CourseDTO {
     private String courseStatus;
     private String courseObjectives;
     private String courseContent;
-    private String evaluationMethod;
+    private Map<String, Object> evaluationMethod;
     private String textbookInfo;
     private String subjectName;
     private String professorName;
@@ -35,7 +39,7 @@ public class CourseDTO {
         this.courseStatus = course.getCourseStatus();
         this.courseObjectives = course.getCourseObjectives();
         this.courseContent = course.getCourseContent();
-        this.evaluationMethod = course.getEvaluationMethod();
+        this.evaluationMethod = parseEvaluationMethod(course.getEvaluationMethod());
         this.textbookInfo = course.getTextbookInfo();
         this.subjectName = course.getSubject() != null ? course.getSubject().getSName() : "N/A";
         this.professorName = professorName;
@@ -119,12 +123,26 @@ public class CourseDTO {
         this.courseContent = courseContent;
     }
 
-    public String getEvaluationMethod() {
+    public Map<String, Object> getEvaluationMethod() {
         return evaluationMethod;
     }
 
-    public void setEvaluationMethod(String evaluationMethod) {
+    public void setEvaluationMethod(Map<String, Object> evaluationMethod) {
         this.evaluationMethod = evaluationMethod;
+    }
+
+    private Map<String, Object> parseEvaluationMethod(String json) {
+        if (json == null || json.isEmpty()) {
+            return null;
+        }
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.readValue(json, new TypeReference<Map<String, Object>>() {});
+        } catch (JsonProcessingException e) {
+            // Handle exception, e.g., log it and return an empty map or null
+            e.printStackTrace();
+            return null;
+        }
     }
 
     public String getTextbookInfo() {

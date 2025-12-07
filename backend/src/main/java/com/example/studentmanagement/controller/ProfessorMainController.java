@@ -1,31 +1,49 @@
 package com.example.studentmanagement.controller;
 
 import com.example.studentmanagement.beans.Course;
+import com.example.studentmanagement.beans.Course;
+import com.example.studentmanagement.beans.Member;
 import com.example.studentmanagement.dto.ProfessorCourseResponse;
+import com.example.studentmanagement.repository.MemberRepository;
 import com.example.studentmanagement.repository.ProfessorMainRepository;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/professor-new") // 👈 충돌 방지용 새 주소
+@RequestMapping("/api/professors") 
 public class ProfessorMainController {
 
     private final ProfessorMainRepository professorMainRepository;
+    private final MemberRepository memberRepository;
 
-    public ProfessorMainController(ProfessorMainRepository professorMainRepository) {
+    public ProfessorMainController(ProfessorMainRepository professorMainRepository, MemberRepository memberRepository) {
         this.professorMainRepository = professorMainRepository;
+        this.memberRepository = memberRepository;
     }
 
-    @GetMapping("/courses/{professorId}")
-    public ResponseEntity<?> getProfessorCourses(@PathVariable("professorId") String professorId) {
+    @GetMapping("/courses")
+    public ResponseEntity<?> getProfessorCourses() {
         try {
-            System.out.println("새로운 교수 컨트롤러 작동: " + professorId);
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String professorLoginId = authentication.getName();
+            
+            // 1. 로그인 ID로 Member(교수) 정보 조회
+            Optional<Member> memberOptional = memberRepository.findById(professorLoginId);
+            if (memberOptional.isEmpty()) {
+                return ResponseEntity.status(404).body("교수 정보를 찾을 수 없습니다.");
+            }
+            // 2. 조회된 정보에서 교번(m_no) 추출
+            String professorNo = memberOptional.get().getMemberNo();
+            System.out.println("교수 강의 목록 조회 (로그인ID: " + professorLoginId + ", 교번: " + professorNo + ")");
 
-            // 1. DB에서 원본 가져오기
-            List<Course> courses = professorMainRepository.findMyCourses(professorId);
+            // 3. 교번으로 강의 목록 조회
+            List<Course> courses = professorMainRepository.findMyCourses(professorNo);
 
             // 2. 자바에서 DTO로 변환 (안전장치 가동)
             List<ProfessorCourseResponse> responseList = courses.stream().map(c -> {

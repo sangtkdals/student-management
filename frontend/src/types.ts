@@ -96,9 +96,9 @@ export interface Course {
   courseTime?: string;
 
   // 강의 계획서 관련
-  objectives?: string;
-  content?: string;
-  evaluationMethod?: string;
+  courseObjectives?: string;
+  courseContent?: string;
+  evaluationMethod?: Record<string, number>;
   textbookInfo?: string;
   status: CourseStatus;
 
@@ -168,17 +168,20 @@ export interface Tuition {
 export interface LeaveApplication {
   applicationId: number;
   studentNo: string;
-  leaveType: "GENERAL" | "MILITARY" | "ILLNESS" | "PREGNANCY";
+  leaveType: "일반휴학" | "군입대" | "질병휴학" | "창업휴학";
   startYear: number;
   startSemester: number;
   endYear: number;
   endSemester: number;
-  reason: string;
+  applicationReason: string; // `reason` -> `applicationReason`
   applicationDate: string;
-  approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
+  approvalStatus: "PENDING" | "APPROVED" | "REJECTED" | "RETURN_PENDING";
   approvalDate?: string;
   approverId?: string;
   rejectReason?: string;
+
+  // DTO fields from backend
+  studentName?: string;
 }
 
 // =====================================================
@@ -277,4 +280,19 @@ export interface StudentRecord {
   department: string;
   attendance: "Present" | "Absent" | "Late";
   grade: string | null;
+}
+
+// =====================================================
+// 14. Course Announcement (강의 공지사항)
+// =====================================================
+export interface CourseAnnouncement {
+  noticeId: number;
+  courseCode: string;
+  writerId: string;
+  title: string;
+  content: string;
+  viewCount: number;
+  createdAt: string;
+  updatedAt?: string;
+  writerName?: string; // DTO에서 추가
 }
