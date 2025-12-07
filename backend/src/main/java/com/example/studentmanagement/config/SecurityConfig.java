@@ -58,18 +58,21 @@ public class SecurityConfig {
                 // **관리자(ADMIN)만 접근 가능**
                 .requestMatchers("/api/admin/**").hasRole("ADMIN") // AdminLeaveApplicationController, AdminTuitionController 등
                 .requestMatchers(HttpMethod.POST, "/api/announcements/**").hasRole("ADMIN") // 공지사항 작성
-                .requestMatchers(HttpMethod.PUT, "/api/announcements/**").hasRole("ADMIN") // 공지사항 수정
-                .requestMatchers(HttpMethod.DELETE, "/api/announcements/**").hasRole("ADMIN") // 공지사항 삭제
-                .requestMatchers(HttpMethod.POST, "/api/schedules/**").hasRole("ADMIN") // 학사일정 생성
-                .requestMatchers(HttpMethod.PUT, "/api/schedules/**").hasRole("ADMIN") // 학사일정 수정
-                .requestMatchers(HttpMethod.DELETE, "/api/schedules/**").hasRole("ADMIN") // 학사일정 삭제
+                .requestMatchers(HttpMethod.POST, "/api/schedules").hasRole("ADMIN")         // 학사일정 추가
 
-                // **학생(STUDENT)만 접근 가능**
-                .requestMatchers("/api/student/**").hasRole("STUDENT") // StudentLeaveApplicationController 등
-                .requestMatchers("/api/enrollments/**").hasAnyRole("STUDENT", "PROFESSOR", "ADMIN") // 수강신청 관련
-                
+                // 학생만 접근 가능
+                .requestMatchers(
+                        "/api/leave-applications/**", // 휴학 신청
+                        "/api/tuition/**",            // 등록금 조회
+                        "/api/enrollment/**"          // 수강신청
+                ).hasRole("STUDENT")
+
                 // 학생,교수 접근 가능
                 .requestMatchers("/api/grades/**").hasAnyRole("STUDENT", "PROFESSOR", "ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/course-notices/**").hasAnyRole("STUDENT", "PROFESSOR")
+                .requestMatchers(HttpMethod.POST, "/api/course-notices").hasRole("PROFESSOR")
+                .requestMatchers(HttpMethod.POST, "/api/course-notices/*/view").hasAnyRole("STUDENT", "PROFESSOR")
+
 
                 // **교수(PROFESSOR)만 접근 가능**
                 .requestMatchers("/api/professor/**").hasRole("PROFESSOR")

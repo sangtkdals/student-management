@@ -130,7 +130,7 @@ public class CourseController {
 
     // Get a single course by courseCode
     @GetMapping("/{courseCode}")
-    public ResponseEntity<CourseDTO> getCourseByCode(@PathVariable String courseCode) {
+    public ResponseEntity<CourseDTO> getCourseByCode(@PathVariable("courseCode") String courseCode) {
         return courseRepository.findById(courseCode)
                 .map(course -> {
                     int currentStudents = (int) enrollmentRepository.countByCourse_CourseCode(course.getCourseCode());

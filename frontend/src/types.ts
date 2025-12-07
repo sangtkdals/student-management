@@ -278,3 +278,18 @@ export interface StudentRecord {
   attendance: "Present" | "Absent" | "Late";
   grade: string | null;
 }
+
+// =====================================================
+// 14. Course Announcement (강의 공지사항)
+// =====================================================
+export interface CourseAnnouncement {
+  noticeId: number;
+  courseCode: string;
+  writerId: string;
+  title: string;
+  content: string;
+  viewCount: number;
+  createdAt: string;
+  updatedAt?: string;
+  writerName?: string; // DTO에서 추가
+}

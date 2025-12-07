@@ -377,6 +377,25 @@ COMMENT='강의 자료 테이블'
 ;
 
 -- =====================================================
+-- 17) course_announcement (NEW!)
+-- =====================================================
+DROP TABLE IF EXISTS course_announcement;
+CREATE TABLE course_announcement (
+    notice_id      INT AUTO_INCREMENT PRIMARY KEY,
+    course_code    VARCHAR(20) NOT NULL, 
+    writer_id      VARCHAR(20) NOT NULL, 
+    title          VARCHAR(200) NOT NULL,
+    content        TEXT NOT NULL,
+    view_count     INT DEFAULT 0,
+    created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at     TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_c_notice_course FOREIGN KEY (course_code) REFERENCES course (course_code) ON DELETE CASCADE,
+    CONSTRAINT fk_c_notice_writer FOREIGN KEY (writer_id) REFERENCES member (m_no) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+-- =====================================================
 -- Sample Data Insertion
 -- =====================================================
 
@@ -451,21 +470,6 @@ INSERT INTO course (course_code, academic_year, semester, s_code, course_class, 
 ('CSE2010_01', 2025, 2, 'CSE2010', '01', 'prof003', 50, 'IT-401', 'OPEN'),
 ('CSE2020_01', 2025, 2, 'CSE2020', '01', 'prof004', 50, 'IT-402', 'OPEN'),
 ('CSE3030_01', 2025, 2, 'CSE3030', '01', 'prof001', 45, 'IT-503', 'OPEN');
-
--- 강의 계획서 샘플 데이터 추가
-UPDATE course SET
-    course_objectives = '본 강의는 소프트웨어 개발의 전체 생명주기를 이해하고, 각 단계에서 필요한 기술과 도구를 습득하는 것을 목표로 합니다. 학생들은 요구사항 분석, 설계, 구현, 테스트, 유지보수 과정을 체계적으로 학습하게 됩니다.',
-    course_content = '1주차: 소프트웨어 공학 소개\n2주차: 소프트웨어 프로세스 모델\n3주차: 요구사항 공학\n4주차: 시스템 모델링\n5주차: 아키텍처 설계\n6주차: 객체지향 설계\n7주차: 중간고사\n8주차: 구현 및 테스트 전략\n9주차: 소프트웨어 품질 보증\n10주차: 프로젝트 관리',
-    evaluation_method = '{"midterm": 30, "final": 40, "assignments": 20, "attendance": 10}',
-    textbook_info = '주교재: Software Engineering, 10th Edition by Ian Sommerville (Pearson, 2015)\n부교재: Head First Design Patterns (O''Reilly, 2004)'
-WHERE course_code = 'CSE4001_01';
-
-UPDATE course SET
-    course_objectives = '데이터베이스 시스템의 기본 개념과 원리를 이해하고, 관계형 데이터베이스 모델을 중심으로 데이터베이스를 설계, 구축, 활용하는 능력을 배양합니다.',
-    course_content = '1주차: 데이터베이스 시스템 개요\n2주차: 관계형 데이터 모델\n3주차: SQL 기초\n4주차: 고급 SQL\n5주차: 데이터베이스 설계와 ER 모델\n6주차: 정규화\n7주차: 중간고사\n8주차: 트랜잭션 관리\n9주차: 동시성 제어\n10주차: 회복 시스템',
-    evaluation_method = '{"midterm": 35, "final": 45, "assignments": 20, "attendance": 0}',
-    textbook_info = '주교재: Database System Concepts, 7th Edition by Silberschatz, Korth, and Sudarshan (McGraw-Hill, 2019)'
-WHERE course_code = 'CSE4002_01';
 
 -- Course Schedule 데이터
 INSERT INTO course_schedule (course_code, day_of_week, start_time, end_time) VALUES
@@ -542,6 +546,20 @@ INSERT INTO academic_schedule (academic_year, semester, schedule_title, start_da
 (2025, 2, '기말고사', '2025-12-15', '2025-12-19', 'academic'),
 (2025, 2, '동계 방학', '2025-12-22', '2026-02-28', 'academic');
 
+-- =====================================================
+-- Sample Course Announcement Data (NEW!)
+-- =====================================================
+-- 김영희 교수(prof003)가 '데이터베이스 시스템'에 올린 공지사항
+INSERT INTO course_announcement (course_code, writer_id, title, content, view_count, created_at)
+VALUES 
+('CSE4002_01', 'prof003', '중간고사 범위 안내', '중간고사는 1장부터 5장까지입니다. 열심히 공부하세요!', 15, NOW()),
+('CSE4002_01', 'prof003', '팀 프로젝트 조편성 결과', '팀 프로젝트 조편성 결과를 첨부파일로 확인하세요.', 22, NOW());
+
+-- 김영희 교수(prof003)가 '자료구조'에 올린 공지사항
+INSERT INTO course_announcement (course_code, writer_id, title, content, view_count, created_at)
+VALUES 
+('CSE2010_01', 'prof003', '과제 제출 기한 연장', '과제 제출 기한을 이번 주 금요일까지 연장합니다.', 45, NOW());
+
 -- 1. 기존 데이터 정리 (중복 에러 방지용)
 SET FOREIGN_KEY_CHECKS = 0;
 TRUNCATE TABLE grade;
@@ -595,6 +613,3 @@ SELECT enrollment_id, 0, 0, 0, 0, 0, NULL, 0
 FROM enrollment
 WHERE stu_no = '20240001'
   AND course_code IN ('CSE4002_01', 'CSE2010_01');
-
-SELECT * FROM enrollment;
-SELECT * FROM grade;

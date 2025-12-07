@@ -30,6 +30,9 @@ import {
 } from "./components/student/StudentAcademicStatusViews";
 import { StudentGraduationCheck, StudentCertificateIssuance } from "./components/student/StudentMiscViews";
 import { StudentAttendance } from "./components/student/StudentAttendance";
+import StudentCourseAnnouncementDetail from "./components/student/StudentCourseAnnouncementDetail";
+import StudentAllAnnouncements from "./components/student/StudentAllAnnouncements";
+import { ProfessorCourseNotices } from "./components/professor/ProfessorCourseNotices";
 
 // Professor Views
 import { ProfessorHome } from "./components/professor/ProfessorHome";
@@ -231,12 +234,36 @@ const AppRoutes = ({ user, onLogout, enrolledCourses }: { user: User; onLogout: 
                   </div>
                 }
               />
+              <Route
+                path="/student/my-classroom/:courseCode/announcements/:noticeId"
+                element={
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <StudentCourseAnnouncementDetail />
+                  </div>
+                }
+              />
+              <Route
+                path="/student/announcements"
+                element={
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <StudentAllAnnouncements />
+                  </div>
+                }
+              />
             </>
           )}
 
           {/* Professor Specific Routes */}
           {user.role === "professor" && (
             <>
+              <Route
+                path="/professor/course-notices"
+                element={
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <ProfessorCourseNotices user={user} />
+                  </div>
+                }
+              />
               <Route
                 path="/professor/student-attendance"
                 element={

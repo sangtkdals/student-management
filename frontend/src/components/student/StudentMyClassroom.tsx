@@ -1,34 +1,49 @@
 import React, { useState, useEffect } from "react";
-import { Course } from "../../types";
+import { Course, CourseAnnouncement } from "../../types";
 import { useNavigate } from "react-router-dom";
 import { FiChevronRight } from "react-icons/fi";
 
 const StudentMyClassroom: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>([]);
+  const [announcements, setAnnouncements] = useState<CourseAnnouncement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchCourses = async () => {
+    const fetchData = async () => {
       try {
         const token = localStorage.getItem("token");
         if (!token) {
           throw new Error("인증 토큰이 없습니다.");
         }
 
-        const response = await fetch("/api/courses/my", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        // Fetch courses and announcements in parallel
+        const [coursesResponse, announcementsResponse] = await Promise.all([
+          fetch("/api/courses/my", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch("/api/course-notices/my-latest", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        if (!coursesResponse.ok) {
+          throw new Error(`강의 목록 로딩 실패: ${coursesResponse.status}`);
+        }
+        if (!announcementsResponse.ok) {
+          throw new Error(`공지사항 로딩 실패: ${announcementsResponse.status}`);
         }
 
-        const data = await response.json();
-        setCourses(data);
+        const coursesData = await coursesResponse.json();
+        const announcementsData = await announcementsResponse.json();
+        
+        // Sort announcements by creation date, newest first
+        announcementsData.sort((a: CourseAnnouncement, b: CourseAnnouncement) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+        setCourses(coursesData);
+        setAnnouncements(announcementsData);
+
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);
@@ -40,21 +55,21 @@ const StudentMyClassroom: React.FC = () => {
       }
     };
 
-    fetchCourses();
+    fetchData();
   }, []);
 
   const handleCourseClick = (courseCode: string) => {
     navigate(`/student/my-classroom/${courseCode}`);
   };
 
-  const SectionHeader: React.FC<{ title: string; showMore?: boolean }> = ({ title, showMore }) => (
+  const SectionHeader: React.FC<{ title: string; showMore?: boolean; onClick?: () => void }> = ({ title, showMore, onClick }) => (
     <div className="flex justify-between items-center pb-3 mb-4">
       <h2 className="text-2xl font-bold text-gray-800 flex items-center">
         <span className="inline-block w-1.5 h-6 bg-blue-600 mr-3"></span>
         {title}
       </h2>
       {showMore && (
-        <button className="flex items-center text-sm font-semibold text-gray-500 hover:text-blue-600 transition-colors">
+        <button onClick={onClick} className="flex items-center text-sm font-semibold text-gray-500 hover:text-blue-600 transition-colors">
           MORE <FiChevronRight className="ml-1" />
         </button>
       )}
@@ -115,13 +130,30 @@ const StudentMyClassroom: React.FC = () => {
           </div>
         </div>
 
-        {/* 나의 할일 */}
+        {/* 최근 공지사항 */}
         <div className="bg-white rounded-lg shadow-lg p-6">
-          <SectionHeader title="나의 할일" />
-          <div className="mt-4">
-            <div className="text-center text-gray-500 py-8">
-              <p>현재 등록된 할일이 없습니다.</p>
-            </div>
+          <SectionHeader title="최근 공지사항" showMore={true} onClick={() => navigate('/student/announcements')} />
+          <div className="mt-4 space-y-3">
+            {announcements.length > 0 ? (
+              announcements.map((ann) => {
+                const course = courses.find(c => c.courseCode === ann.courseCode);
+                return (
+                  <div key={ann.noticeId} className="border-b border-gray-100 pb-3 cursor-pointer hover:bg-gray-50"
+                       onClick={() => navigate(`/student/my-classroom/${ann.courseCode}/announcements/${ann.noticeId}`)}>
+                     <p className="text-sm font-semibold text-blue-600">{course?.subjectName || ann.courseCode}</p>
+                    <p className="text-md font-bold text-gray-800 truncate hover:text-clip">{ann.title}</p>
+                    <div className="flex justify-between items-center mt-1">
+                      <p className="text-xs text-gray-500">{ann.writerName}</p>
+                      <p className="text-xs text-gray-400">{new Date(ann.createdAt).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="text-center text-gray-500 py-8">
+                <p>새로운 공지사항이 없습니다.</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
