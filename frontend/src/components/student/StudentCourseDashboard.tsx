@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, Outlet, useOutlet } from 'react-router-dom';
 import { Course, CourseAnnouncement, Attendance, Grade } from '../../types';
-import { FaHome, FaBook, FaFileAlt, FaBullhorn, FaQuestionCircle, FaUser, FaSignOutAlt, FaUsers, FaChalkboardTeacher } from 'react-icons/fa';
+import { FaHome, FaBook, FaFileAlt, FaBullhorn, FaSignOutAlt } from 'react-icons/fa';
 
 interface CourseAttendance {
   courseName: string;
@@ -18,6 +18,7 @@ const DetailSection: React.FC<{ title: string; children: React.ReactNode }> = ({
 
 const StudentCourseDashboard: React.FC = () => {
   const { courseCode } = useParams<{ courseCode: string }>();
+  const outlet = useOutlet();
   const [activeView, setActiveView] = useState('home');
   const [course, setCourse] = useState<Course | null>(null);
   const [announcements, setAnnouncements] = useState<CourseAnnouncement[]>([]);
@@ -27,60 +28,63 @@ const StudentCourseDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchCourseDetail = async () => {
+      setLoading(true);
       try {
         const token = localStorage.getItem('token');
         if (!token) throw new Error('인증 토큰이 없습니다.');
-
-        // Fetch course details
-        const courseResponse = await fetch(`/api/courses/${courseCode}`, {
+        const response = await fetch(`/api/courses/${courseCode}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (!courseResponse.ok) throw new Error(`HTTP error! status: ${courseResponse.status}`);
-        const courseData = await courseResponse.json();
-        setCourse(courseData);
-
-        // Fetch course announcements
-        const announcementsResponse = await fetch(`/api/course-notices/${courseCode}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!announcementsResponse.ok) throw new Error(`HTTP error! status: ${announcementsResponse.status}`);
-        const announcementsData = await announcementsResponse.json();
-        setAnnouncements(announcementsData);
-        
-        // Fetch attendance
-        const attendanceResponse = await fetch(`/api/attendance/student`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!attendanceResponse.ok) throw new Error(`HTTP error! status: ${attendanceResponse.status}`);
-        const allAttendanceData: CourseAttendance[] = await attendanceResponse.json();
-        const currentCourseAttendance = allAttendanceData.find(a => a.courseCode === courseCode);
-        if (currentCourseAttendance) {
-          setAttendance(currentCourseAttendance.attendance);
-        }
-
-        // Fetch grades
-        const gradesResponse = await fetch(`/api/grades`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!gradesResponse.ok) throw new Error(`HTTP error! status: ${gradesResponse.status}`);
-        const allGradesData: Grade[] = await gradesResponse.json();
-        const currentCourseGrade = allGradesData.find(g => g.courseCode === courseCode);
-        if (currentCourseGrade) {
-          setGrade(currentCourseGrade);
-        }
-        
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        setCourse(await response.json());
       } catch (e) {
         setError(e instanceof Error ? e.message : '알 수 없는 오류가 발생했습니다.');
       } finally {
         setLoading(false);
       }
     };
-
     if (courseCode) {
-      fetchData();
+      fetchCourseDetail();
     }
   }, [courseCode]);
+  
+  useEffect(() => {
+    const fetchDataForView = async () => {
+      const token = localStorage.getItem('token');
+      if (!token || !courseCode) return;
+
+      try {
+        if (activeView === 'home') {
+            if (attendance.length === 0) {
+              const attendanceResponse = await fetch(`/api/attendance/student`, { headers: { Authorization: `Bearer ${token}` } });
+              if (!attendanceResponse.ok) throw new Error('출결 정보 로딩 실패');
+              const allAttendanceData: CourseAttendance[] = await attendanceResponse.json();
+              const currentCourseAttendance = allAttendanceData.find(a => a.courseCode === courseCode);
+              if (currentCourseAttendance) setAttendance(currentCourseAttendance.attendance);
+            }
+            if (!grade) {
+               const gradesResponse = await fetch(`/api/grades`, { headers: { Authorization: `Bearer ${token}` } });
+               if (!gradesResponse.ok) throw new Error('성적 정보 로딩 실패');
+               const allGradesData: Grade[] = await gradesResponse.json();
+               const currentCourseGrade = allGradesData.find(g => g.courseCode === courseCode);
+               if (currentCourseGrade) setGrade(currentCourseGrade);
+            }
+        }
+        
+        if ((activeView === 'home' || activeView === 'announcements') && announcements.length === 0) {
+            const announcementsResponse = await fetch(`/api/course-notices/${courseCode}`, { headers: { Authorization: `Bearer ${token}` } });
+            if (!announcementsResponse.ok) throw new Error('공지사항 로딩 실패');
+            setAnnouncements(await announcementsResponse.json());
+        }
+
+      } catch (e) {
+        setError(e instanceof Error ? e.message : '데이터를 불러오는 중 오류가 발생했습니다.');
+      }
+    };
+    
+    fetchDataForView();
+  }, [activeView, courseCode]);
 
   if (loading) return <div className="p-8 text-center">로딩 중...</div>;
   if (error) return <div className="p-8 text-center text-red-500">오류: {error}</div>;
@@ -93,7 +97,7 @@ const StudentCourseDashboard: React.FC = () => {
     { id: 'announcements', name: '공지사항', icon: FaBullhorn },
   ];
 
-  const renderContent = () => {
+  const renderMainContent = () => {
     switch (activeView) {
       case 'syllabus':
         return (
@@ -275,7 +279,7 @@ const StudentCourseDashboard: React.FC = () => {
         </div>
       </aside>
       <main className="flex-1 p-8">
-        {renderContent()}
+        {outlet ? <Outlet /> : renderMainContent()}
       </main>
     </div>
   );

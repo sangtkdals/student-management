@@ -113,12 +113,24 @@ public class CourseController {
     @GetMapping("/my")
     public ResponseEntity<List<CourseDTO>> getMyCourses() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String studentId = authentication.getName();
+        String studentLoginId = authentication.getName();
 
-        List<Course> courses = enrollmentRepository.findCoursesByStudentId(studentId);
+        // 1. 로그인 ID로 학번 조회
+        Member student = memberRepository.findById(studentLoginId)
+                .orElseThrow(() -> new RuntimeException("학생 정보를 찾을 수 없습니다."));
+        String studentNo = student.getMemberNo();
+
+        // 2. 최적화된 쿼리로 강의 정보 한번에 조회 (N+1 해결)
+        List<Course> courses = enrollmentRepository.findCoursesByStudentNoWithDetails(studentNo);
+        
+        // 3. 수강 인원 정보를 한 번의 쿼리로 조회
+        List<String> courseCodes = courses.stream().map(Course::getCourseCode).collect(Collectors.toList());
+        Map<String, Long> studentCounts = enrollmentRepository.findAllByCourse_CourseCodeIn(courseCodes).stream()
+                .collect(Collectors.groupingBy(e -> e.getCourse().getCourseCode(), Collectors.counting()));
+
         List<CourseDTO> courseDTOs = courses.stream()
                 .map(course -> {
-                    int currentStudents = (int) enrollmentRepository.countByCourse_CourseCode(course.getCourseCode());
+                    int currentStudents = studentCounts.getOrDefault(course.getCourseCode(), 0L).intValue();
                     String professorName = course.getProfessor() != null ? course.getProfessor().getName() : "N/A";
                     List<CourseSchedule> schedules = course.getCourseSchedules();
                     int credit = course.getSubject() != null ? course.getSubject().getCredit() : 0;

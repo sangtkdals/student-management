@@ -168,17 +168,20 @@ export interface Tuition {
 export interface LeaveApplication {
   applicationId: number;
   studentNo: string;
-  leaveType: "GENERAL" | "MILITARY" | "ILLNESS" | "PREGNANCY";
+  leaveType: "일반휴학" | "군입대" | "질병휴학" | "창업휴학";
   startYear: number;
   startSemester: number;
   endYear: number;
   endSemester: number;
-  reason: string;
+  applicationReason: string; // `reason` -> `applicationReason`
   applicationDate: string;
-  approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
+  approvalStatus: "PENDING" | "APPROVED" | "REJECTED" | "RETURN_PENDING";
   approvalDate?: string;
   approverId?: string;
   rejectReason?: string;
+
+  // DTO fields from backend
+  studentName?: string;
 }
 
 // =====================================================

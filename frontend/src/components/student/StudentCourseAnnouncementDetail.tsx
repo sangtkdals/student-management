@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { CourseAnnouncement } from '../../types';
 import { Card } from '../ui';
+import { FaArrowLeft } from 'react-icons/fa';
 
 const StudentCourseAnnouncementDetail = () => {
   const { courseCode, noticeId } = useParams();
+  const navigate = useNavigate();
   const [announcement, setAnnouncement] = useState<CourseAnnouncement | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,15 +45,23 @@ const StudentCourseAnnouncementDetail = () => {
   if (!announcement) return <div className="p-8 text-center">Announcement not found.</div>;
 
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
-        <Card title={announcement.title}>
-            <div className="text-sm text-gray-500 mb-4 border-b pb-4">
-              <span>작성자: {announcement.writerName}</span> | <span>작성일: {new Date(announcement.createdAt).toLocaleDateString()}</span>
-            </div>
-            <div className="prose max-w-none">
-                <p>{announcement.content}</p>
-            </div>
-        </Card>
+    <div className="bg-white p-6 rounded-lg shadow">
+        <div className="flex items-center justify-between mb-6 border-b pb-4">
+            <h1 className="text-2xl font-bold">{announcement.title}</h1>
+            <button 
+                onClick={() => navigate(-1)} 
+                className="flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
+            >
+                <FaArrowLeft className="mr-2" />
+                목록으로
+            </button>
+        </div>
+        <div className="text-sm text-gray-500 mb-4">
+            <span>작성자: {announcement.writerName}</span> | <span>작성일: {new Date(announcement.createdAt).toLocaleDateString()}</span>
+        </div>
+        <div className="prose max-w-none">
+            <p className="whitespace-pre-wrap">{announcement.content}</p>
+        </div>
     </div>
   );
 };

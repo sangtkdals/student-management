@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../../api";
 import { Card, Table, Button } from "../ui";
 import type { LeaveApplication } from "../../types";
 
@@ -17,10 +17,7 @@ export const AdminLeaveManagement: React.FC = () => {
 
   const fetchApplications = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get("/api/admin/leave-applications", {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const response = await api.get("/api/admin/leave-applications");
       setApplications(response.data);
     } catch (error) {
       console.error("Error fetching leave applications:", error);
@@ -29,10 +26,7 @@ export const AdminLeaveManagement: React.FC = () => {
 
   const fetchStudentsOnLeave = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get("/api/admin/leave-applications/approved", {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const response = await api.get("/api/admin/leave-applications/approved");
       setStudentsOnLeave(response.data);
     } catch (error) {
       console.error("Error fetching students on leave:", error);
@@ -41,10 +35,7 @@ export const AdminLeaveManagement: React.FC = () => {
 
   const fetchReturnPendingApplications = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get("/api/admin/leave-applications/return-pending", {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const response = await api.get("/api/admin/leave-applications/return-pending");
       setReturnPendingApplications(response.data);
     } catch (error) {
       console.error("Error fetching return pending applications:", error);
@@ -54,10 +45,7 @@ export const AdminLeaveManagement: React.FC = () => {
   const handleApprove = async (id: number) => {
     if (confirm("승인하시겠습니까?")) {
       try {
-        const token = localStorage.getItem('token');
-        await axios.post(`/api/admin/leave-applications/${id}/approve`, {}, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+        await api.post(`/api/admin/leave-applications/${id}/approve`, {});
         fetchApplications();
         fetchStudentsOnLeave();
         alert("승인되었습니다.");
@@ -72,10 +60,7 @@ export const AdminLeaveManagement: React.FC = () => {
     const reason = prompt("거부 사유를 입력하세요:");
     if (reason) {
       try {
-        const token = localStorage.getItem('token');
-        await axios.post(`/api/admin/leave-applications/${id}/reject`, { rejectReason: reason }, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+        await api.post(`/api/admin/leave-applications/${id}/reject`, { rejectReason: reason });
         fetchApplications();
         alert("거부되었습니다.");
       } catch (error) {
@@ -88,10 +73,7 @@ export const AdminLeaveManagement: React.FC = () => {
   const handleReturnToSchool = async (studentNo: string, studentName: string) => {
     if (confirm(`${studentName} 학생을 복학 처리하시겠습니까?`)) {
       try {
-        const token = localStorage.getItem('token');
-        await axios.put(`/api/admin/leave-applications/return/${studentNo}`, {}, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+        await api.put(`/api/admin/leave-applications/return/${studentNo}`, {});
         fetchStudentsOnLeave();
         alert("복학 처리되었습니다.");
       } catch (error) {
@@ -104,10 +86,7 @@ export const AdminLeaveManagement: React.FC = () => {
   const handleApproveReturn = async (id: number, studentName: string) => {
     if (confirm(`${studentName} 학생의 복학 신청을 승인하시겠습니까?`)) {
       try {
-        const token = localStorage.getItem('token');
-        await axios.post(`/api/admin/leave-applications/${id}/approve-return`, {}, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+        await api.post(`/api/admin/leave-applications/${id}/approve-return`, {});
         fetchReturnPendingApplications();
         fetchStudentsOnLeave();
         fetchApplications();

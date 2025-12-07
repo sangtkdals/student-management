@@ -226,20 +226,11 @@ const AppRoutes = ({ user, onLogout, enrolledCourses }: { user: User; onLogout: 
                   </div>
                 }
               />
-              <Route
-                path="/student/my-classroom/:courseCode"
-                element={
-                  <StudentCourseDashboard />
-                }
-              />
-              <Route
-                path="/student/my-classroom/:courseCode/announcements/:noticeId"
-                element={
-                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <StudentCourseAnnouncementDetail />
-                  </div>
-                }
-              />
+              <Route path="/student/my-classroom/:courseCode" element={<StudentCourseDashboard />}>
+                {/* 기본적으로 홈 대시보드 컨텐츠를 보여주기 위한 index route가 필요하다면 여기에 추가 */}
+                {/* <Route index element={<CourseDashboardHome />} /> */}
+                <Route path="announcements/:noticeId" element={<StudentCourseAnnouncementDetail />} />
+              </Route>
               <Route
                 path="/student/announcements"
                 element={
