@@ -14,7 +14,7 @@ export const ProfessorCourseNotices: React.FC<{ user: User }> = ({ user }) => {
       try {
         const token = localStorage.getItem("token");
         // 새 컨트롤러 주소 사용
-        const response = await fetch(`http://localhost:8080/api/professor-new/courses/${user.memberNo}`, {
+        const response = await fetch(`/api/professors/courses`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response.ok) {

@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/professor")
+@RequestMapping("/api/professors")
 @CrossOrigin(origins = "http://localhost:3000")
 public class ProfessorController {
 
@@ -20,8 +20,8 @@ public class ProfessorController {
     @Autowired
     private GradeService gradeService;
 
-    @GetMapping("/courses/{courseCode}/students")
-    public ResponseEntity<List<StudentGradeDTO>> getCourseStudents(@PathVariable String courseCode) {
+    @GetMapping("/courses/students")
+    public ResponseEntity<List<StudentGradeDTO>> getCourseStudents(@RequestParam("courseCode") String courseCode) {
         List<StudentGradeDTO> students = professorGradeRepository.findStudentsByCourseCode(courseCode);
         return ResponseEntity.ok(students);
     }
