@@ -40,6 +40,7 @@ import { ProfessorMyLectures } from "./components/professor/ProfessorMyLectures"
 import { ProfessorStudentManagement } from "./components/professor/ProfessorStudentManagement";
 import { ProfessorSyllabus } from "./components/professor/ProfessorSyllabus";
 import { ProfessorCourseMaterials, ProfessorAssignments } from "./components/professor/ProfessorMiscViews";
+import { ProfessorAssignmentDetail } from "./components/professor/ProfessorAssignmentDetail";
 
 // Admin Views
 import {
@@ -298,7 +299,15 @@ const AppRoutes = ({ user, onLogout, enrolledCourses }: { user: User; onLogout: 
                 path="/professor/assignments"
                 element={
                   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <ProfessorAssignments />
+                    <ProfessorAssignments user={user} />
+                  </div>
+                }
+              />
+              <Route
+                path="/professor/assignments/:assignmentId"
+                element={
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <ProfessorAssignmentDetail />
                   </div>
                 }
               />

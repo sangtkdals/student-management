@@ -27,7 +27,7 @@ export const ProfessorSyllabus: React.FC<{ user: User }> = ({ user }) => {
       if (!user?.memberNo) return;
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`http://localhost:8080/api/courses/professor/${user.memberNo}`, {
+        const response = await fetch(`/api/professor-new/courses`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response.ok) {
@@ -61,14 +61,14 @@ export const ProfessorSyllabus: React.FC<{ user: User }> = ({ user }) => {
       setSyllabus({
         classTime: course.courseTime || "",
         credits: String(course.credit || 0), // Use course.credit directly
-        overview: course.content || "",
-        objectives: course.objectives || "",
+        overview: course.courseContent || "",
+        objectives: course.courseObjectives || "",
         textbook: course.textbookInfo || "",
       });
 
       // Parse evaluation method
       try {
-        if (course.evaluationMethod && course.evaluationMethod.startsWith("{")) {
+        if (course.evaluationMethod && typeof course.evaluationMethod === 'string' && course.evaluationMethod.startsWith("{")) {
           const parsed = JSON.parse(course.evaluationMethod);
           setEvalBreakdown({
             mid: parsed.mid || 0,
@@ -78,13 +78,13 @@ export const ProfessorSyllabus: React.FC<{ user: User }> = ({ user }) => {
           });
           setEvalDesc(parsed.desc || "");
         } else {
-          // Legacy plain text
+          // Legacy plain text or object
           setEvalBreakdown({ mid: 0, final: 0, assign: 0, attend: 0 });
-          setEvalDesc(course.evaluationMethod || "");
+          setEvalDesc(course.evaluationMethod ? JSON.stringify(course.evaluationMethod) : "");
         }
       } catch (e) {
         setEvalBreakdown({ mid: 0, final: 0, assign: 0, attend: 0 });
-        setEvalDesc(course.evaluationMethod || "");
+        setEvalDesc(course.evaluationMethod ? JSON.stringify(course.evaluationMethod) : "");
       }
     }
   }, [course]);
@@ -107,7 +107,7 @@ export const ProfessorSyllabus: React.FC<{ user: User }> = ({ user }) => {
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:8080/api/courses/${course.courseCode}`, {
+      const response = await fetch(`/api/courses/${course.courseCode}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

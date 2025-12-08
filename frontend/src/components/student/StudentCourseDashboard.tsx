@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, Outlet, useOutlet } from 'react-router-dom';
-import { Course, CourseAnnouncement, Attendance, Grade } from '../../types';
+import { Course, CourseAnnouncement, Attendance, Grade, Assignment } from '../../types';
+import { jwtDecode } from 'jwt-decode';
 import { FaHome, FaBook, FaFileAlt, FaBullhorn, FaSignOutAlt } from 'react-icons/fa';
 
 interface CourseAttendance {
@@ -24,6 +25,9 @@ const StudentCourseDashboard: React.FC = () => {
   const [announcements, setAnnouncements] = useState<CourseAnnouncement[]>([]);
   const [attendance, setAttendance] = useState<Attendance[]>([]);
   const [grade, setGrade] = useState<Grade | null>(null);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<{ [key: number]: File | undefined }>({});
+  const [submissionContents, setSubmissionContents] = useState<{ [key: number]: string }>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -78,6 +82,12 @@ const StudentCourseDashboard: React.FC = () => {
             setAnnouncements(await announcementsResponse.json());
         }
 
+        if (activeView === 'assignments' && assignments.length === 0) {
+            const assignmentsResponse = await fetch(`/api/assignments/course/${courseCode}`, { headers: { Authorization: `Bearer ${token}` } });
+            if (!assignmentsResponse.ok) throw new Error('과제 정보 로딩 실패');
+            setAssignments(await assignmentsResponse.json());
+        }
+
       } catch (e) {
         setError(e instanceof Error ? e.message : '데이터를 불러오는 중 오류가 발생했습니다.');
       }
@@ -89,6 +99,66 @@ const StudentCourseDashboard: React.FC = () => {
   if (loading) return <div className="p-8 text-center">로딩 중...</div>;
   if (error) return <div className="p-8 text-center text-red-500">오류: {error}</div>;
   if (!course) return <div className="p-8 text-center">강의 정보를 찾을 수 없습니다.</div>;
+
+  const handleFileChange = (assignmentId: number, event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      setSelectedFiles(prev => ({ ...prev, [assignmentId]: event.target.files[0] }));
+    }
+  };
+
+  const handleContentChange = (assignmentId: number, event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setSubmissionContents(prev => ({ ...prev, [assignmentId]: event.target.value }));
+  };
+
+  const handleAssignmentSubmit = async (assignmentId: number) => {
+    const selectedFile = selectedFiles[assignmentId];
+    const content = submissionContents[assignmentId] || "";
+
+    if (!selectedFile && content.trim() === "") {
+      alert("내용을 작성하거나 파일을 첨부해주세요.");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+
+    const decodedToken = jwtDecode<{ sub: string }>(token);
+    const studentId = decodedToken.sub;
+
+    const formData = new FormData();
+    if (selectedFile) {
+      formData.append("file", selectedFile);
+    }
+    formData.append("content", content);
+
+    try {
+      const response = await fetch(`/api/assignments/${assignmentId}/submit`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      if (response.ok) {
+        alert("과제가 성공적으로 제출되었습니다.");
+        setSelectedFiles(prev => ({ ...prev, [assignmentId]: undefined }));
+        setSubmissionContents(prev => ({ ...prev, [assignmentId]: "" }));
+        // Optionally, refresh submission status
+      } else {
+        const errorText = await response.text();
+        try {
+          const errorData = JSON.parse(errorText);
+          throw new Error(errorData.message || "과제 제출에 실패했습니다.");
+        } catch (jsonError) {
+          throw new Error(errorText || "과제 제출에 실패했습니다.");
+        }
+      }
+    } catch (e) {
+        alert(e instanceof Error ? e.message : "알 수 없는 오류가 발생했습니다.");
+    }
+  };
 
   const sidebarNavItems = [
     { id: 'home', name: 'Home', icon: FaHome },
@@ -135,7 +205,69 @@ const StudentCourseDashboard: React.FC = () => {
         return (
           <div className="bg-white p-6 rounded-lg shadow">
             <h1 className="text-2xl font-bold mb-6">과제</h1>
-            <div className="text-center text-gray-500 py-12">과제 기능은 준비 중입니다.</div>
+            <div className="space-y-6">
+              {assignments.length > 0 ? (
+                assignments.map((assignment) => (
+                  <div key={assignment.assignmentId} className="p-4 border rounded-md">
+                    <h3 className="text-lg font-bold">{assignment.assignmentTitle}</h3>
+                    <p className="text-sm text-gray-500">마감일: {new Date(assignment.dueDate).toLocaleDateString()}</p>
+                    <p className="mt-2">{assignment.assignmentDesc}</p>
+                    <div className="mt-4 pt-4 border-t">
+                      {assignment.submission ? (
+                        <div>
+                          <p className="text-sm font-semibold text-gray-700">제출된 과제:</p>
+                          <div className="mt-2 p-3 bg-white rounded-md border text-sm">
+                            <p><strong>내용:</strong> {assignment.submission.content}</p>
+                            {assignment.submission.filePath && <p><strong>파일명:</strong> {assignment.submission.filePath.split(/[\\/]/).pop()?.split('_').slice(1).join('_')}</p>}
+                            <p><strong>제출일:</strong> {new Date(assignment.submission.submissionDate).toLocaleString('ko-KR')}</p>
+                          </div>
+                          <div className="mt-3 flex space-x-2">
+                            <button
+                              onClick={() => alert("수정 기능은 현재 구현되지 않았습니다.")}
+                              className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-xs"
+                            >
+                              수정
+                            </button>
+                            <button
+                              // onClick={() => handleAssignmentDelete(assignment.submission.submissionId)}
+                              className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          <div>
+                            <textarea
+                              rows={4}
+                              placeholder="과제 내용을 100자 이내로 입력하세요."
+                              maxLength={100}
+                              value={submissionContents[assignment.assignmentId] || ''}
+                              onChange={(e) => handleContentChange(assignment.assignmentId, e)}
+                              className="w-full p-2 border rounded text-sm"
+                            />
+                          </div>
+                          <div className="flex items-center">
+                            <input type="file" onChange={(e) => handleFileChange(assignment.assignmentId, e)} className="text-sm"/>
+                            <button
+                              onClick={() => handleAssignmentSubmit(assignment.assignmentId)}
+                              className="ml-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+                            >
+                              제출
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-12 text-gray-500">
+                  <p>등록된 과제가 없습니다.</p>
+                </div>
+              )}
+            </div>
           </div>
         );
       case 'announcements':

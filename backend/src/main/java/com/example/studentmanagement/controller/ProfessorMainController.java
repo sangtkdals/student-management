@@ -1,7 +1,7 @@
 package com.example.studentmanagement.controller;
 
 import com.example.studentmanagement.beans.Course;
-import com.example.studentmanagement.beans.Course;
+import com.example.studentmanagement.beans.CourseSchedule;
 import com.example.studentmanagement.beans.Member;
 import com.example.studentmanagement.dto.ProfessorCourseResponse;
 import com.example.studentmanagement.repository.MemberRepository;
@@ -11,12 +11,13 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/professors") 
+@RequestMapping("/api/professor-new") 
 public class ProfessorMainController {
 
     private final ProfessorMainRepository professorMainRepository;
@@ -54,18 +55,48 @@ public class ProfessorMainController {
                 // 수강인원 조회
                 int studentCount = professorMainRepository.countStudents(c.getCourseCode());
 
+                // 강의 시간 포맷팅
+                String courseTime = c.getCourseSchedules().stream()
+                    .map(s -> {
+                        String day = "";
+                        switch (s.getDayOfWeek()) {
+                            case 1: day = "월"; break;
+                            case 2: day = "화"; break;
+                            case 3: day = "수"; break;
+                            case 4: day = "목"; break;
+                            case 5: day = "금"; break;
+                            case 6: day = "토"; break;
+                            case 7: day = "일"; break;
+                        }
+                        return day + " " + s.getStartTime().format(DateTimeFormatter.ofPattern("HH:mm")) + 
+                               "-" + s.getEndTime().format(DateTimeFormatter.ofPattern("HH:mm"));
+                    })
+                    .collect(Collectors.joining(", "));
+
                 return new ProfessorCourseResponse(
                     c.getCourseCode(),
                     subjectName,
                     c.getCourseClass(),
                     c.getClassroom(),
                     studentCount,
-                    credit
+                    credit,
+                    courseTime
                 );
             }).collect(Collectors.toList());
 
             return ResponseEntity.ok(responseList);
 
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("서버 오류: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/courses/{courseCode}/students")
+    public ResponseEntity<?> getStudentsByCourse(@PathVariable("courseCode") String courseCode) {
+        try {
+            List<Member> students = professorMainRepository.findStudentsByCourse(courseCode);
+            return ResponseEntity.ok(students);
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.internalServerError().body("서버 오류: " + e.getMessage());

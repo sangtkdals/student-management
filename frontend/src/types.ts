@@ -296,3 +296,31 @@ export interface CourseAnnouncement {
   updatedAt?: string;
   writerName?: string; // DTO에서 추가
 }
+
+// =====================================================
+// 15. Assignment (과제)
+// =====================================================
+export interface Assignment {
+  assignmentId: number;
+  courseCode: string;
+  assignmentTitle: string;
+  assignmentDesc: string;
+  attachmentPath?: string;
+  registrationDate: string;
+  dueDate: string;
+  submission?: AssignmentSubmission | null; // 학생의 제출 정보
+}
+
+// =====================================================
+// 16. Assignment Submission (과제 제출)
+// =====================================================
+export interface AssignmentSubmission {
+    submissionId: number;
+    studentName: string;
+    studentId?: string; // Add studentId
+    submissionDate: string;
+    content?: string;
+    filePath?: string;
+    grade?: number;
+    feedback?: string;
+}
