@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import type { User } from "../../types";
 import { Card, Button, Input } from "../ui";
+import axios from "axios";
 
 interface UserProfileProps {
   user: User;
@@ -8,6 +9,7 @@ interface UserProfileProps {
 
 export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: user.email,
     phone: user.phone || "",
@@ -21,19 +23,57 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSave = () => {
-    // Validation logic here
-    if (formData.newPassword && formData.newPassword !== formData.confirmPassword) {
+  const handleSave = async () => {
+    const { newPassword, confirmPassword, ...restFormData } = formData;
+
+    // 1. 비밀번호 일치 확인 유효성 검사
+    if (newPassword && newPassword !== confirmPassword) {
       alert("새 비밀번호가 일치하지 않습니다.");
       return;
     }
+    
+    setIsLoading(true); // 로딩 시작
 
-    // In a real app, trigger API update here
-    alert("정보가 성공적으로 수정되었습니다.");
+    // 2. 서버로 전송할 데이터 구성
+    const updatePayload = {
+      ...restFormData,
+      // newPassword가 비어있지 않은 경우에만 전송 데이터에 포함
+      ...(newPassword && { newPassword: newPassword }),
+    };
 
-    // Update visual state if this were a real connected component,
-    // but for now we just exit edit mode
-    setIsEditing(false);
+    try {
+      // 3. API 호출
+      const response = await axios.post('/api/profile', updatePayload);
+
+      if (response.data.message) {
+        alert(response.data.message);
+      } else {
+        alert("정보가 성공적으로 수정되었습니다.");
+      }
+      
+      // 실제 앱에서는 성공 시 user state를 업데이트해야 화면에 반영됨
+      // 예: onUpdateSuccess(updatedUserData);
+
+      // Reset password fields and exit edit mode
+      setFormData((prev) => ({
+        ...prev,
+        newPassword: "",
+        confirmPassword: "",
+      }));
+      setIsEditing(false);
+      
+    } catch (error) {
+      // 오류 응답 처리 (4xx, 5xx)
+      if (axios.isAxiosError(error) && error.response) {
+        alert(`업데이트 실패: ${error.response.data.error || '알 수 없는 오류가 발생했습니다.'}`);
+      } else {
+        // 네트워크 오류 등
+        alert("서버 연결에 실패했습니다.");
+        console.error("API 호출 오류:", error);
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCancel = () => {
@@ -73,7 +113,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
                 <Input label="아이디" value={user.id} disabled readOnly className="bg-slate-100 text-slate-500 cursor-not-allowed" />
                 <Input
                   label={user.role === "professor" ? "교번" : "학번"}
-                  value={user.id}
+                  value={user.memberNo}
                   disabled
                   readOnly
                   className="bg-slate-100 text-slate-500 cursor-not-allowed"
@@ -109,10 +149,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
                 />
 
                 <div className="md:col-span-2 flex justify-end space-x-3 pt-6 border-t mt-2">
-                  <Button variant="secondary" onClick={handleCancel}>
+                  <Button variant="secondary" onClick={handleCancel} disabled={isLoading}>
                     취소
                   </Button>
-                  <Button onClick={handleSave}>저장하기</Button>
+                  <Button onClick={handleSave} disabled={isLoading}>
+                    {isLoading ? '저장 중...' : '저장하기'}
+                  </Button>
                 </div>
               </div>
             ) : (
@@ -135,7 +177,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
                 </div>
                 <div>
                   <span className="block text-xs font-medium text-slate-500 mb-1">{user.role === "professor" ? "교번" : "학번"}</span>
-                  <span className="block text-base font-semibold text-slate-800">{user.id}</span>
+                  <span className="block text-base font-semibold text-slate-800">{user.memberNo}</span>
                 </div>
 
                 <div className="border-b border-slate-100 pb-2 col-span-1 md:col-span-2 mt-2">

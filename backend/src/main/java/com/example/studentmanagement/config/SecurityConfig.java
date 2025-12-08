@@ -45,7 +45,8 @@ public class SecurityConfig {
                         "/api/hello",
                         "/error",
                         "/actuator/**",
-                        "/api/check-id"
+                        "/api/check-id",
+                        "/api/profile"
                 ).permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/courses/my").hasRole("STUDENT")
                 .requestMatchers(HttpMethod.GET,
