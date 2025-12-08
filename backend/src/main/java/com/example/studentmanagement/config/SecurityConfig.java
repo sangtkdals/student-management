@@ -82,7 +82,10 @@ public class SecurityConfig {
                 .requestMatchers("/api/professor-new/**").permitAll() // Allow all (Temporary fix for persistent 403)
                 
                 .requestMatchers("/api/attendance/student").authenticated() // Allow authenticated students
-                .requestMatchers("/api/assignments/**").permitAll() // 과제 관리 (Temporary fix for upload 403)
+                .requestMatchers(HttpMethod.GET, "/api/assignments/**").hasAnyRole("STUDENT", "PROFESSOR")
+                .requestMatchers(HttpMethod.POST, "/api/assignments/*/submit").hasRole("STUDENT")
+                .requestMatchers(HttpMethod.PUT, "/api/assignments/submissions/*").hasRole("STUDENT")
+                .requestMatchers(HttpMethod.DELETE, "/api/assignments/submissions/*").hasRole("STUDENT")
                 .requestMatchers(
                         "/api/attendance/**",   // 출결 관리 (Professor fallback)
                         "/api/materials/**"     // 강의자료 관리

@@ -65,6 +65,11 @@ const StudentCourseDetail: React.FC = () => {
         }
     }, [courseCode, fetchCourseData]);
 
+    // For debugging state changes
+    useEffect(() => {
+        console.log("Editing Submission State Changed:", editingSubmission);
+    }, [editingSubmission]);
+
     const handleFileChange = (assignmentId: number, event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files) {
             setSelectedFiles(prev => ({ ...prev, [assignmentId]: event.target.files[0] }));
@@ -119,8 +124,12 @@ const StudentCourseDetail: React.FC = () => {
     };
 
     const handleAssignmentUpdate = async (submissionId: number) => {
+        console.log(`[handleAssignmentUpdate] Called with submissionId: ${submissionId}`);
         const token = localStorage.getItem("token");
-        if (!token || !editingSubmission) return;
+        if (!token || !editingSubmission) {
+            console.error("[handleAssignmentUpdate] Auth token or editingSubmission state is missing.");
+            return;
+        }
 
         const formData = new FormData();
         // Check if a new file is selected for the specific assignment being edited.
@@ -130,6 +139,12 @@ const StudentCourseDetail: React.FC = () => {
             formData.append("file", selectedFiles[assignment.assignmentId] as File);
         }
         formData.append("content", editingSubmission.content);
+
+        // For debugging form data before sending
+        console.log("[handleAssignmentUpdate] FormData content:", editingSubmission.content);
+        if (assignment && selectedFiles[assignment.assignmentId]) {
+            console.log("[handleAssignmentUpdate] FormData file:", selectedFiles[assignment.assignmentId]?.name);
+        }
 
         try {
             const response = await fetch(`/api/assignments/submissions/${submissionId}`, {
@@ -299,7 +314,10 @@ const StudentCourseDetail: React.FC = () => {
                                             { !isPastDue &&
                                                 <div className="mt-3 flex space-x-2">
                                                     <button
-                                                        onClick={() => setEditingSubmission({ id: submission.submissionId, content: submission.content || '' })}
+                                                        onClick={() => {
+                                                            console.log(`[Edit Click] Setting editing submission for ID: ${submission.submissionId}`, { submission });
+                                                            setEditingSubmission({ id: submission.submissionId, content: submission.content || '' });
+                                                        }}
                                                         className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-xs"
                                                     >
                                                         수정
