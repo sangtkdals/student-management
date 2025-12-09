@@ -32,21 +32,25 @@ public class AcademicScheduleController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<AcademicSchedule> updateSchedule(@PathVariable Integer id, @RequestBody AcademicSchedule scheduleDetails) {
+    public ResponseEntity<AcademicSchedule> updateSchedule(@PathVariable("id") Integer id, @RequestBody AcademicSchedule scheduleDetails) {
         return academicScheduleRepository.findById(id)
                 .map(schedule -> {
+                    schedule.setAcademicYear(scheduleDetails.getAcademicYear());
+                    schedule.setSemester(scheduleDetails.getSemester());
                     schedule.setScheduleTitle(scheduleDetails.getScheduleTitle());
+                    schedule.setScheduleContent(scheduleDetails.getScheduleContent());
                     schedule.setStartDate(scheduleDetails.getStartDate());
                     schedule.setEndDate(scheduleDetails.getEndDate());
+                    schedule.setBackgroundColor(scheduleDetails.getBackgroundColor());
+                    schedule.setRecurrenceType(scheduleDetails.getRecurrenceType());
                     schedule.setCategory(scheduleDetails.getCategory());
-                    schedule.setScheduleContent(scheduleDetails.getScheduleContent());
                     AcademicSchedule updatedSchedule = academicScheduleRepository.save(schedule);
                     return ResponseEntity.ok(updatedSchedule);
                 }).orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteSchedule(@PathVariable Integer id) {
+    public ResponseEntity<?> deleteSchedule(@PathVariable("id") Integer id) {
         return academicScheduleRepository.findById(id)
                 .map(schedule -> {
                     academicScheduleRepository.delete(schedule);

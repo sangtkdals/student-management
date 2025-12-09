@@ -124,16 +124,16 @@ export interface Board {
 export interface Post {
   postId: number;
   boardId: number;
-  postTitle: string;
-  postContent: string;
-  writerId: string;
+  title: string; // postTitle -> title
+  content: string; // postContent -> content
+  writer?: { mId: string; mName: string }; // writerId -> writer 객체로 변경
   viewCount: number;
   createdAt: string;
   updatedAt?: string;
 
   // UI용
   writerName?: string;
-  author?: string;
+  author?: string; // 기존 코드 호환성 유지
   attachments?: Attachment[];
 }
 

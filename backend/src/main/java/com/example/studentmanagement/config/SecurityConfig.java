@@ -58,6 +58,8 @@ public class SecurityConfig {
                 // **관리자(ADMIN)만 접근 가능**
                 .requestMatchers("/api/admin/**").hasRole("ADMIN") // AdminLeaveApplicationController, AdminTuitionController 등
                 .requestMatchers(HttpMethod.POST, "/api/announcements/**").hasRole("ADMIN") // 공지사항 작성
+                .requestMatchers(HttpMethod.PUT, "/api/announcements/**").hasRole("ADMIN")  // 공지사항 수정
+                .requestMatchers(HttpMethod.DELETE, "/api/announcements/**").hasRole("ADMIN") // 공지사항 삭제
                 .requestMatchers(HttpMethod.POST, "/api/schedules").hasRole("ADMIN")         // 학사일정 추가
 
                 // 학생만 접근 가능

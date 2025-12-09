@@ -33,7 +33,7 @@ public class AdminLeaveApplicationController {
 
     // 특정 휴학 신청 조회
     @GetMapping("/{applicationId}")
-    public ResponseEntity<?> getApplicationById(@PathVariable Integer applicationId) {
+    public ResponseEntity<?> getApplicationById(@PathVariable("applicationId") Integer applicationId) {
         try {
             LeaveApplicationDTO application = leaveApplicationService.getApplicationById(applicationId);
             return ResponseEntity.ok(application);
@@ -45,7 +45,7 @@ public class AdminLeaveApplicationController {
 
     // 학생별 휴학 신청 조회
     @GetMapping("/student/{studentNo}")
-    public ResponseEntity<List<LeaveApplicationDTO>> getApplicationsByStudent(@PathVariable String studentNo) {
+    public ResponseEntity<List<LeaveApplicationDTO>> getApplicationsByStudent(@PathVariable("studentNo") String studentNo) {
         try {
             List<LeaveApplicationDTO> applications = leaveApplicationService.getApplicationsByStudent(studentNo);
             return ResponseEntity.ok(applications);
@@ -57,7 +57,7 @@ public class AdminLeaveApplicationController {
 
     // 승인 상태별 조회
     @GetMapping("/status/{status}")
-    public ResponseEntity<List<LeaveApplicationDTO>> getApplicationsByStatus(@PathVariable String status) {
+    public ResponseEntity<List<LeaveApplicationDTO>> getApplicationsByStatus(@PathVariable("status") String status) {
         try {
             List<LeaveApplicationDTO> applications = leaveApplicationService.getApplicationsByStatus(status);
             return ResponseEntity.ok(applications);
@@ -117,7 +117,7 @@ public class AdminLeaveApplicationController {
 
     // 휴학 신청 수정
     @PutMapping("/{applicationId}")
-    public ResponseEntity<?> updateApplication(@PathVariable Integer applicationId, @RequestBody LeaveApplicationDTO dto) {
+    public ResponseEntity<?> updateApplication(@PathVariable("applicationId") Integer applicationId, @RequestBody LeaveApplicationDTO dto) {
         try {
             LeaveApplicationDTO updatedApplication = leaveApplicationService.updateApplication(applicationId, dto);
             return ResponseEntity.ok(updatedApplication);
@@ -131,7 +131,7 @@ public class AdminLeaveApplicationController {
 
     // 휴학 신청 삭제
     @DeleteMapping("/{applicationId}")
-    public ResponseEntity<?> deleteApplication(@PathVariable Integer applicationId) {
+    public ResponseEntity<?> deleteApplication(@PathVariable("applicationId") Integer applicationId) {
         try {
             leaveApplicationService.deleteApplication(applicationId);
             return ResponseEntity.ok("신청이 삭제되었습니다.");
@@ -146,11 +146,11 @@ public class AdminLeaveApplicationController {
     // 휴학 신청 승인
     @PostMapping("/{applicationId}/approve")
     public ResponseEntity<?> approveApplication(
-            @PathVariable Integer applicationId,
+            @PathVariable("applicationId") Integer applicationId,
             Authentication authentication) {
         try {
-            // JWT에서 memberNo 추출 (실제로는 JWT claims에서 가져와야 함)
-            String approverNo = "admin001"; // 임시로 하드코딩, 실제로는 authentication에서 추출
+            // JWT에서 memberNo 추출
+            String approverNo = authentication.getName();
 
             LeaveApplicationDTO approvedApplication = leaveApplicationService.approveApplication(applicationId, approverNo);
             return ResponseEntity.ok(approvedApplication);
@@ -165,7 +165,7 @@ public class AdminLeaveApplicationController {
     // 휴학 신청 거절
     @PostMapping("/{applicationId}/reject")
     public ResponseEntity<?> rejectApplication(
-            @PathVariable Integer applicationId,
+            @PathVariable("applicationId") Integer applicationId,
             @RequestBody Map<String, String> payload,
             Authentication authentication) {
         try {
@@ -175,7 +175,7 @@ public class AdminLeaveApplicationController {
             }
 
             // JWT에서 memberNo 추출
-            String approverNo = "admin001"; // 임시로 하드코딩, 실제로는 authentication에서 추출
+            String approverNo = authentication.getName();
 
             LeaveApplicationDTO rejectedApplication = leaveApplicationService.rejectApplication(applicationId, approverNo, rejectReason);
             return ResponseEntity.ok(rejectedApplication);
@@ -190,11 +190,11 @@ public class AdminLeaveApplicationController {
     // 복학 처리 (구버전 - 학생번호로 직접 처리)
     @PutMapping("/return/{studentNo}")
     public ResponseEntity<?> processReturn(
-            @PathVariable String studentNo,
+            @PathVariable("studentNo") String studentNo,
             Authentication authentication) {
         try {
             // JWT에서 memberNo 추출
-            String approverNo = "admin001"; // 임시로 하드코딩, 실제로는 authentication에서 추출
+            String approverNo = authentication.getName();
 
             LeaveApplicationDTO returnedApplication = leaveApplicationService.processReturn(studentNo, approverNo);
             return ResponseEntity.ok(returnedApplication);
@@ -209,11 +209,11 @@ public class AdminLeaveApplicationController {
     // 복학 신청 승인 (학생의 복학 신청을 승인)
     @PostMapping("/{applicationId}/approve-return")
     public ResponseEntity<?> approveReturnRequest(
-            @PathVariable Integer applicationId,
+            @PathVariable("applicationId") Integer applicationId,
             Authentication authentication) {
         try {
             // JWT에서 memberNo 추출
-            String approverNo = "admin001"; // 임시로 하드코딩, 실제로는 authentication에서 추출
+            String approverNo = authentication.getName();
 
             LeaveApplicationDTO approvedReturn = leaveApplicationService.approveReturnRequest(applicationId, approverNo);
             return ResponseEntity.ok(approvedReturn);

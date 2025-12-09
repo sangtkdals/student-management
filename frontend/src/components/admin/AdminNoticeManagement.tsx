@@ -7,7 +7,7 @@ export const AdminNoticeManagement: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{ title: string; content: string }>({
     title: "",
     content: ""
   });
@@ -19,7 +19,8 @@ export const AdminNoticeManagement: React.FC = () => {
   const fetchPosts = async () => {
     try {
       const response = await axios.get("/api/announcements");
-      const mappedPosts = response.data.map((post: any) => ({
+      // 응답 데이터가 Page 객체이므로 content 속성에 접근합니다.
+      const mappedPosts = response.data.content.map((post: any) => ({
         postId: post.postId,
         title: post.postTitle,
         content: post.postContent,
@@ -35,8 +36,8 @@ export const AdminNoticeManagement: React.FC = () => {
   const handleEdit = (post: Post) => {
     setEditingId(post.postId);
     setFormData({
-      title: post.title,
-      content: post.content
+      title: post.title || "", // null 값 방지
+      content: post.content || "" // null 값 방지
     });
     setIsModalOpen(true);
   };

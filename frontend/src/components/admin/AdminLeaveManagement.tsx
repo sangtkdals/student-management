@@ -51,7 +51,7 @@ export const AdminLeaveManagement: React.FC = () => {
         alert("승인되었습니다.");
       } catch (error) {
         console.error("Error approving:", error);
-        alert("승인 실패");
+        alert(`승인 실패: ${error.response?.data || error.message}`);
       }
     }
   };

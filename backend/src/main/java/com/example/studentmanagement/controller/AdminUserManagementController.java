@@ -20,10 +20,10 @@ public class AdminUserManagementController {
     // 사용자 목록 조회 (필터링 포함)
     @GetMapping
     public ResponseEntity<List<UserManagementDTO>> getAllUsers(
-            @RequestParam(required = false) String memberType,
-            @RequestParam(required = false) String deptCode,
-            @RequestParam(required = false) Integer stuGrade,
-            @RequestParam(required = false) String searchName) {
+            @RequestParam(value = "memberType", required = false) String memberType,
+            @RequestParam(value = "deptCode", required = false) String deptCode,
+            @RequestParam(value = "stuGrade", required = false) Integer stuGrade,
+            @RequestParam(value = "searchName", required = false) String searchName) {
         try {
             List<UserManagementDTO> users = userManagementService.getAllUsers(
                     memberType, deptCode, stuGrade, searchName);
