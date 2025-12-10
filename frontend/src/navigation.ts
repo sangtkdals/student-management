@@ -11,6 +11,7 @@ export const STUDENT_MENU: MenuNode[] = [
     label: "수강",
     path: "",
     children: [
+      { label: "내 강의실", path: "/student/my-classroom" },
       { label: "수강신청", path: "/student/course-registration" },
       { label: "시간표 조회", path: "/student/Mytimetable" },
       { label: "출결 조회", path: "/student/attendance" },
@@ -55,6 +56,7 @@ export const PROFESSOR_MENU: MenuNode[] = [
       { label: "강의계획서", path: "/professor/syllabus" },
       { label: "강의 자료", path: "/professor/course-materials" },
       { label: "과제 관리", path: "/professor/assignments" },
+      { label: "강의 공지사항", path: "/professor/course-notices" },
     ],
   },
   {

@@ -54,7 +54,7 @@ const AttendanceAndGradesView: React.FC<{ selectedCourse: Course; mode: "attenda
     if (mode === "attendance") {
       const fetchAttendance = async () => {
         try {
-          const response = await fetch(`http://localhost:8080/api/attendance?courseCode=${selectedCourse.courseCode}&week=${selectedWeek}`, {
+          const response = await fetch(`/api/attendance?courseCode=${selectedCourse.courseCode}&week=${selectedWeek}`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (response.ok) {
@@ -70,8 +70,7 @@ const AttendanceAndGradesView: React.FC<{ selectedCourse: Course; mode: "attenda
     else if (mode === "grades") {
       const fetchGrades = async () => {
         try {
-
-          const response = await fetch(`http://localhost:8080/api/professor/courses/${selectedCourse.courseCode}/students`, {
+          const response = await fetch(`/api/professor-new/courses/${selectedCourse.courseCode}/students`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (response.ok) {
@@ -103,7 +102,7 @@ const AttendanceAndGradesView: React.FC<{ selectedCourse: Course; mode: "attenda
   const handleSaveAttendance = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:8080/api/attendance?week=${selectedWeek}`, {
+      const response = await fetch(`/api/attendance?week=${selectedWeek}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -139,7 +138,7 @@ const AttendanceAndGradesView: React.FC<{ selectedCourse: Course; mode: "attenda
   const handleSaveGrades = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:8080/api/professor/grades", {
+      const response = await fetch("/api/professor/grades", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -187,10 +186,10 @@ const AttendanceAndGradesView: React.FC<{ selectedCourse: Course; mode: "attenda
                       className="px-2 py-1 rounded text-xs font-bold border border-slate-300"
                     >
                       <option value="">선택</option>
-                      <option value="출석">출석</option>
-                      <option value="지각">지각</option>
-                      <option value="결석">결석</option>
-                      <option value="공결">공결</option>
+                      <option value="PRESENT">출석</option>
+                      <option value="LATE">지각</option>
+                      <option value="ABSENT">결석</option>
+                      <option value="EXCUSED">공결</option>
                     </select>
                   </td>
                   <td className="px-6 py-4 text-sm">
@@ -205,7 +204,7 @@ const AttendanceAndGradesView: React.FC<{ selectedCourse: Course; mode: "attenda
                 </tr>
               ))
             ) : (
-              <tr>
+              <tr key="no-attendance">
                 <td colSpan={4} className="text-center py-4 text-slate-500">
                   수강생이 없습니다.
                 </td>
@@ -233,7 +232,7 @@ const AttendanceAndGradesView: React.FC<{ selectedCourse: Course; mode: "attenda
               </thead>
               <tbody className="bg-white divide-y divide-brand-gray">
                 {gradeStudents.length === 0 ? (
-                   <tr><td colSpan={7} className="text-center py-8 text-slate-500">수강생이 없습니다.</td></tr>
+                   <tr key="no-grade-students"><td colSpan={7} className="text-center py-8 text-slate-500">수강생이 없습니다.</td></tr>
                 ) : (
                   gradeStudents.map((s) => (
                     <tr key={s.studentId} className="hover:bg-slate-50">
@@ -315,7 +314,7 @@ export const ProfessorStudentManagement: React.FC<{ user: User; viewType?: "atte
       if (!user?.memberNo) return;
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`http://localhost:8080/api/professor-new/courses/${user.memberNo}`, {
+        const response = await fetch(`/api/professor-new/courses`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response.ok) {
@@ -340,7 +339,7 @@ export const ProfessorStudentManagement: React.FC<{ user: User; viewType?: "atte
   useEffect(() => {
     if (activeTab === "list" && selectedCourse) {
        const token = localStorage.getItem("token");
-       fetch(`http://localhost:8080/api/professor/courses/${selectedCourse.courseCode}/students`, {
+       fetch(`/api/professor-new/courses/${selectedCourse.courseCode}/students`, {
             headers: { Authorization: `Bearer ${token}` },
        })
        .then(res => res.json())
@@ -364,12 +363,12 @@ export const ProfessorStudentManagement: React.FC<{ user: User; viewType?: "atte
                 <tr key={s.studentId}>
                   <td className="px-6 py-4 text-sm">{s.studentId}</td>
                   <td className="px-6 py-4 text-sm font-medium">{s.name || s.studentName}</td>
-                  <td className="px-6 py-4 text-sm">{s.department || "컴퓨터공학과"}</td>
+                  <td className="px-6 py-4 text-sm">{s.department?.deptName || "컴퓨터공학과"}</td>
                   <td className="px-6 py-4 text-sm">{s.email || "-"}</td>
                 </tr>
               ))
           ) : (
-             <tr><td colSpan={4} className="text-center py-4">수강생이 없습니다.</td></tr>
+             <tr key="no-students"><td colSpan={4} className="text-center py-4">수강생이 없습니다.</td></tr>
           )}
         </Table>
       </>

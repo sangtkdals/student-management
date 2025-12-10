@@ -15,6 +15,9 @@ import com.example.studentmanagement.repository.EnrollmentRepository;
 import com.example.studentmanagement.repository.MemberRepository;
 import com.example.studentmanagement.repository.SubjectRepository;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalTime;
@@ -104,6 +107,52 @@ public class CourseController {
                 })
                 .collect(Collectors.toList());
         return ResponseEntity.ok(courseDTOs);
+    }
+
+    // Get courses for the currently logged-in student
+    @GetMapping("/my")
+    public ResponseEntity<List<CourseDTO>> getMyCourses() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String studentLoginId = authentication.getName();
+
+        // 1. 로그인 ID로 학번 조회
+        Member student = memberRepository.findById(studentLoginId)
+                .orElseThrow(() -> new RuntimeException("학생 정보를 찾을 수 없습니다."));
+        String studentNo = student.getMemberNo();
+
+        // 2. 최적화된 쿼리로 강의 정보 한번에 조회 (N+1 해결)
+        List<Course> courses = enrollmentRepository.findCoursesByStudentNoWithDetails(studentNo);
+        
+        // 3. 수강 인원 정보를 한 번의 쿼리로 조회
+        List<String> courseCodes = courses.stream().map(Course::getCourseCode).collect(Collectors.toList());
+        Map<String, Long> studentCounts = enrollmentRepository.findAllByCourse_CourseCodeIn(courseCodes).stream()
+                .collect(Collectors.groupingBy(e -> e.getCourse().getCourseCode(), Collectors.counting()));
+
+        List<CourseDTO> courseDTOs = courses.stream()
+                .map(course -> {
+                    int currentStudents = studentCounts.getOrDefault(course.getCourseCode(), 0L).intValue();
+                    String professorName = course.getProfessor() != null ? course.getProfessor().getName() : "N/A";
+                    List<CourseSchedule> schedules = course.getCourseSchedules();
+                    int credit = course.getSubject() != null ? course.getSubject().getCredit() : 0;
+                    return new CourseDTO(course, currentStudents, professorName, schedules, credit);
+                })
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(courseDTOs);
+    }
+
+    // Get a single course by courseCode
+    @GetMapping("/{courseCode}")
+    public ResponseEntity<CourseDTO> getCourseByCode(@PathVariable("courseCode") String courseCode) {
+        return courseRepository.findById(courseCode)
+                .map(course -> {
+                    int currentStudents = (int) enrollmentRepository.countByCourse_CourseCode(course.getCourseCode());
+                    String professorName = course.getProfessor() != null ? course.getProfessor().getName() : "N/A";
+                    List<CourseSchedule> schedules = course.getCourseSchedules();
+                    int credit = course.getSubject() != null ? course.getSubject().getCredit() : 0;
+                    CourseDTO courseDTO = new CourseDTO(course, currentStudents, professorName, schedules, credit);
+                    return ResponseEntity.ok(courseDTO);
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 
     // Get courses for a specific professor

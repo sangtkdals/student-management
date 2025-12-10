@@ -16,6 +16,8 @@ import { AcademicCalendar } from "./components/common/AcademicCalendar";
 
 // Student Views
 import { StudentHome } from "./components/student/StudentHome";
+import StudentMyClassroom from "./components/student/StudentMyClassroom";
+import StudentCourseDashboard from "./components/student/StudentCourseDashboard";
 import { StudentCourseRegistration } from "./components/student/StudentCourseRegistration";
 import { StudentGradeCenter } from "./components/student/StudentGradeCenter";
 import { StudentMyTimetable } from "./components/student/StudentMyTimetable";
@@ -28,6 +30,9 @@ import {
 } from "./components/student/StudentAcademicStatusViews";
 import { StudentGraduationCheck, StudentCertificateIssuance } from "./components/student/StudentMiscViews";
 import { StudentAttendance } from "./components/student/StudentAttendance";
+import StudentCourseAnnouncementDetail from "./components/student/StudentCourseAnnouncementDetail";
+import StudentAllAnnouncements from "./components/student/StudentAllAnnouncements";
+import { ProfessorCourseNotices } from "./components/professor/ProfessorCourseNotices";
 
 // Professor Views
 import { ProfessorHome } from "./components/professor/ProfessorHome";
@@ -35,6 +40,7 @@ import { ProfessorMyLectures } from "./components/professor/ProfessorMyLectures"
 import { ProfessorStudentManagement } from "./components/professor/ProfessorStudentManagement";
 import { ProfessorSyllabus } from "./components/professor/ProfessorSyllabus";
 import { ProfessorCourseMaterials, ProfessorAssignments } from "./components/professor/ProfessorMiscViews";
+import { ProfessorAssignmentDetail } from "./components/professor/ProfessorAssignmentDetail";
 
 // Admin Views
 import {
@@ -213,12 +219,41 @@ const AppRoutes = ({ user, onLogout, enrolledCourses }: { user: User; onLogout: 
                   </div>
                 }
               />
+              <Route
+                path="/student/my-classroom"
+                element={
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <StudentMyClassroom />
+                  </div>
+                }
+              />
+              <Route path="/student/my-classroom/:courseCode" element={<StudentCourseDashboard />}>
+                {/* 기본적으로 홈 대시보드 컨텐츠를 보여주기 위한 index route가 필요하다면 여기에 추가 */}
+                {/* <Route index element={<CourseDashboardHome />} /> */}
+                <Route path="announcements/:noticeId" element={<StudentCourseAnnouncementDetail />} />
+              </Route>
+              <Route
+                path="/student/announcements"
+                element={
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <StudentAllAnnouncements />
+                  </div>
+                }
+              />
             </>
           )}
 
           {/* Professor Specific Routes */}
           {user.role === "professor" && (
             <>
+              <Route
+                path="/professor/course-notices"
+                element={
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <ProfessorCourseNotices user={user} />
+                  </div>
+                }
+              />
               <Route
                 path="/professor/student-attendance"
                 element={
@@ -264,7 +299,15 @@ const AppRoutes = ({ user, onLogout, enrolledCourses }: { user: User; onLogout: 
                 path="/professor/assignments"
                 element={
                   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <ProfessorAssignments />
+                    <ProfessorAssignments user={user} />
+                  </div>
+                }
+              />
+              <Route
+                path="/professor/assignments/:assignmentId"
+                element={
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <ProfessorAssignmentDetail />
                   </div>
                 }
               />

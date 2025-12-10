@@ -36,7 +36,11 @@ export const AdminScheduleManagement: React.FC = () => {
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
-        body: JSON.stringify(selectedSchedule),
+        body: JSON.stringify({
+          ...selectedSchedule,
+          startDate: selectedSchedule.startDate ? new Date(selectedSchedule.startDate).toISOString() : null,
+          endDate: selectedSchedule.endDate ? new Date(selectedSchedule.endDate).toISOString() : null,
+        }),
       });
 
       if (response.ok) {
@@ -67,7 +71,22 @@ export const AdminScheduleManagement: React.FC = () => {
   };
 
   const openModal = (schedule: Partial<AcademicSchedule> | null = null) => {
-    setSelectedSchedule(schedule ? { ...schedule } : { scheduleTitle: "", startDate: "", endDate: "", category: "academic" });
+    const currentYear = new Date().getFullYear();
+    setSelectedSchedule(
+      schedule
+        ? { ...schedule }
+        : {
+            academicYear: currentYear, // 기본값 설정
+            semester: 1, // 기본값 설정
+            scheduleTitle: "",
+            scheduleContent: "", // 기본값 추가
+            startDate: "",
+            endDate: "",
+            backgroundColor: "", // 기본값 추가
+            recurrenceType: "", // 기본값 추가
+            category: "academic",
+          }
+    );
     setIsModalOpen(true);
   };
 

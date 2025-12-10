@@ -52,7 +52,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = "student" })
 
   useEffect(() => {
     if (view === "register") {
-      fetch("http://localhost:8080/api/departments")
+      fetch("/api/departments")
         .then((res) => {
           if (!res.ok) throw new Error("Network response was not ok");
           return res.json();
@@ -86,7 +86,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = "student" })
       return;
     }
     try {
-      const response = await fetch(`http://localhost:8080/api/check-id?userId=${regData.m_id}`);
+      const response = await fetch(`/api/check-id?userId=${regData.m_id}`);
       const data = await response.json();
       if (data.exists) {
         setModalMessage("이미 사용 중인 아이디입니다.");
@@ -108,7 +108,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = "student" })
     setError("");
 
     try {
-      const response = await fetch("http://localhost:8080/api/login", {
+      const response = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ m_id: userId, m_pwd: password }),
@@ -170,7 +170,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = "student" })
     };
 
     try {
-      const response = await fetch("http://localhost:8080/api/register", {
+      const response = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
