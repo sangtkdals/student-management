@@ -127,6 +127,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onBack, initialRole = "student" })
       console.log("login success data:", data);
 
       localStorage.setItem("token", data.token ?? "");
+      localStorage.setItem("refreshToken", data.refreshToken ?? "");
 
       const loggedInUser: User = {
         id: data.userId,

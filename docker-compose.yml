@@ -21,7 +21,7 @@ services:
       - --collation-server=utf8mb4_unicode_ci
       - --skip-character-set-client-handshake
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       # 수정: 이름 있는 볼륨(db-data)을 사용하도록 변경 (Best Practice)
       - db-data:/var/lib/mysql
