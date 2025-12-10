@@ -111,7 +111,7 @@ public class SecurityConfig {
     public CorsFilter corsFilter() {
         CorsConfiguration configuration = new CorsConfiguration();
         // Use specific origin instead of wildcard pattern to be safe with credentials
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000, http://localhost:80", "http://localhost"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));
         configuration.setAllowedHeaders(Collections.singletonList("*"));
         configuration.setAllowCredentials(true);
