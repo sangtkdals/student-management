@@ -1,5 +1,6 @@
 package com.example.studentmanagement.beans;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.Date;
@@ -15,12 +16,14 @@ public class Enrollment {
     @Column(name = "enrollment_id")
     private Integer enrollmentId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "stu_no", referencedColumnName = "m_no")
+    @JsonIgnoreProperties({"courses", "enrollments", "password"})
     private Member student;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "course_code")
+    @JsonIgnoreProperties({"enrollments"})
     private Course course;
 
     @Column(name = "enrollment_date")

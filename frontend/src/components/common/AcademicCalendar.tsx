@@ -1,15 +1,11 @@
-import React, { useState } from "react";
-import type { AcademicSchedule, CalendarEvent } from "../../types";
+import React, { useState, useEffect } from "react";
+import type { AcademicSchedule } from "../../types";
 import { Card, Button } from "../ui";
-import { MOCK_CALENDAR_EVENTS } from "../../constants";
 
-// DB 타입(AcademicSchedule)과 Mock 타입(CalendarEvent) 호환 지원
-type CalendarItem = AcademicSchedule | CalendarEvent;
-
-const MonthCalendar: React.FC<{ year: number; month: number; events: CalendarItem[] }> = ({ year, month, events }) => {
-  const today = new Date();
-  const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+const MonthCalendar: React.FC<{ year: number; month: number; events: AcademicSchedule[] }> = ({ year, month, events }) => {
   const daysOfWeek = ["일", "월", "화", "수", "목", "금", "토"];
+  const firstDayOfMonth = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   const categoryColor: { [key: string]: string } = {
     academic: "bg-blue-500 text-white",
@@ -17,66 +13,30 @@ const MonthCalendar: React.FC<{ year: number; month: number; events: CalendarIte
     event: "bg-purple-500 text-white",
   };
 
-  const firstDayOfMonth = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const weeks: Date[][] = [];
+  let currentWeek: Date[] = [];
+  let dayCounter = 1;
 
-  const blanks = Array.from({ length: firstDayOfMonth }, (_, i) => <div key={`blank-${i}`} className="border-r border-b border-slate-200"></div>);
+  for (let i = 0; i < firstDayOfMonth; i++) {
+    currentWeek.push(new Date(0)); // Placeholder for blank days
+  }
 
-  const dayCells = Array.from({ length: daysInMonth }, (_, i) => {
-    const day = i + 1;
-    const currentDate = new Date(year, month, day);
-    currentDate.setHours(0, 0, 0, 0);
-    const dayOfWeek = currentDate.getDay();
-
-    const isToday = isCurrentMonth && today.getDate() === day;
-
-    const dayEvents = events.filter((e) => {
-      const eventStartDate = new Date(e.startDate);
-      eventStartDate.setHours(0, 0, 0, 0);
-      const eventEndDate = new Date(e.endDate); // CalendarEvent, AcademicSchedule 모두 endDate 존재
-      eventEndDate.setHours(0, 0, 0, 0);
-      return currentDate >= eventStartDate && currentDate <= eventEndDate;
-    });
-
-    const isHoliday = dayEvents.some((event) => event.category === "holiday");
-    const isSunday = dayOfWeek === 0;
-
-    return (
-      <div key={day} className="border-r border-b border-slate-200 p-2 min-h-[120px] flex flex-col relative">
-        <span
-          className={`font-semibold ${
-            isToday
-              ? "bg-brand-blue text-white rounded-full h-6 w-6 flex items-center justify-center"
-              : isHoliday || isSunday
-              ? "text-red-500"
-              : "text-slate-700"
-          }`}
-        >
-          {day}
-        </span>
-        <div className="flex-grow space-y-1 mt-1 overflow-y-auto">
-          {dayEvents.map((event) => {
-            // 타입 호환: scheduleId(DB) vs id(Mock)
-            const id = "scheduleId" in event ? event.scheduleId : event.id;
-            const colorClass = event.category && categoryColor[event.category] ? categoryColor[event.category] : "bg-gray-400 text-white";
-
-            return (
-              <div key={id} title={event.title} className={`text-xs p-1 rounded-md truncate ${colorClass}`}>
-                {event.title}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  });
+  while (dayCounter <= daysInMonth) {
+    if (currentWeek.length === 7) {
+      weeks.push(currentWeek);
+      currentWeek = [];
+    }
+    currentWeek.push(new Date(year, month, dayCounter));
+    dayCounter++;
+  }
+  if (currentWeek.length > 0) {
+    while (currentWeek.length < 7) currentWeek.push(new Date(0));
+    weeks.push(currentWeek);
+  }
 
   return (
-    <div>
-      <h3 className="text-xl font-bold text-slate-800 text-center mb-4">
-        {year}년 {month + 1}월
-      </h3>
-      <div className="grid grid-cols-7 border-t border-l border-slate-200 bg-white">
+    <div className="border-t border-l border-slate-200 bg-white">
+      <div className="grid grid-cols-7">
         {daysOfWeek.map((day, index) => (
           <div
             key={day}
@@ -87,36 +47,107 @@ const MonthCalendar: React.FC<{ year: number; month: number; events: CalendarIte
             {day}
           </div>
         ))}
-        {blanks}
-        {dayCells}
       </div>
+      {weeks.map((week, weekIndex) => (
+        <div key={weekIndex} className="grid grid-cols-7 relative h-20">
+          {week.map((date, dayIndex) => (
+            <div key={dayIndex} className="border-r border-b border-slate-200 p-1 relative">
+              {date.getTime() !== 0 && (
+                <span className={`font-semibold relative z-10 ${dayIndex === 0 ? "text-red-500" : "text-slate-700"}`}>{date.getDate()}</span>
+              )}
+            </div>
+          ))}
+          {events.map((event, eventIndex) => {
+            const startDate = new Date(event.startDate);
+            const endDate = new Date(event.endDate);
+
+            let startDay = -1,
+              endDay = -1;
+
+            for (let i = 0; i < week.length; i++) {
+              if (week[i].getTime() !== 0 && startDate.getTime() <= week[i].getTime() && endDate.getTime() >= week[i].getTime()) {
+                if (startDay === -1) startDay = i;
+                endDay = i;
+              }
+            }
+
+            if (startDay !== -1) {
+              return (
+                <div
+                  key={event.scheduleId}
+                  className={`absolute top-8 left-0 right-0 mx-px my-px p-1 text-xs rounded truncate ${
+                    categoryColor[event.category || "event"] || "bg-gray-400 text-white"
+                  }`}
+                  style={{ gridColumn: `${startDay + 1} / span ${endDay - startDay + 1}` }}
+                >
+                  {event.scheduleTitle}
+                </div>
+              );
+            }
+            return null;
+          })}
+        </div>
+      ))}
     </div>
   );
 };
 
 export const AcademicCalendar: React.FC = () => {
-  // Mock 데이터 타입 캐스팅
-  const events = MOCK_CALENDAR_EVENTS as CalendarItem[];
+  const [events, setEvents] = useState<AcademicSchedule[]>([]);
+  const [currentDate, setCurrentDate] = useState(new Date());
 
-  const allYears = [...new Set(events.map((e) => new Date(e.startDate).getFullYear()))].sort();
-  const [selectedYear, setSelectedYear] = useState(allYears.length > 0 ? allYears[allYears.length - 1] : new Date().getFullYear());
+  useEffect(() => {
+    const fetchSchedules = async () => {
+      try {
+        const response = await fetch("/api/schedules");
+        if (response.ok) {
+          const data = await response.json();
+          setEvents(data);
+        } else {
+          console.error("Failed to fetch academic schedules");
+        }
+      } catch (error) {
+        console.error("Error fetching academic schedules:", error);
+      }
+    };
+    fetchSchedules();
+  }, []);
 
-  const eventsForYear = events.filter((event) => new Date(event.startDate).getFullYear() === selectedYear);
-  const months = Array.from({ length: 12 }, (_, i) => i);
+  const goToPreviousYear = () => {
+    setCurrentDate(new Date(currentDate.getFullYear() - 1, 0, 1));
+  };
+
+  const goToNextYear = () => {
+    setCurrentDate(new Date(currentDate.getFullYear() + 1, 0, 1));
+  };
+
+  const year = currentDate.getFullYear();
 
   return (
     <Card title="학사일정">
-      <div className="flex items-center justify-center space-x-2 mb-6 border-b pb-6">
-        {(allYears.length > 0 ? allYears : [new Date().getFullYear()]).map((year) => (
-          <Button key={year} variant={selectedYear === year ? "primary" : "secondary"} onClick={() => setSelectedYear(year)}>
-            {year}년
-          </Button>
-        ))}
+      <div className="flex items-center justify-center space-x-4 mb-6 border-b pb-4">
+        <Button onClick={goToPreviousYear}>◀</Button>
+        <h2 className="text-2xl font-bold text-slate-800">
+          {year}년
+        </h2>
+        <Button onClick={goToNextYear}>▶</Button>
       </div>
-      <div className="space-y-12 max-h-[75vh] overflow-y-auto p-1">
-        {months.map((month) => (
-          <MonthCalendar key={month} year={selectedYear} month={month} events={eventsForYear} />
-        ))}
+      
+      <div className="space-y-4 h-[calc(100vh-350px)] min-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+        {Array.from({ length: 12 }, (_, i) => i).map(month => {
+            const eventsForMonth = events.filter((event) => {
+                const eventYear = new Date(event.startDate).getFullYear();
+                const eventMonth = new Date(event.startDate).getMonth();
+                return eventYear === year && eventMonth === month;
+            });
+            
+            return (
+                <div key={month} className="mb-6">
+                    <h3 className="text-lg font-bold text-slate-700 mb-2 pl-2 border-l-4 border-brand-blue">{month + 1}월</h3>
+                    <MonthCalendar year={year} month={month} events={eventsForMonth} />
+                </div>
+            );
+        })}
       </div>
     </Card>
   );

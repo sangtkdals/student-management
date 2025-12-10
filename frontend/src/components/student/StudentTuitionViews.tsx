@@ -1,46 +1,85 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import { Card, Button, Modal } from "../ui";
+
+interface Tuition {
+  tuitionId: number;
+  academicYear: number;
+  semester: number;
+  tuitionAmount: number;
+  scholarshipAmount: number;
+  paidAmount: number;
+  paymentStatus: "PAID" | "UNPAID";
+  paidDate?: string;
+}
+
+const semesterToString = (semester: number) => {
+  switch (semester) {
+    case 1:
+      return "1학기";
+    case 2:
+      return "2학기";
+    case 3:
+      return "여름학기";
+    case 4:
+      return "겨울학기";
+    default:
+      return "";
+  }
+};
 
 export const StudentTuitionHistory: React.FC = () => {
   const navigate = useNavigate();
+  const [tuitionHistory, setTuitionHistory] = useState<Tuition[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const tuitionData = [
-    {
-      year: 2024,
-      semester: "1학기",
-      amount: "3,500,000원",
-      status: "납부 완료",
-      date: "2024-02-28",
-    },
-    {
-      year: 2023,
-      semester: "2학기",
-      amount: "3,300,000원",
-      status: "납부 완료",
-      date: "2023-08-25",
-    },
-  ];
+  useEffect(() => {
+    const fetchTuitionHistory = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get("/api/student/tuitions/my", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setTuitionHistory(response.data);
+      } catch (error) {
+        console.error("Error fetching tuition history:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTuitionHistory();
+  }, []);
 
-  const hasUnpaidTuition = false;
+  const unpaidTuition = tuitionHistory.find((t) => t.paymentStatus === "UNPAID");
+
+  if (loading) {
+    return (
+      <Card title="등록금 납부 내역 조회">
+        <p>로딩 중...</p>
+      </Card>
+    );
+  }
 
   return (
     <Card title="등록금 납부 내역 조회">
       <p className="mb-6 text-slate-600">등록금 납부 내역 및 상세 영수증을 확인합니다.</p>
 
       <div className="space-y-6">
-        {tuitionData.map((item, index) => (
-          <div key={index} className="border p-4 rounded-lg shadow-sm flex justify-between items-center bg-white">
+        {tuitionHistory.map((item) => (
+          <div key={item.tuitionId} className="border p-4 rounded-lg shadow-sm flex justify-between items-center bg-white">
             <div>
               <p className="text-lg font-semibold text-slate-800">
-                {item.year}년 {item.semester}
+                {item.academicYear}년 {semesterToString(item.semester)}
               </p>
               <p className="text-sm text-slate-600">
-                금액: <span className="font-semibold">{item.amount}</span>
+                금액: <span className="font-semibold">{(item.tuitionAmount - item.scholarshipAmount).toLocaleString()}원</span>
               </p>
-              <p className={`text-sm font-medium ${item.status === "납부 완료" ? "text-green-600" : "text-red-600"}`}>상태: {item.status}</p>
+              <p className={`text-sm font-medium ${item.paymentStatus === "PAID" ? "text-green-600" : "text-red-600"}`}>
+                상태: {item.paymentStatus === "PAID" ? `납부 완료 (${item.paidDate})` : "미납"}
+              </p>
             </div>
-            <Button variant="secondary" onClick={() => navigate("/student/tuition-payment")}>
+            <Button variant="secondary" onClick={() => navigate(`/student/tuition-payment/${item.tuitionId}`)}>
               자세히 보기
             </Button>
           </div>
@@ -48,24 +87,21 @@ export const StudentTuitionHistory: React.FC = () => {
       </div>
 
       <div className="mt-8 pt-4 border-t">
-        <h3 className="text-lg font-bold text-slate-800 mb-4">미납 내역 (예시)</h3>
-
-        {hasUnpaidTuition ? (
+        <h3 className="text-lg font-bold text-slate-800 mb-4">미납 내역</h3>
+        {unpaidTuition ? (
           <div className="text-red-600 p-4 border border-red-300 bg-red-50 rounded-lg">
-            <p>2025년 1학기 등록금 미납 상태입니다.</p>
-            <Button className="mt-3" onClick={() => navigate("/student/tuition-payment")}>
+            <p>
+              {unpaidTuition.academicYear}년 {semesterToString(unpaidTuition.semester)} 등록금 미납 상태입니다.
+            </p>
+            <Button className="mt-3" onClick={() => navigate(`/student/tuition-payment/${unpaidTuition.tuitionId}`)}>
               등록금 납부하기
             </Button>
           </div>
         ) : (
           <div className="flex justify-between items-center p-4 border border-blue-300 bg-blue-50 rounded-lg">
             <p className="text-slate-700">
-              현재 <span className="font-semibold">미납된 등록금 내역은 없습니다.</span> 다음 학기 등록금 납부를 미리 확인하시려면 버튼을
-              클릭해주세요.
+              현재 <span className="font-semibold">미납된 등록금 내역은 없습니다.</span>
             </p>
-            <Button variant="primary" className="ml-4 flex-shrink-0" onClick={() => navigate("/student/tuition-payment")}>
-              등록금 납부 페이지로 이동
-            </Button>
           </div>
         )}
       </div>
@@ -78,25 +114,45 @@ type StudentTuitionPaymentProps = {
 };
 
 export const StudentTuitionPayment: React.FC<StudentTuitionPaymentProps> = () => {
-  const [paymentStatus, setPaymentStatus] = useState<"unpaid" | "paid">("unpaid");
+  const [tuition, setTuition] = useState<Tuition | null>(null);
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [includeOptionalFee, setIncludeOptionalFee] = useState(true);
 
-  const bill = {
-    semester: "2024학년도 2학기",
-    period: "2024.08.21 ~ 2024.08.27",
-    tuition: 4500000,
-    scholarship: 1500000,
-    studentUnionFee: 20000,
-    account: {
-      bank: "우리은행",
-      number: "1002-987-654321",
-      holder: "대학교(김민준)",
-    },
-  };
+  useEffect(() => {
+    const fetchLatestTuition = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get("/api/student/tuitions/my", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const unpaidTuition = response.data.find((t: Tuition) => t.paymentStatus === "UNPAID");
+        setTuition(unpaidTuition || response.data[0] || null);
+      } catch (error) {
+        console.error("Error fetching tuition data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLatestTuition();
+  }, []);
 
-  const finalAmount = bill.tuition - bill.scholarship + (includeOptionalFee ? bill.studentUnionFee : 0);
+  const bill = tuition
+    ? {
+        semester: `${tuition.academicYear}학년도 ${semesterToString(tuition.semester)}`,
+        period: "2024.08.21 ~ 2024.08.27", // This should be dynamic
+        tuition: tuition.tuitionAmount,
+        scholarship: tuition.scholarshipAmount,
+        studentUnionFee: 20000, // Optional fee
+        account: {
+          bank: "우리은행",
+          number: "1002-987-654321",
+          holder: "대학교",
+        },
+      }
+    : null;
+
+  const finalAmount = bill ? bill.tuition - bill.scholarship + bill.studentUnionFee : 0;
   const formatter = new Intl.NumberFormat("ko-KR", {
     style: "currency",
     currency: "KRW",
@@ -106,16 +162,45 @@ export const StudentTuitionPayment: React.FC<StudentTuitionPaymentProps> = () =>
     setIsModalOpen(true);
   };
 
-  const handleConfirmPayment = () => {
+  const handleConfirmPayment = async () => {
+    if (!tuition) return;
     setIsProcessing(true);
-    setTimeout(() => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.put(
+        `/api/student/tuitions/${tuition.tuitionId}/confirm`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setTuition({ ...tuition, paymentStatus: "PAID", paidDate: new Date().toLocaleDateString() });
+    } catch (error) {
+      console.error("Error confirming payment:", error);
+      alert("납부 확인 처리 중 오류가 발생했습니다.");
+    } finally {
       setIsProcessing(false);
-      setPaymentStatus("paid");
       setIsModalOpen(false);
-    }, 2000);
+    }
   };
 
-  if (paymentStatus === "paid") {
+  if (loading) {
+    return (
+      <Card title="등록금 고지서 조회 및 납부">
+        <p>로딩 중...</p>
+      </Card>
+    );
+  }
+
+  if (!bill) {
+    return (
+      <Card title="등록금 고지서 조회 및 납부">
+        <p>등록금 정보가 없습니다.</p>
+      </Card>
+    );
+  }
+
+  if (tuition?.paymentStatus === "PAID") {
     return (
       <div className="space-y-8">
         <Card title="등록금 납부">
@@ -126,7 +211,7 @@ export const StudentTuitionPayment: React.FC<StudentTuitionPaymentProps> = () =>
               </svg>
             </div>
             <h3 className="text-2xl font-bold text-slate-800 mb-2">납부 완료</h3>
-            <p className="text-slate-600 mb-4">2024학년도 2학기 등록금 납부가 정상적으로 처리되었습니다.</p>
+            <p className="text-slate-600 mb-4">{bill.semester} 등록금 납부가 정상적으로 처리되었습니다.</p>
             <div className="bg-slate-50 p-4 rounded-lg text-left max-w-sm w-full mx-auto border border-slate-200">
               <div className="flex justify-between mb-2">
                 <span className="text-slate-500 text-sm">납부 금액</span>
@@ -134,7 +219,7 @@ export const StudentTuitionPayment: React.FC<StudentTuitionPaymentProps> = () =>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500 text-sm">납부 일시</span>
-                <span className="text-slate-800 text-sm">{new Date().toLocaleDateString()}</span>
+                <span className="text-slate-800 text-sm">{tuition.paidDate}</span>
               </div>
             </div>
           </div>
@@ -204,8 +289,8 @@ export const StudentTuitionPayment: React.FC<StudentTuitionPaymentProps> = () =>
                       <input
                         id="union-fee"
                         type="checkbox"
-                        checked={includeOptionalFee}
-                        onChange={(e) => setIncludeOptionalFee(e.target.checked)}
+                        checked={true} // Simplified for now
+                        readOnly
                         className="h-4 w-4 text-brand-blue focus:ring-brand-blue border-slate-300 rounded mr-3 cursor-pointer"
                       />
                       <label htmlFor="union-fee" className="cursor-pointer select-none">

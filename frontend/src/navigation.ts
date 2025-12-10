@@ -11,8 +11,10 @@ export const STUDENT_MENU: MenuNode[] = [
     label: "수강",
     path: "",
     children: [
+      { label: "내 강의실", path: "/student/my-classroom" },
       { label: "수강신청", path: "/student/course-registration" },
       { label: "시간표 조회", path: "/student/Mytimetable" },
+      { label: "출결 조회", path: "/student/attendance" },
     ],
   },
   {
@@ -54,6 +56,7 @@ export const PROFESSOR_MENU: MenuNode[] = [
       { label: "강의계획서", path: "/professor/syllabus" },
       { label: "강의 자료", path: "/professor/course-materials" },
       { label: "과제 관리", path: "/professor/assignments" },
+      { label: "강의 공지사항", path: "/professor/course-notices" },
     ],
   },
   {
@@ -71,6 +74,9 @@ export const PROFESSOR_MENU: MenuNode[] = [
 ];
 
 export const ADMIN_MENU: MenuNode[] = [
-  { label: "사용자 관리", path: "/admin/user-management" },
-  { label: "시스템 관리", path: "/admin/system-management" },
+  { label: "사용자 조회", path: "/admin/user-management" },
+  {label: "휴학/복학 관리",path: "/admin/leave-management"},
+  {label: "공지사항 관리",path: "/admin/notice-management"},
+  { label: "학사일정 관리", path: "/admin/schedule-management" },
+  { label: "등록금 관리", path: "/admin/tuition-management" },
 ];

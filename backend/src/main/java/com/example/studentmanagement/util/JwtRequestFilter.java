@@ -1,10 +1,14 @@
 package com.example.studentmanagement.util;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.SignatureException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
@@ -12,6 +16,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 @Component
 public class JwtRequestFilter extends OncePerRequestFilter {
@@ -35,19 +40,38 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             jwt = authorizationHeader.substring(7);
             try {
                 username = jwtUtil.extractUsername(jwt);
+            } catch (ExpiredJwtException e) {
+                // Handle expired token
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("Access token expired");
+                return;
+            } catch (SignatureException e) {
+                // Handle signature validation failure
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("Invalid JWT signature");
+                return;
             } catch (Exception e) {
-                // Token invalid or expired
+                // Handle other JWT-related exceptions
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("Invalid token");
+                return;
             }
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             if (jwtUtil.validateToken(jwt, username)) {
-                // Since we don't have a UserDetailsService implemented fully yet, we'll create a simple authenticated token
-                // In a production app, you might want to load UserDetails from DB here.
-                // However, JWT contains claims so we can trust it if valid.
-                
+                // Extract role from JWT claims
+                Claims claims = jwtUtil.extractAllClaims(jwt);
+                String role = claims.get("role", String.class);
+
+                // Create authorities from role
+                List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+                if (role != null && !role.isEmpty()) {
+                    authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+                }
+
                 UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
-                        username, null, new ArrayList<>());
+                        username, null, authorities);
                 usernamePasswordAuthenticationToken
                         .setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);

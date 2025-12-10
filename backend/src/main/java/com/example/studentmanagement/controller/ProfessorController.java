@@ -1,0 +1,40 @@
+package com.example.studentmanagement.controller;
+
+import com.example.studentmanagement.dto.StudentGradeDTO;
+import com.example.studentmanagement.repository.ProfessorGradeRepository; 
+import com.example.studentmanagement.service.GradeService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/professors")
+@CrossOrigin(origins = "http://localhost:3000")
+public class ProfessorController {
+
+    @Autowired
+    private ProfessorGradeRepository professorGradeRepository;
+
+    @Autowired
+    private GradeService gradeService;
+
+    @GetMapping("/courses/students")
+    public ResponseEntity<List<StudentGradeDTO>> getCourseStudents(@RequestParam("courseCode") String courseCode) {
+        List<StudentGradeDTO> students = professorGradeRepository.findStudentsByCourseCode(courseCode);
+        return ResponseEntity.ok(students);
+    }
+
+    @PutMapping("/grades")
+    public ResponseEntity<?> updateGrades(@RequestBody List<StudentGradeDTO> grades) {
+        try {
+            System.out.println("성적 저장 요청 받음: " + grades.size() + "명");
+            gradeService.updateGrades(grades);
+            return ResponseEntity.ok("성적이 성공적으로 저장되었습니다.");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("저장 실패: " + e.getMessage());
+        }
+    }
+}

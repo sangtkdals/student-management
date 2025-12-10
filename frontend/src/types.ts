@@ -77,6 +77,12 @@ export interface Subject {
 // =====================================================
 // 4. Course (개설 강좌 - 실제 열린 수업)
 // =====================================================
+export interface CourseSchedule {
+  dayOfWeek: string;
+  startTime: string; // "HH:mm:ss"
+  endTime: string; // "HH:mm:ss"
+}
+
 export interface Course {
   courseCode: string; // PK
   academicYear: number;
@@ -85,22 +91,24 @@ export interface Course {
   courseClass: string; // 분반 (01, 02...)
   professorNo: string; // FK -> Member(Professor)
   maxStudents: number;
-  currentStudents: number;
   classroom?: string;
-  courseTime?: string; // 예: "Mon 10:00-12:00"
+  courseSchedules?: CourseSchedule[];
+  courseTime?: string;
 
   // 강의 계획서 관련
-  objectives?: string;
-  content?: string;
-  evaluationMethod?: string;
+  courseObjectives?: string;
+  courseContent?: string;
+  evaluationMethod?: Record<string, number>;
   textbookInfo?: string;
   status: CourseStatus;
 
   // UI 표시용 (Join된 데이터)
-  courseName?: string; // course_name column
   subjectName?: string;
   professorName?: string;
   credit?: number; // subject 테이블에서 가져옴
+  deptCode?: string; // 추가: 학과 코드
+  subject?: Subject; // For filtering by type
+  currentStudents?: number; // From DTO
 }
 
 // =====================================================
@@ -116,16 +124,16 @@ export interface Board {
 export interface Post {
   postId: number;
   boardId: number;
-  title: string; // post_title
-  content: string; // post_content
-  writerId: string; // member.m_no
+  title: string; // postTitle -> title
+  content: string; // postContent -> content
+  writer?: { mId: string; mName: string }; // writerId -> writer 객체로 변경
   viewCount: number;
-  createdAt: string; // timestamp string
+  createdAt: string;
   updatedAt?: string;
 
   // UI용
   writerName?: string;
-  author?: string; // for CommonViews.tsx compatibility
+  author?: string; // 기존 코드 호환성 유지
   attachments?: Attachment[];
 }
 
@@ -160,17 +168,20 @@ export interface Tuition {
 export interface LeaveApplication {
   applicationId: number;
   studentNo: string;
-  leaveType: "GENERAL" | "MILITARY" | "ILLNESS" | "PREGNANCY";
+  leaveType: "일반휴학" | "군입대" | "질병휴학" | "창업휴학";
   startYear: number;
   startSemester: number;
   endYear: number;
   endSemester: number;
-  reason: string;
+  applicationReason: string; // `reason` -> `applicationReason`
   applicationDate: string;
-  approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
+  approvalStatus: "PENDING" | "APPROVED" | "REJECTED" | "RETURN_PENDING";
   approvalDate?: string;
   approverId?: string;
   rejectReason?: string;
+
+  // DTO fields from backend
+  studentName?: string;
 }
 
 // =====================================================
@@ -249,39 +260,67 @@ export interface CourseEvaluation {
 export interface AcademicSchedule {
   scheduleId: number;
   academicYear: number;
-  semester: number; // 0이면 전체 학기
-  title: string; // schedule_title
-  content?: string;
+  semester: number;
+  scheduleTitle: string;
+  scheduleContent?: string;
   startDate: string;
   endDate: string;
   backgroundColor?: string;
-  category?: "academic" | "holiday" | "event"; // for ProfessorViews.tsx, CommonViews.tsx
-  recurrenceType: "NONE" | "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY";
+  category?: "academic" | "holiday" | "event";
+  recurrenceType?: string;
 }
 
 // =====================================================
 // Mock Data Types (Not in DB)
 // =====================================================
-export interface Announcement {
-  id: string;
-  title: string;
-  content: string;
-  author: string;
-  date: string;
-}
-
-export interface CalendarEvent {
-  id: string;
-  title: string;
-  startDate: string;
-  endDate: string;
-  category: 'academic' | 'holiday' | 'event';
-}
 
 export interface StudentRecord {
   id: string;
   name: string;
   department: string;
-  attendance: 'Present' | 'Absent' | 'Late';
+  attendance: "Present" | "Absent" | "Late";
   grade: string | null;
+}
+
+// =====================================================
+// 14. Course Announcement (강의 공지사항)
+// =====================================================
+export interface CourseAnnouncement {
+  noticeId: number;
+  courseCode: string;
+  writerId: string;
+  title: string;
+  content: string;
+  viewCount: number;
+  createdAt: string;
+  updatedAt?: string;
+  writerName?: string; // DTO에서 추가
+}
+
+// =====================================================
+// 15. Assignment (과제)
+// =====================================================
+export interface Assignment {
+  assignmentId: number;
+  courseCode: string;
+  assignmentTitle: string;
+  assignmentDesc: string;
+  attachmentPath?: string;
+  registrationDate: string;
+  dueDate: string;
+  submission?: AssignmentSubmission | null; // 학생의 제출 정보
+}
+
+// =====================================================
+// 16. Assignment Submission (과제 제출)
+// =====================================================
+export interface AssignmentSubmission {
+    submissionId: number;
+    studentName: string;
+    studentId?: string; // Add studentId
+    submissionDate: string;
+    content?: string;
+    filePath?: string;
+    grade?: number;
+    feedback?: string;
 }

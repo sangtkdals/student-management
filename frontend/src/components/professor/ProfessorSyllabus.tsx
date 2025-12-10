@@ -27,14 +27,14 @@ export const ProfessorSyllabus: React.FC<{ user: User }> = ({ user }) => {
       if (!user?.memberNo) return;
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`http://localhost:8080/api/courses/professor/${user.memberNo}`, {
+        const response = await fetch(`/api/professor-new/courses`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response.ok) {
           const data = await response.json();
           const mappedCourses = data.map((c: any) => ({
             ...c,
-            subjectName: c.courseName || c.subject?.sName || c.courseCode,
+            subjectName: c.subjectName || c.courseName || c.subject?.sName || c.courseCode,
           }));
           setMyCourses(mappedCourses);
 
@@ -58,37 +58,17 @@ export const ProfessorSyllabus: React.FC<{ user: User }> = ({ user }) => {
   // Update syllabus state when course changes
   useEffect(() => {
     if (course) {
-      // Calculate credits from courseTime (1 hour = 1 credit)
-      const calculateCredits = (timeStr: string) => {
-        if (!timeStr) return 0;
-        const parts = timeStr.split(",").map((s) => s.trim());
-        let totalHours = 0;
-        parts.forEach((part) => {
-          const match = part.match(/([월화수목금])\s*(\d{2}:\d{2})-(\d{2}:\d{2})/);
-          if (match) {
-            const [, , start, end] = match;
-            const [startH, startM] = start.split(":").map(Number);
-            const [endH, endM] = end.split(":").map(Number);
-            const duration = endH + endM / 60 - (startH + startM / 60);
-            totalHours += duration;
-          }
-        });
-        return Math.round(totalHours);
-      };
-
-      const calculatedCredits = calculateCredits(course.courseTime || "");
-
       setSyllabus({
         classTime: course.courseTime || "",
-        credits: String(calculatedCredits),
-        overview: course.content || "",
-        objectives: course.objectives || "",
+        credits: String(course.credit || 0), // Use course.credit directly
+        overview: course.courseContent || "",
+        objectives: course.courseObjectives || "",
         textbook: course.textbookInfo || "",
       });
 
       // Parse evaluation method
       try {
-        if (course.evaluationMethod && course.evaluationMethod.startsWith("{")) {
+        if (course.evaluationMethod && typeof course.evaluationMethod === 'string' && course.evaluationMethod.startsWith("{")) {
           const parsed = JSON.parse(course.evaluationMethod);
           setEvalBreakdown({
             mid: parsed.mid || 0,
@@ -98,13 +78,13 @@ export const ProfessorSyllabus: React.FC<{ user: User }> = ({ user }) => {
           });
           setEvalDesc(parsed.desc || "");
         } else {
-          // Legacy plain text
+          // Legacy plain text or object
           setEvalBreakdown({ mid: 0, final: 0, assign: 0, attend: 0 });
-          setEvalDesc(course.evaluationMethod || "");
+          setEvalDesc(course.evaluationMethod ? JSON.stringify(course.evaluationMethod) : "");
         }
       } catch (e) {
         setEvalBreakdown({ mid: 0, final: 0, assign: 0, attend: 0 });
-        setEvalDesc(course.evaluationMethod || "");
+        setEvalDesc(course.evaluationMethod ? JSON.stringify(course.evaluationMethod) : "");
       }
     }
   }, [course]);
@@ -127,7 +107,7 @@ export const ProfessorSyllabus: React.FC<{ user: User }> = ({ user }) => {
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:8080/api/courses/${course.courseCode}`, {
+      const response = await fetch(`/api/courses/${course.courseCode}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -191,7 +171,7 @@ export const ProfessorSyllabus: React.FC<{ user: User }> = ({ user }) => {
           >
             {myCourses.map((c) => (
               <option key={c.courseCode} value={c.courseCode}>
-                {c.subjectName} ({c.courseCode})
+                {c.subjectName}
               </option>
             ))}
           </select>

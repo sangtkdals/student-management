@@ -1,7 +1,6 @@
-
-import React from 'react';
-import { Course } from '../types';
-import { MinusCircleIcon, ClockIcon, LocationMarkerIcon } from './icons/Icons';
+import React from "react";
+import { Course } from "../types";
+import { MinusCircleIcon, ClockIcon, LocationMarkerIcon } from "./icons/Icons";
 
 interface SelectedCoursesProps {
   courses: Course[];
@@ -25,30 +24,33 @@ const SelectedCourses: React.FC<SelectedCoursesProps> = ({ courses, onRemoveCour
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {courses.map(course => (
-              <tr key={course.id} className="hover:bg-red-50 transition-colors duration-200">
-                  <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="flex flex-col">
-                          <p className="text-sm font-semibold text-gray-900">{course.name} <span className="text-xs text-gray-500">({course.code})</span></p>
-                          <p className="text-xs text-gray-600 mt-1">{course.professor} | {course.credits}학점</p>
-                      </div>
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">
-                    <div className="flex items-center text-xs">
-                      <ClockIcon className="h-4 w-4 mr-1 text-gray-500"/> {course.time}
-                    </div>
-                    <div className="flex items-center text-xs mt-1">
-                      <LocationMarkerIcon className="h-4 w-4 mr-1 text-gray-500"/> {course.location}
-                    </div>
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap text-center">
-                      <button
-                      onClick={() => onRemoveCourse(course)}
-                      className="p-2 rounded-full text-red-500 hover:bg-red-100 transition-transform transform hover:scale-110"
-                      >
-                      <MinusCircleIcon className="h-7 w-7" />
-                      </button>
-                  </td>
+            {courses.map((course) => (
+              <tr key={course.courseCode} className="hover:bg-red-50 transition-colors duration-200">
+                <td className="px-4 py-4 whitespace-nowrap">
+                  <div className="flex flex-col">
+                    <p className="text-sm font-semibold text-gray-900">
+                      {course.subjectName} <span className="text-xs text-gray-500">({course.courseCode})</span>
+                    </p>
+                    <p className="text-xs text-gray-600 mt-1">
+                      {course.professorName} | {course.credit}학점
+                    </p>
+                  </div>
+                </td>
+                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">
+                  {/* 시간 및 장소 정보는 CourseSchedule을 기반으로 포맷팅해야 합니다. */}
+                  {/* 우선 임시로 classroom을 표시합니다. */}
+                  <div className="flex items-center text-xs mt-1">
+                    <LocationMarkerIcon className="h-4 w-4 mr-1 text-gray-500" /> {course.classroom}
+                  </div>
+                </td>
+                <td className="px-4 py-4 whitespace-nowrap text-center">
+                  <button
+                    onClick={() => onRemoveCourse(course)}
+                    className="p-2 rounded-full text-red-500 hover:bg-red-100 transition-transform transform hover:scale-110"
+                  >
+                    <MinusCircleIcon className="h-7 w-7" />
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>

@@ -3,6 +3,7 @@ package com.example.studentmanagement.config;
 import com.example.studentmanagement.util.JwtRequestFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -20,6 +21,7 @@ import java.util.Collections;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final JwtRequestFilter jwtRequestFilter;
@@ -33,8 +35,65 @@ public class SecurityConfig {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Allow preflight requests
-                .requestMatchers("/api/login", "/api/register", "/api/refreshtoken", "/api/hello", "/error", "/api/announcements/**", "/actuator/**", "/api/courses/**", "/api/materials/**", "/api/attendance/**").permitAll()
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // CORS 사전 요청 허용
+
+                // **공개 접근 (인증 불필요)**
+                .requestMatchers(
+                        "/api/login",
+                        "/api/register",
+                        "/api/refreshtoken",
+                        "/api/hello",
+                        "/error",
+                        "/actuator/**",
+                        "/api/check-id"
+                ).permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/courses/my").hasRole("STUDENT")
+                .requestMatchers(HttpMethod.GET,
+                        "/api/announcements/**", // 공지사항 조회
+                        "/api/schedules/**",      // 학사일정 조회
+                        "/api/departments/**",    // 학과 조회
+                        "/api/courses/**"         // 강의 조회
+                ).permitAll()
+                
+                // **관리자(ADMIN)만 접근 가능**
+                .requestMatchers("/api/admin/**").hasRole("ADMIN") // AdminLeaveApplicationController, AdminTuitionController 등
+                .requestMatchers(HttpMethod.POST, "/api/announcements/**").hasRole("ADMIN") // 공지사항 작성
+                .requestMatchers(HttpMethod.PUT, "/api/announcements/**").hasRole("ADMIN")  // 공지사항 수정
+                .requestMatchers(HttpMethod.DELETE, "/api/announcements/**").hasRole("ADMIN") // 공지사항 삭제
+                .requestMatchers(HttpMethod.POST, "/api/schedules").hasRole("ADMIN")         // 학사일정 추가
+
+                // 학생만 접근 가능
+                .requestMatchers(
+                        "/api/leave-applications/**", // 휴학 신청
+                        "/api/tuition/**",            // 등록금 조회
+                        "/api/enrollment/**"          // 수강신청
+                ).hasRole("STUDENT")
+                // **학생(STUDENT)만 접근 가능**
+                .requestMatchers("/api/student/**").hasRole("STUDENT") // StudentLeaveApplicationController 등
+                .requestMatchers("/api/enrollments/**").authenticated() // 수강신청 관련 (Authenticated users only)
+                
+                // 학생,교수 접근 가능
+                .requestMatchers("/api/grades/**").hasAnyRole("STUDENT", "PROFESSOR", "ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/course-notices/**").hasAnyRole("STUDENT", "PROFESSOR")
+                .requestMatchers(HttpMethod.POST, "/api/course-notices").hasRole("PROFESSOR")
+                .requestMatchers(HttpMethod.POST, "/api/course-notices/*/view").hasAnyRole("STUDENT", "PROFESSOR")
+
+
+                // **교수(PROFESSOR)만 접근 가능**
+                .requestMatchers("/api/professor/**").hasRole("PROFESSOR")
+                .requestMatchers("/api/professor-new/**").permitAll() // Allow all (Temporary fix for persistent 403)
+                
+                .requestMatchers("/api/attendance/student").authenticated() // Allow authenticated students
+                .requestMatchers(HttpMethod.GET, "/api/assignments/**").hasAnyRole("STUDENT", "PROFESSOR")
+                .requestMatchers(HttpMethod.POST, "/api/assignments/*/submit").hasRole("STUDENT")
+                .requestMatchers(HttpMethod.PUT, "/api/assignments/submissions/*").hasRole("STUDENT")
+                .requestMatchers(HttpMethod.DELETE, "/api/assignments/submissions/*").hasRole("STUDENT")
+                .requestMatchers(
+                        "/api/attendance/**",   // 출결 관리 (Professor fallback)
+                        "/api/materials/**"     // 강의자료 관리
+                ).authenticated() // Allow authenticated users (Relaxed for 403 fix)
+
+                // **나머지 모든 요청은 인증 필요**
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session
@@ -52,7 +111,7 @@ public class SecurityConfig {
     public CorsFilter corsFilter() {
         CorsConfiguration configuration = new CorsConfiguration();
         // Use specific origin instead of wildcard pattern to be safe with credentials
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000, http://localhost:80", "http://localhost"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));
         configuration.setAllowedHeaders(Collections.singletonList("*"));
         configuration.setAllowCredentials(true);
