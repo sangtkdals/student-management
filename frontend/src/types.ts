@@ -124,16 +124,16 @@ export interface Board {
 export interface Post {
   postId: number;
   boardId: number;
-  postTitle: string;
-  postContent: string;
-  writerId: string;
+  title: string; // postTitle -> title
+  content: string; // postContent -> content
+  writer?: { mId: string; mName: string }; // writerId -> writer 객체로 변경
   viewCount: number;
   createdAt: string;
   updatedAt?: string;
 
   // UI용
   writerName?: string;
-  author?: string;
+  author?: string; // 기존 코드 호환성 유지
   attachments?: Attachment[];
 }
 
@@ -295,4 +295,32 @@ export interface CourseAnnouncement {
   createdAt: string;
   updatedAt?: string;
   writerName?: string; // DTO에서 추가
+}
+
+// =====================================================
+// 15. Assignment (과제)
+// =====================================================
+export interface Assignment {
+  assignmentId: number;
+  courseCode: string;
+  assignmentTitle: string;
+  assignmentDesc: string;
+  attachmentPath?: string;
+  registrationDate: string;
+  dueDate: string;
+  submission?: AssignmentSubmission | null; // 학생의 제출 정보
+}
+
+// =====================================================
+// 16. Assignment Submission (과제 제출)
+// =====================================================
+export interface AssignmentSubmission {
+    submissionId: number;
+    studentName: string;
+    studentId?: string; // Add studentId
+    submissionDate: string;
+    content?: string;
+    filePath?: string;
+    grade?: number;
+    feedback?: string;
 }

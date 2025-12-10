@@ -5,6 +5,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.example.studentmanagement.service.RefreshTokenService;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -27,6 +28,9 @@ public class JwtUtil {
     private final long ACCESS_TOKEN_VALIDITY_MS = 1000 * 60 * 15; 
     // 7 days validity for refresh token
     private final long REFRESH_TOKEN_VALIDITY_MS = 1000 * 60 * 60 * 24 * 7;
+
+    @Autowired
+    private RefreshTokenService refreshTokenService;
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
@@ -76,12 +80,7 @@ public class JwtUtil {
 
     public String createRefreshToken(String memberId) {
         String refreshToken = UUID.randomUUID().toString();
-        redisTemplate.opsForValue().set(
-                memberId,
-                refreshToken,
-                REFRESH_TOKEN_VALIDITY_MS,
-                TimeUnit.MILLISECONDS
-        );
+        refreshTokenService.saveRefreshToken(memberId, refreshToken, REFRESH_TOKEN_VALIDITY_MS);
         return refreshToken;
     }
 

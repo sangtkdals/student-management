@@ -192,8 +192,8 @@ public class AdminTuitionController {
     // 학과 및 학년별 등록금 조회
     @GetMapping("/department/{deptCode}/grade/{grade}")
     public ResponseEntity<List<TuitionDTO>> getTuitionsByDepartmentAndGrade(
-            @PathVariable String deptCode,
-            @PathVariable int grade) {
+            @PathVariable(value = "deptCode") String deptCode,
+            @PathVariable(value = "grade") int grade) {
         try {
             List<TuitionDTO> tuitions = tuitionService.getTuitionsByDepartmentAndGrade(deptCode, grade);
             return ResponseEntity.ok(tuitions);
@@ -221,10 +221,10 @@ public class AdminTuitionController {
     // 학과 및 학년별 학생 목록 조회 (등록금 생성 여부 포함)
     @GetMapping("/department/{deptCode}/grade/{grade}/students")
     public ResponseEntity<List<StudentTuitionStatusDTO>> getStudentsByDepartmentAndGradeWithTuitionStatus(
-            @PathVariable String deptCode,
-            @PathVariable int grade,
-            @RequestParam Integer academicYear,
-            @RequestParam Integer semester) {
+            @PathVariable(value = "deptCode") String deptCode,
+            @PathVariable(value = "grade") int grade,
+            @RequestParam(value = "academicYear") Integer academicYear,
+            @RequestParam(value = "semester") Integer semester) {
         try {
             List<StudentTuitionStatusDTO> students = tuitionService.getStudentsByDepartmentAndGradeWithTuitionStatus(deptCode, grade, academicYear, semester);
             return ResponseEntity.ok(students);

@@ -102,16 +102,16 @@ public class LeaveApplicationService {
 
     // 휴학 신청 승인
     @Transactional
-    public LeaveApplicationDTO approveApplication(Integer applicationId, String approverNo) {
+    public LeaveApplicationDTO approveApplication(Integer applicationId, String approverId) {
         LeaveApplication application = leaveApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new EntityNotFoundException("Application not found with id: " + applicationId));
 
         if (!"PENDING".equals(application.getApprovalStatus())) {
-            throw new IllegalStateException("Only pending applications can be approved");
+            throw new IllegalStateException("이미 처리되었거나 대기 중이 아닌 휴학 신청은 승인할 수 없습니다.");
         }
 
-        Member approver = memberRepository.findByMemberNo(approverNo)
-                .orElseThrow(() -> new EntityNotFoundException("Approver not found with number: " + approverNo));
+        Member approver = memberRepository.findByMemberId(approverId)
+                .orElseThrow(() -> new EntityNotFoundException("Approver not found with id: " + approverId));
 
         application.setApprovalStatus("APPROVED");
         application.setApprovalDate(new Date());
@@ -133,7 +133,7 @@ public class LeaveApplicationService {
 
     // 휴학 신청 거절
     @Transactional
-    public LeaveApplicationDTO rejectApplication(Integer applicationId, String approverNo, String rejectReason) {
+    public LeaveApplicationDTO rejectApplication(Integer applicationId, String approverId, String rejectReason) {
         LeaveApplication application = leaveApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new EntityNotFoundException("Application not found with id: " + applicationId));
 
@@ -141,8 +141,8 @@ public class LeaveApplicationService {
             throw new IllegalStateException("Only pending applications can be rejected");
         }
 
-        Member approver = memberRepository.findByMemberNo(approverNo)
-                .orElseThrow(() -> new EntityNotFoundException("Approver not found with number: " + approverNo));
+        Member approver = memberRepository.findByMemberId(approverId)
+                .orElseThrow(() -> new EntityNotFoundException("Approver not found with id: " + approverId));
 
         application.setApprovalStatus("REJECTED");
         application.setApprovalDate(new Date());
@@ -217,7 +217,7 @@ public class LeaveApplicationService {
 
     // 복학 처리 - 학생의 가장 최근 승인된 휴학 신청을 복학 상태로 변경
     @Transactional
-    public LeaveApplicationDTO processReturn(String studentNo, String approverNo) {
+    public LeaveApplicationDTO processReturn(String studentNo, String approverId) {
         // 학생의 승인된 휴학 신청 중 가장 최근 것을 찾음
         List<LeaveApplication> approvedApplications = leaveApplicationRepository.findByStudent_MemberNo(studentNo)
                 .stream()
@@ -305,7 +305,7 @@ public class LeaveApplicationService {
 
     // 복학 신청 승인 처리
     @Transactional
-    public LeaveApplicationDTO approveReturnRequest(Integer applicationId, String approverNo) {
+    public LeaveApplicationDTO approveReturnRequest(Integer applicationId, String approverId) {
         LeaveApplication returnApplication = leaveApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new EntityNotFoundException("Application not found with id: " + applicationId));
 
@@ -313,8 +313,8 @@ public class LeaveApplicationService {
             throw new IllegalStateException("복학 신청 대기 상태가 아닙니다.");
         }
 
-        Member approver = memberRepository.findByMemberNo(approverNo)
-                .orElseThrow(() -> new EntityNotFoundException("Approver not found with number: " + approverNo));
+        Member approver = memberRepository.findByMemberId(approverId)
+                .orElseThrow(() -> new EntityNotFoundException("Approver not found with id: " + approverId));
 
         // 복학 신청을 승인으로 변경
         returnApplication.setApprovalStatus("RETURNED");

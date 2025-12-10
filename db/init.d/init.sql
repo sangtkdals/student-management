@@ -394,6 +394,43 @@ CREATE TABLE course_announcement (
     CONSTRAINT fk_c_notice_writer FOREIGN KEY (writer_id) REFERENCES member (m_no) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- =====================================================
+-- 18) assignment
+-- =====================================================
+DROP TABLE IF EXISTS assignment;
+CREATE TABLE assignment (
+    assignment_id BIGINT PRIMARY KEY AUTO_INCREMENT, -- 과제ID (BIGINT로 수정)
+    course_code VARCHAR(20) NOT NULL COLLATE 'utf8mb4_0900_ai_ci',              -- 참조할 강의 코드 필드 추가
+    assignment_title VARCHAR(255) NOT NULL,                   -- 주제
+    assignment_desc TEXT,                          -- 과제설명
+    attachment_path VARCHAR(255),                  -- 첨부파일
+    registration_date DATE NOT NULL,               -- 등록일
+    due_date DATE NOT NULL,                        -- 제출일
+    
+    -- 외래 키 정의 (Foreign Key Definition)
+    CONSTRAINT fk_assignment_course
+        FOREIGN KEY (course_code)
+        REFERENCES course (course_code)
+        ON UPDATE CASCADE  -- 부모(course) 코드가 변경되면 자식(assignment)도 함께 갱신
+        ON DELETE CASCADE  -- 부모(course)가 삭제되면 자식(assignment)도 함께 삭제
+);
+
+-- =====================================================
+-- 19) assignment_submission (NEW!)
+-- =====================================================
+DROP TABLE IF EXISTS assignment_submission;
+CREATE TABLE assignment_submission (
+    submission_id BIGINT PRIMARY KEY AUTO_INCREMENT, -- BIGINT로 수정
+    assignment_id BIGINT NOT NULL, -- BIGINT로 수정
+    stu_no VARCHAR(20) NOT NULL COLLATE 'utf8mb4_0900_ai_ci',
+    submission_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    content TEXT,
+    file_path VARCHAR(255),
+    grade INT,
+    feedback TEXT,
+    CONSTRAINT fk_submission_assignment FOREIGN KEY (assignment_id) REFERENCES assignment(assignment_id) ON DELETE CASCADE,
+    CONSTRAINT fk_submission_student FOREIGN KEY (stu_no) REFERENCES member(m_no) ON DELETE CASCADE
+);
 
 -- =====================================================
 -- Sample Data Insertion
