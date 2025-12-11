@@ -73,7 +73,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
                 <Input label="아이디" value={user.id} disabled readOnly className="bg-slate-100 text-slate-500 cursor-not-allowed" />
                 <Input
                   label={user.role === "professor" ? "교번" : "학번"}
-                  value={user.id}
+                  value={user.memberNo}
                   disabled
                   readOnly
                   className="bg-slate-100 text-slate-500 cursor-not-allowed"
@@ -135,7 +135,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
                 </div>
                 <div>
                   <span className="block text-xs font-medium text-slate-500 mb-1">{user.role === "professor" ? "교번" : "학번"}</span>
-                  <span className="block text-base font-semibold text-slate-800">{user.id}</span>
+                  <span className="block text-base font-semibold text-slate-800">{user.memberNo}</span>
                 </div>
 
                 <div className="border-b border-slate-100 pb-2 col-span-1 md:col-span-2 mt-2">
